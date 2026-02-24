@@ -1,0 +1,189 @@
+# 🚀 SAFE UI UPGRADE MODE — DO NOT MODIFY CORE ENGINE
+
+You are working inside an EXISTING production repository:
+
+👉 CodeFlow AI — C++ Autocomplete IDE
+
+The repository is already functional and uploaded on GitHub.
+
+⚠️ VERY IMPORTANT:
+This task is **NOT to regenerate the project**.
+
+You must ONLY:
+
+* improve UI
+* fix existing bugs
+* add theme system
+* enhance usability
+
+DO NOT rewrite backend or change architecture.
+
+---
+
+# ✅ STRICT EDIT RULES
+
+## ❌ NEVER DO THESE
+
+* Do NOT recreate project structure
+* Do NOT delete files
+* Do NOT rename backend folders
+* Do NOT rewrite Trie / Tokenizer / SuggestionEngine logic
+* Do NOT modify working APIs
+* Do NOT regenerate Electron setup
+
+---
+
+## ✅ ALLOWED ACTIONS
+
+You MAY:
+
+✔ Update existing frontend files
+✔ Add new UI components
+✔ Improve CSS
+✔ Fix UI bugs
+✔ Fix small integration bugs
+✔ Add theme switching
+✔ Improve popup styling
+✔ Improve responsiveness
+
+---
+
+# 🎨 UI IMPROVEMENT REQUIREMENTS
+
+## Add Professional IDE Layout
+
+Create layout similar to VS Code:
+
+```
+Sidebar | Editor | Suggestion Popup
+        | Status Bar
+```
+
+Add:
+
+✅ Left activity sidebar
+✅ Bottom status bar
+✅ Smooth suggestion animation
+✅ Modern spacing
+✅ Professional fonts
+
+---
+
+# 🌙 DARK + ☀️ LIGHT THEME SYSTEM
+
+Add Theme Manager:
+
+Requirements:
+
+* Toggle button in UI
+* Persist theme using localStorage
+* No reload required
+* Monaco theme switches dynamically
+
+Themes:
+
+### Dark Theme
+
+Background: #0D1117
+Editor: #161B22
+Accent: #6366F1
+
+### Light Theme
+
+Background: #FFFFFF
+Editor: #F5F5F5
+Accent: #4F46E5
+
+---
+
+## Required Files (ADD ONLY IF NEEDED)
+
+frontend/src/theme/
+
+* ThemeContext.jsx
+* themes.js
+
+frontend/src/components/
+
+* ThemeToggle.jsx
+* StatusBar.jsx
+* Sidebar.jsx
+
+---
+
+# 🧠 MONACO EDITOR IMPROVEMENTS
+
+Enhance existing editor ONLY:
+
+✅ auto resize
+✅ cursor smooth animation
+✅ better suggestion popup styling
+✅ font ligatures
+✅ padding + readability
+
+DO NOT replace Monaco instance.
+
+---
+
+# 🐞 BUG FIX MODE
+
+If any of these exist, fix safely:
+
+* suggestion popup flicker
+* incorrect cursor position
+* popup overlapping text
+* autocomplete delay
+* dark theme contrast issues
+
+Fix WITHOUT changing backend logic.
+
+---
+
+# ✨ UI QUALITY TARGET
+
+Final UI must look like:
+
+Modern Developer Tool (2026 level)
+
+Comparable to:
+
+* VS Code
+* Cursor IDE
+* JetBrains Lite IDE
+
+---
+
+# ✅ OUTPUT FORMAT
+
+For every change:
+
+SHOW ONLY:
+
+1. File modified
+2. Exact updated code
+3. Newly added files (if any)
+
+DO NOT output untouched files.
+
+---
+
+# 🚀 SUCCESS CONDITION
+
+After update:
+
+npm install
+npm start
+
+```
+
+Application runs normally with:
+
+✅ Working autocomplete  
+✅ Dark/light toggle  
+✅ Improved popup  
+✅ No backend breakage  
+
+---
+
+Begin SAFE UI UPGRADE now.
+```
