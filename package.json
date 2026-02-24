@@ -12,7 +12,7 @@
     "node": ">=16.0.0"
   },
   "scripts": {
-    "postinstall": "npm run build",
+    "postinstall": "echo skipping build",
     "install-deps": "npm install && cd backend && npm install",
     "build": "cd backend && node-gyp configure build && cd .. && npm run build:frontend",
     "build:frontend": "cd frontend && npm install && npm run build",
@@ -46,8 +46,7 @@
     "axios": "^1.6.0",
     "node-addon-api": "^7.0.0",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "axios": "^1.6.0"
+    "react-dom": "^18.2.0"
   },
   "devDependencies": {
     "@babel/core": "^7.23.0",
