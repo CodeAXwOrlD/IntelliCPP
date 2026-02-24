@@ -353,16 +353,11 @@ npm run dist
 4. Push to branch (`git push origin feature/amazing-feature`)
 5. Open Pull Request with test coverage ≥ 92%
 
-## 📄 License
-
-MIT License - See [LICENSE](LICENSE) file for details
-
 ## 👨‍💻 Author
 
-**Your Name**  
-- GitHub: [@yourusername](https://github.com/yourusername)
-- LinkedIn: [Your Profile](https://linkedin.com/in/yourprofile)
-
+**Akhil Agarwal**  
+- GitHub: [@CodeAXwOrlD](https://github.com/CodeAXwOrlD)
+- LinkedIn: [Akhil Agarwal](www.linkedin.com/in/aggarwalakhil13032005)
 ---
 
 ## ⭐ Show Your Support
