@@ -1,0 +1,511 @@
+/* ============================================
+   GLASSMORPHISM UI - CodeFlow Theme
+   ============================================ */
+
+:root {
+  /* Dark Theme (Default) */
+  --bg-primary: #0f0f1e;
+  --bg-secondary: #1a1a2e;
+  --bg-tertiary: #16213e;
+  --glass-bg: rgba(255, 255, 255, 0.08);
+  --glass-bg-hover: rgba(255, 255, 255, 0.12);
+  --glass-border: rgba(255, 255, 255, 0.12);
+  --accent: #6366f1;
+  --accent-light: #818cf8;
+  --accent-darker: #4f46e5;
+  --text-primary: #f0f0f0;
+  --text-secondary: #a0a0a0;
+  --text-tertiary: #808080;
+  --success: #10b981;
+  --danger: #ef4444;
+  --shadow-sm: 0 4px 6px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 8px 16px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 20px 40px rgba(0, 0, 0, 0.5);
+}
+
+/* Light Theme */
+.app.light-theme {
+  --bg-primary: #f8f9fa;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #f0f2f5;
+  --glass-bg: rgba(0, 0, 0, 0.04);
+  --glass-bg-hover: rgba(0, 0, 0, 0.06);
+  --glass-border: rgba(0, 0, 0, 0.08);
+  --accent: #6366f1;
+  --accent-light: #818cf8;
+  --accent-darker: #4f46e5;
+  --text-primary: #1a1a1a;
+  --text-secondary: #666666;
+  --text-tertiary: #999999;
+  --success: #10b981;
+  --danger: #ef4444;
+  --shadow-sm: 0 4px 6px rgba(0, 0, 0, 0.1);
+  --shadow-md: 0 8px 16px rgba(0, 0, 0, 0.12);
+  --shadow-lg: 0 20px 40px rgba(0, 0, 0, 0.15);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', sans-serif;
+  overflow: hidden;
+}
+
+body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+  width: 100%;
+  height: 100vh;
+}
+
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+  overflow: hidden;
+  color: var(--text-primary);
+}
+
+/* ============================================
+   HEADER
+   ============================================ */
+
+.header {
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--glass-border);
+  background: var(--glass-bg);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  z-index: 100;
+  box-shadow: var(--shadow-sm);
+}
+
+.header h1 {
+  font-size: 20px;
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--accent), var(--accent-light));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  letter-spacing: 0.5px;
+}
+
+.status-bar {
+  display: flex;
+  gap: 24px;
+  align-items: center;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.status-bar span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Theme Toggle Button */
+.theme-toggle {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  color: var(--text-primary);
+  border-radius: 8px;
+  padding: 8px 14px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: 12px;
+}
+
+.theme-toggle:hover {
+  background: var(--glass-bg-hover);
+  border-color: var(--accent);
+  box-shadow: 0 0 12px rgba(99, 102, 241, 0.2);
+}
+
+.theme-toggle:active {
+  transform: scale(0.96);
+}
+
+/* ============================================
+   EDITOR CONTAINER
+   ============================================ */
+
+.editor-container {
+  flex: 1;
+  display: flex;
+  position: relative;
+  overflow: hidden;
+  background: var(--bg-primary);
+}
+
+.monaco-editor {
+  flex: 1;
+  background: var(--bg-primary) !important;
+}
+
+.monaco-editor .monaco-scrollbars-vertical {
+  width: 10px;
+}
+
+.monaco-editor .monaco-scrollbars-vertical > div {
+  background: rgba(99, 102, 241, 0.2);
+  border-radius: 5px;
+}
+
+.monaco-editor .monaco-scrollbars-vertical > div:hover {
+  background: rgba(99, 102, 241, 0.3);
+}
+
+/* ============================================
+   SUGGESTION POPUP
+   ============================================ */
+
+.suggestion-popup {
+  width: 380px;
+  max-height: 480px;
+  overflow-y: auto;
+  z-index: 1000;
+  animation: slideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  box-shadow: var(--shadow-lg);
+  background: var(--glass-bg);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  padding: 8px;
+}
+
+.suggestion-popup::-webkit-scrollbar {
+  width: 8px;
+}
+
+.suggestion-popup::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.suggestion-popup::-webkit-scrollbar-thumb {
+  background: rgba(99, 102, 241, 0.3);
+  border-radius: 4px;
+}
+
+.suggestion-popup::-webkit-scrollbar-thumb:hover {
+  background: rgba(99, 102, 241, 0.5);
+}
+
+.suggestion-list {
+  list-style: none;
+  padding: 4px;
+  margin: 0;
+}
+
+.suggestion-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  margin: 2px 0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  background: transparent;
+  border-left: 3px solid transparent;
+  color: var(--text-primary);
+}
+
+.suggestion-item:hover {
+  background: var(--glass-bg-hover);
+  border-left-color: var(--accent);
+  transform: translateX(2px);
+}
+
+.suggestion-item.selected {
+  background: rgba(99, 102, 241, 0.2);
+  border-left-color: var(--accent);
+  transform: translateX(2px);
+}
+
+.suggestion-text {
+  flex: 1;
+  font-family: 'Fira Code', 'Monaco', monospace;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--accent-light);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.suggestion-type {
+  font-size: 10px;
+  color: var(--text-secondary);
+  background: rgba(99, 102, 241, 0.15);
+  padding: 3px 8px;
+  border-radius: 4px;
+  margin: 0 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.suggestion-score {
+  font-size: 11px;
+  color: var(--success);
+  font-weight: 700;
+  flex-shrink: 0;
+  min-width: 35px;
+  text-align: right;
+}
+
+/* ============================================
+   GLASS PANEL
+   ============================================ */
+
+.glass-panel {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  padding: 16px;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: var(--shadow-sm);
+  transition: all 0.3s ease;
+  color: var(--text-primary);
+}
+
+.glass-panel:hover {
+  background: var(--glass-bg-hover);
+  border-color: rgba(99, 102, 241, 0.3);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.glass-panel h3 {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--accent-light);
+  margin-bottom: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.glass-panel p {
+  font-size: 13px;
+  color: var(--text-primary);
+  margin: 8px 0;
+  display: flex;
+  justify-content: space-between;
+}
+
+.glass-panel p strong {
+  color: var(--accent-light);
+  font-weight: 600;
+}
+
+.glass-panel ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.glass-panel ul li {
+  font-size: 13px;
+  color: var(--text-primary);
+  margin: 8px 0;
+  padding: 4px 0;
+  line-height: 1.6;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ============================================
+   SIDEBAR
+   ============================================ */
+
+.sidebar {
+  position: fixed;
+  right: 0;
+  top: 64px;
+  width: 300px;
+  height: calc(100vh - 64px);
+  background: var(--glass-bg);
+  border-left: 1px solid var(--glass-border);
+  padding: 24px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  z-index: 50;
+  color: var(--text-primary);
+  box-shadow: -4px 0 8px rgba(0, 0, 0, 0.2);
+}
+
+.sidebar .glass-panel {
+  margin: 0;
+}
+
+.sidebar h3 {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--accent-light);
+  margin-bottom: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.sidebar p {
+  font-size: 13px;
+  color: var(--text-primary);
+  margin: 8px 0;
+  display: flex;
+  justify-content: space-between;
+}
+
+.sidebar p strong {
+  color: var(--accent-light);
+  font-weight: 600;
+}
+
+.sidebar ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.sidebar ul li {
+  font-size: 13px;
+  color: var(--text-primary);
+  margin: 8px 0;
+  padding: 4px 0;
+  line-height: 1.6;
+}
+
+/* ============================================
+   CHECKBOX
+   ============================================ */
+
+.checkbox {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  margin: 8px 0;
+  font-size: 13px;
+  color: var(--text-secondary);
+  user-select: none;
+}
+
+.checkbox input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: var(--accent);
+  border-radius: 4px;
+}
+
+.checkbox:hover span {
+  color: var(--text-primary);
+}
+
+/* ============================================
+   ANIMATIONS
+   ============================================ */
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* ============================================
+   SCROLLBAR STYLING
+   ============================================ */
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(99, 102, 241, 0.25);
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(99, 102, 241, 0.4);
+}
+
+/* ============================================
+   RESPONSIVE
+   ============================================ */
+
+@media (max-width: 1024px) {
+  .sidebar {
+    width: 280px;
+    padding: 16px;
+  }
+  
+  .suggestion-popup {
+    width: 320px;
+  }
+}
+
+@media (max-width: 768px) {
+  .sidebar {
+    display: none;
+  }
+
+  .header h1 {
+    font-size: 16px;
+  }
+
+  .status-bar {
+    gap: 12px;
+    font-size: 11px;
+  }
+
+  .suggestion-popup {
+    width: calc(100vw - 48px);
+    left: 24px;
+    max-height: 300px;
+  }
+}

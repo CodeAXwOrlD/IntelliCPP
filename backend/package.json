@@ -1,0 +1,26 @@
+{
+  "name": "codeflow-native-binding",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Native C++ addon for CodeFlow autocomplete engine",
+  "main": "./dist/index.js",
+  "gypfile": true,
+  "scripts": {
+    "test": "node test.js",
+    "build": "node-gyp rebuild",
+    "clean": "node-gyp clean",
+    "install": "node-gyp rebuild"
+  },
+  "binary": {
+    "module_name": "codeflow_native",
+    "module_path": "./dist/",
+    "remote_path": "./v{version}/",
+    "package_name": "{module_name}-v{version}-{platform}-{arch}.tar.gz"
+  },
+  "dependencies": {
+    "node-addon-api": "^7.0.0"
+  },
+  "devDependencies": {
+    "node-gyp": "^9.4.0"
+  }
+}

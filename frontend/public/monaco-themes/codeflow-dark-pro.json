@@ -1,0 +1,87 @@
+{
+  "name": "codeflow-dark-pro",
+  "type": "dark",
+  "colors": {
+    "editor.background": "#0a0a0a",
+    "editor.foreground": "#f5f5f5",
+    "editor.lineNumbersBackground": "#1a1a1a",
+    "editor.lineNumbersForeground": "#555555",
+    "editor.selectionBackground": "#6366f166",
+    "editor.lineHighlightBackground": "#1e1e2e66",
+    "editorCursor.foreground": "#6366f1",
+    "editorWhitespace.foreground": "#404040",
+    "editorIndentGuide.background": "#404040"
+  },
+  "tokenColors": [
+    {
+      "name": "Comment",
+      "scope": ["comment"],
+      "settings": {
+        "foreground": "#6a737d"
+      }
+    },
+    {
+      "name": "String",
+      "scope": ["string"],
+      "settings": {
+        "foreground": "#9ccc65"
+      }
+    },
+    {
+      "name": "Number",
+      "scope": ["constant.numeric"],
+      "settings": {
+        "foreground": "#ff9999"
+      }
+    },
+    {
+      "name": "Built-in constant",
+      "scope": ["constant.language"],
+      "settings": {
+        "foreground": "#ff9999"
+      }
+    },
+    {
+      "name": "User-defined constant",
+      "scope": ["constant.character", "constant.other"],
+      "settings": {
+        "foreground": "#ff9999"
+      }
+    },
+    {
+      "name": "Variable",
+      "scope": ["variable"],
+      "settings": {
+        "foreground": "#f5f5f5"
+      }
+    },
+    {
+      "name": "Keyword",
+      "scope": ["keyword"],
+      "settings": {
+        "foreground": "#6366f1"
+      }
+    },
+    {
+      "name": "Storage",
+      "scope": ["storage"],
+      "settings": {
+        "foreground": "#6366f1"
+      }
+    },
+    {
+      "name": "Storage type",
+      "scope": ["storage.type"],
+      "settings": {
+        "foreground": "#818cf8"
+      }
+    },
+    {
+      "name": "Entity name",
+      "scope": ["entity.name.function"],
+      "settings": {
+        "foreground": "#64b5f6"
+      }
+    }
+  ]
+}

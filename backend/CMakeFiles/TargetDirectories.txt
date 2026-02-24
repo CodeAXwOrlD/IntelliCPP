@@ -1,0 +1,3 @@
+/home/indmadmax/Documents/code_editr/autocomplete-engine/backend/CMakeFiles/codeflow_native.dir
+/home/indmadmax/Documents/code_editr/autocomplete-engine/backend/CMakeFiles/edit_cache.dir
+/home/indmadmax/Documents/code_editr/autocomplete-engine/backend/CMakeFiles/rebuild_cache.dir

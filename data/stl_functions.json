@@ -1,0 +1,81 @@
+{
+  "vector": [
+    "push_back", "pop_back", "emplace_back", "insert", "erase", "clear",
+    "begin", "end", "rbegin", "rend", "cbegin", "cend", "crbegin", "crend",
+    "size", "capacity", "max_size", "resize", "reserve", "shrink_to_fit",
+    "data", "at", "front", "back", "empty", "swap", "assign"
+  ],
+  "stack": [
+    "push", "pop", "emplace", "top", "empty", "size", "swap"
+  ],
+  "queue": [
+    "push", "pop", "emplace", "front", "back", "empty", "size", "swap"
+  ],
+  "deque": [
+    "push_back", "pop_back", "push_front", "pop_front", "emplace_back",
+    "emplace_front", "insert", "erase", "clear", "begin", "end",
+    "rbegin", "rend", "cbegin", "cend", "crbegin", "crend",
+    "size", "max_size", "resize", "shrink_to_fit", "empty", "at",
+    "front", "back", "data", "swap", "assign"
+  ],
+  "map": [
+    "insert", "emplace", "erase", "clear", "find", "count", "lower_bound",
+    "upper_bound", "equal_range", "begin", "end", "rbegin", "rend",
+    "cbegin", "cend", "crbegin", "crend", "size", "max_size", "empty",
+    "swap", "at", "operator[]", "extract", "merge"
+  ],
+  "unordered_map": [
+    "insert", "emplace", "erase", "clear", "find", "count", "begin", "end",
+    "cbegin", "cend", "size", "max_size", "empty", "swap", "at",
+    "operator[]", "load_factor", "max_load_factor", "rehash", "reserve",
+    "bucket_count", "bucket_size", "bucket", "extract", "merge"
+  ],
+  "set": [
+    "insert", "emplace", "erase", "clear", "find", "count", "lower_bound",
+    "upper_bound", "equal_range", "begin", "end", "rbegin", "rend",
+    "cbegin", "cend", "crbegin", "crend", "size", "max_size", "empty",
+    "swap", "extract", "merge"
+  ],
+  "unordered_set": [
+    "insert", "emplace", "erase", "clear", "find", "count", "begin", "end",
+    "cbegin", "cend", "size", "max_size", "empty", "swap", "load_factor",
+    "max_load_factor", "rehash", "reserve", "bucket_count", "bucket_size",
+    "bucket", "extract", "merge"
+  ],
+  "string": [
+    "at", "operator[]", "front", "back", "data", "c_str", "begin", "end",
+    "rbegin", "rend", "cbegin", "cend", "crbegin", "crend", "empty", "size",
+    "length", "max_size", "reserve", "capacity", "shrink_to_fit", "clear",
+    "insert", "erase", "push_back", "pop_back", "append", "operator+=",
+    "compare", "substr", "find", "rfind", "find_first_of", "find_last_of",
+    "find_first_not_of", "find_last_not_of", "swap", "replace",
+    "copy", "resize", "assign", "get_allocator"
+  ],
+  "list": [
+    "push_back", "pop_back", "push_front", "pop_front", "emplace_back",
+    "emplace_front", "emplace", "insert", "erase", "clear", "begin", "end",
+    "rbegin", "rend", "cbegin", "cend", "crbegin", "crend", "front", "back",
+    "empty", "size", "max_size", "resize", "swap", "reverse", "sort",
+    "unique", "merge", "splice", "remove", "remove_if", "assign"
+  ],
+  "forward_list": [
+    "push_front", "pop_front", "emplace_front", "insert_after", "erase_after",
+    "clear", "begin", "end", "cbegin", "cend", "before_begin", "cbefore_begin",
+    "front", "empty", "max_size", "resize", "swap", "reverse", "sort",
+    "unique", "merge", "splice_after", "remove", "remove_if", "assign"
+  ],
+  "priority_queue": [
+    "push", "pop", "emplace", "top", "empty", "size", "swap"
+  ],
+  "bitset": [
+    "operator[]", "test", "count", "size", "set", "reset", "flip",
+    "to_string", "to_ullong", "to_ulong", "operator&", "operator|",
+    "operator^", "operator~", "operator<<=", "operator>>=",
+    "operator<<", "operator>>", "any", "all", "none"
+  ],
+  "array": [
+    "at", "operator[]", "front", "back", "data", "begin", "end",
+    "rbegin", "rend", "cbegin", "cend", "crbegin", "crend",
+    "empty", "size", "max_size", "fill", "swap", "get_allocator"
+  ]
+}
