@@ -43,6 +43,16 @@ const callBackendAPI = async (method, ...args) => {
 export default function App() {
   const { theme, themeName } = useTheme();
   const [code, setCode] = useState(STARTING_CODE);
+  const [suggestions, setSuggestions] = useState([]);
+  const [popupVisible, setPopupVisible] = useState(false);
+  const [selectedIndex, setSelectedIndex] = useState(0);
+  const [popupPosition, setPopupPosition] = useState({ top: 0, left: 0 });
+  const [symbolCount, setSymbolCount] = useState(0);
+  const [latency, setLatency] = useState(0);
+  const [includedLibs, setIncludedLibs] = useState([]);
+  const editorRef = useRef(null);
+  const monacoRef = useRef(null);
+  const triggerTimeout = useRef(null);
 
   const handleEditorChange = (value) => {
     setCode(value || '');
