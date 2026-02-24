@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import { Editor } from '@monaco-editor/react';
 import SuggestionPopup from './components/SuggestionPopup';
 import ThemeToggle from './components/ThemeToggle';
@@ -24,24 +24,47 @@ const callBackendAPI = async (method, ...args) => {
 
   // Fallback: HTTP API for dev mode (if backend HTTP server is available)
   try {
-    const response = await fetch('http://localhost:3001/api/' + method, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ args }),
-    });
-    if (response.ok) {
-      return response.json();
+    // Map method names to HTTP endpoints
+    if (method === 'getSuggestions') {
+      const [prefix, contextType, code, cursorPosition] = args;
+      const response = await fetch('http://localhost:3001/api/getSuggestions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prefix, contextType, code, cursorPosition }),
+      });
+      if (response.ok) return response.json();
+    } else if (method === 'getStats') {
+      const [code] = args;
+      const response = await fetch('http://localhost:3001/api/getStats', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code }),
+      });
+      if (response.ok) return response.json();
+    } else if (method === 'runCode') {
+      const [code] = args;
+      const response = await fetch('http://localhost:3001/api/runCode', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code }),
+      });
+      if (response.ok) return response.json();
     }
   } catch (err) {
-    // HTTP API not available, return empty
-    return method === 'getStats' 
-      ? { symbolCount: 0, includedLibraries: [] }
-      : [];
+    console.warn('[Frontend] API Error:', err.message);
   }
+  
+  // Return appropriate default values
+  if (method === 'getStats') {
+    return { symbolCount: 0, includedLibraries: [], symbolTable: {} };
+  } else if (method === 'runCode') {
+    return { success: false, output: '', error: 'Backend not available' };
+  }
+  return [];
 };
 
 export default function App() {
-  const { theme, themeName } = useTheme();
+  const { theme } = useTheme();
   const [code, setCode] = useState(STARTING_CODE);
   const [suggestions, setSuggestions] = useState([]);
   const [popupVisible, setPopupVisible] = useState(false);
@@ -53,10 +76,6 @@ export default function App() {
   const editorRef = useRef(null);
   const monacoRef = useRef(null);
   const triggerTimeout = useRef(null);
-
-  const handleEditorChange = (value) => {
-    setCode(value || '');
-  };
 
   const handleEditorDidMount = (editor, monaco) => {
     editorRef.current = editor;
