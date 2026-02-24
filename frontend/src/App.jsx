@@ -1,6 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Editor } from '@monaco-editor/react';
 import SuggestionPopup from './components/SuggestionPopup';
+import ThemeToggle from './components/ThemeToggle';
+import Sidebar from './components/Sidebar';
+import StatusBar from './components/StatusBar';
+import { useTheme } from './theme/ThemeContext';
 import './styles/glassmorphism.css';
 
 const STARTING_CODE = `#include <iostream>
@@ -37,22 +41,8 @@ const callBackendAPI = async (method, ...args) => {
 };
 
 export default function App() {
+  const { theme, themeName } = useTheme();
   const [code, setCode] = useState(STARTING_CODE);
-  const [suggestions, setSuggestions] = useState([]);
-  const [popupVisible, setPopupVisible] = useState(false);
-  const [selectedIndex, setSelectedIndex] = useState(0);
-  const [popupPosition, setPopupPosition] = useState({ top: 0, left: 0 });
-  const [symbolCount, setSymbolCount] = useState(0);
-  const [latency, setLatency] = useState(0);
-  const [includedLibs, setIncludedLibs] = useState([]);
-  const [isDarkTheme, setIsDarkTheme] = useState(true);  // ✅ Dark theme by default
-  const editorRef = useRef(null);
-  const monacoRef = useRef(null);
-  const triggerTimeout = useRef(null);
-
-  const toggleTheme = () => {
-    setIsDarkTheme(!isDarkTheme);
-  };
 
   const handleEditorChange = (value) => {
     setCode(value || '');
@@ -221,80 +211,67 @@ export default function App() {
   };
 
   return (
-    <div className={`app ${isDarkTheme ? '' : 'light-theme'}`}>
-      <div className="header">
-        <h1>🚀 CodeFlow STL-Aware Autocomplete</h1>
-        <div className="status-bar">
-          <span>📦 Symbols: {symbolCount}</span>
-          <span>⚡ Latency: {latency}ms</span>
-          <span>📚 Headers: {includedLibs.join(', ') || 'none'}</span>
-          <button 
-            className="theme-toggle"
-            onClick={toggleTheme}
-            title={isDarkTheme ? 'Switch to Light Theme' : 'Switch to Dark Theme'}
-          >
-            {isDarkTheme ? '☀️ Light' : '🌙 Dark'}
-          </button>
-        </div>
-      </div>
-
-      <div className="editor-container" onKeyDown={handleKeyDown}>
-        <Editor
-          height="100%"
-          defaultLanguage="cpp"
-          value={code}
-          onChange={handleEditorChange2}
-          onMount={handleEditorDidMount}
-          theme={isDarkTheme ? 'codeflow-dark-pro' : 'vs-light'}
-          options={{
-            minimap: { enabled: false },
-            fontSize: 14,
-            lineHeight: 24,
-            fontFamily: 'Fira Code, monospace',
-            autoClosingBrackets: 'always',
-            autoClosingQuotes: 'always',
-            formatOnPaste: true,
-            formatOnType: true,
-            suggestOnTriggerCharacters: true,
-            wordBasedSuggestions: false,
-          }}
-        />
-
-        {popupVisible && suggestions.length > 0 && (
-          <div style={{
-            position: 'fixed',
-            top: `${popupPosition.top}px`,
-            left: `${popupPosition.left}px`,
-            zIndex: 1000
-          }}>
-            <SuggestionPopup
-              suggestions={suggestions}
-              selectedIndex={selectedIndex}
-              onSelect={handleSelectSuggestion}
-            />
+    <div className="app-layout">
+      <Sidebar />
+      <div className="main-content">
+        <div className="header">
+          <div className="header-left">
+            <h1>🚀 CodeFlow AI</h1>
           </div>
-        )}
-      </div>
-
-      <div className="sidebar">
-        <div className="glass-panel">
-          <h3>📋 Rules</h3>
-          <ul style={{ fontSize: '12px', lineHeight: '1.6' }}>
-            <li>✅ Header validation enforced</li>
-            <li>✅ Type-aware suggestions</li>
-            <li>✅ Max 10 suggestions</li>
-            <li>✅ Live filtering on typing</li>
-            <li>✅ Auto-insert with ()</li>
-            <li>✅ Multi-library support</li>
-          </ul>
+          <div className="header-right">
+            <ThemeToggle />
+          </div>
         </div>
 
-        <div className="glass-panel">
-          <h3>📊 Statistics</h3>
-          <p>Symbols: <strong>{symbolCount}</strong></p>
-          <p>Headers: <strong>{includedLibs.length}</strong></p>
-          <p>Latency: <strong>≤30ms</strong></p>
+        <div className="editor-wrapper">
+          <div className="editor-container" onKeyDown={handleKeyDown}>
+            <Editor
+              height="100%"
+              defaultLanguage="cpp"
+              value={code}
+              onChange={handleEditorChange2}
+              onMount={handleEditorDidMount}
+              theme={theme['--monaco-theme']}
+              options={{
+                minimap: { enabled: false },
+                fontSize: 14,
+                lineHeight: 24,
+                fontFamily: 'Fira Code, monospace',
+                autoClosingBrackets: 'always',
+                autoClosingQuotes: 'always',
+                formatOnPaste: true,
+                formatOnType: true,
+                suggestOnTriggerCharacters: true,
+                wordBasedSuggestions: false,
+                cursorSmoothCaretAnimation: "on",
+                smoothScrolling: true,
+                padding: { top: 20 },
+                automaticLayout: true
+              }}
+            />
+
+            {popupVisible && suggestions.length > 0 && (
+              <div style={{
+                position: 'fixed',
+                top: `${popupPosition.top}px`,
+                left: `${popupPosition.left}px`,
+                zIndex: 1000
+              }}>
+                <SuggestionPopup
+                  suggestions={suggestions}
+                  selectedIndex={selectedIndex}
+                  onSelect={handleSelectSuggestion}
+                />
+              </div>
+            )}
+          </div>
         </div>
+        
+        <StatusBar 
+          symbolCount={symbolCount} 
+          latency={latency} 
+          includedLibs={includedLibs} 
+        />
       </div>
     </div>
   );

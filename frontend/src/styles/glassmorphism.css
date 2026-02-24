@@ -1,47 +1,139 @@
 /* ============================================
-   GLASSMORPHISM UI - CodeFlow Theme
+   IDE LAYOUT - CodeFlow 2026
    ============================================ */
 
 :root {
-  /* Dark Theme (Default) */
-  --bg-primary: #0f0f1e;
-  --bg-secondary: #1a1a2e;
-  --bg-tertiary: #16213e;
-  --glass-bg: rgba(255, 255, 255, 0.08);
-  --glass-bg-hover: rgba(255, 255, 255, 0.12);
-  --glass-border: rgba(255, 255, 255, 0.12);
-  --accent: #6366f1;
+  --bg-primary: #0D1117;
+  --bg-secondary: #161B22;
+  --bg-tertiary: #21262d;
+  --glass-bg: rgba(22, 27, 34, 0.8);
+  --glass-bg-hover: rgba(48, 54, 61, 0.9);
+  --glass-border: rgba(240, 246, 252, 0.1);
+  --accent: #6366F1;
   --accent-light: #818cf8;
-  --accent-darker: #4f46e5;
-  --text-primary: #f0f0f0;
-  --text-secondary: #a0a0a0;
-  --text-tertiary: #808080;
-  --success: #10b981;
-  --danger: #ef4444;
-  --shadow-sm: 0 4px 6px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 8px 16px rgba(0, 0, 0, 0.4);
-  --shadow-lg: 0 20px 40px rgba(0, 0, 0, 0.5);
+  --text-primary: #c9d1d9;
+  --text-secondary: #8b949e;
+  --text-tertiary: #484f58;
 }
 
-/* Light Theme */
-.app.light-theme {
-  --bg-primary: #f8f9fa;
-  --bg-secondary: #ffffff;
-  --bg-tertiary: #f0f2f5;
-  --glass-bg: rgba(0, 0, 0, 0.04);
-  --glass-bg-hover: rgba(0, 0, 0, 0.06);
-  --glass-border: rgba(0, 0, 0, 0.08);
-  --accent: #6366f1;
-  --accent-light: #818cf8;
-  --accent-darker: #4f46e5;
-  --text-primary: #1a1a1a;
-  --text-secondary: #666666;
-  --text-tertiary: #999999;
-  --success: #10b981;
-  --danger: #ef4444;
-  --shadow-sm: 0 4px 6px rgba(0, 0, 0, 0.1);
-  --shadow-md: 0 8px 16px rgba(0, 0, 0, 0.12);
-  --shadow-lg: 0 20px 40px rgba(0, 0, 0, 0.15);
+.app-layout {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  overflow: hidden;
+}
+
+/* Activity Bar (Sidebar) */
+.activity-bar {
+  width: 50px;
+  background-color: var(--bg-secondary);
+  border-right: 1px solid var(--glass-border);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 15px;
+  z-index: 200;
+}
+
+.activity-item {
+  width: 50px;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 20px;
+  opacity: 0.6;
+  transition: all 0.2s;
+}
+
+.activity-item:hover {
+  opacity: 1;
+  background-color: var(--glass-bg-hover);
+}
+
+.main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.header {
+  height: 45px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  background-color: var(--bg-secondary);
+  border-bottom: 1px solid var(--glass-border);
+}
+
+.header h1 {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.editor-wrapper {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+}
+
+.editor-container {
+  height: 100%;
+  width: 100%;
+}
+
+/* Status Bar */
+.bottom-status-bar {
+  height: 25px;
+  background-color: var(--accent);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 10px;
+  font-size: 11px;
+}
+
+.status-item {
+  margin: 0 10px;
+  cursor: pointer;
+}
+
+.status-item:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Suggestion Popup Improvements */
+.suggestion-popup {
+  min-width: 300px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--glass-border);
+  border-radius: 6px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+  animation: fadeIn 0.1s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.suggestion-item {
+  padding: 4px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.suggestion-item.selected {
+  background-color: var(--accent);
+  color: white;
 }
 
 * {
