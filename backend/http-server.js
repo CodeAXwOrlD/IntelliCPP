@@ -117,7 +117,14 @@ app.post('/api/runCode', (req, res) => {
     // Call the C++ runCode function if available
     if (suggestionEngine.runCode) {
       const result = suggestionEngine.runCode(code);
-      res.json(result);
+      // The C++ function returns a JSON string, so we parse it and send as JSON
+      try {
+        const parsed = JSON.parse(result);
+        res.json(parsed);
+      } catch (e) {
+        // If parsing fails, send as-is
+        res.json({ success: false, output: '', error: 'Failed to parse C++ result' });
+      }
     } else {
       res.json({
         success: false,

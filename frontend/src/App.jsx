@@ -4,6 +4,7 @@ import SuggestionPopup from './components/SuggestionPopup';
 import ThemeToggle from './components/ThemeToggle';
 import Sidebar from './components/Sidebar';
 import StatusBar from './components/StatusBar';
+import OutputPanel from './components/OutputPanel';
 import { useTheme } from './theme/ThemeContext';
 import './styles/glassmorphism.css';
 
@@ -73,6 +74,10 @@ export default function App() {
   const [symbolCount, setSymbolCount] = useState(0);
   const [latency, setLatency] = useState(0);
   const [includedLibs, setIncludedLibs] = useState([]);
+  const [outputPanelVisible, setOutputPanelVisible] = useState(false);
+  const [outputLoading, setOutputLoading] = useState(false);
+  const [outputResult, setOutputResult] = useState('');
+  const [outputError, setOutputError] = useState('');
   const editorRef = useRef(null);
   const monacoRef = useRef(null);
   const triggerTimeout = useRef(null);
@@ -239,6 +244,50 @@ export default function App() {
     triggerTimeout.current = setTimeout(triggerSuggestions, 100);
   };
 
+  const handleRunCode = async () => {
+    setOutputLoading(true);
+    setOutputError('');
+    setOutputResult('');
+    setOutputPanelVisible(true);
+
+    try {
+      const result = await callBackendAPI('runCode', code);
+      
+      // Handle both JSON string (from HTTP) and already-parsed JSON (from Electron IPC)
+      let parsed = result;
+      if (typeof result === 'string') {
+        try {
+          parsed = JSON.parse(result);
+        } catch (e) {
+          setOutputError('Invalid response format from backend');
+          return;
+        }
+      }
+      
+      if (parsed && typeof parsed === 'object') {
+        if (parsed.success) {
+          setOutputResult(parsed.output || 'Code executed successfully');
+          setOutputError('');
+        } else {
+          setOutputError(parsed.error || 'Unknown error occurred');
+          setOutputResult(parsed.output || '');
+        }
+      } else {
+        setOutputError('Unexpected response format from backend');
+      }
+    } catch (err) {
+      console.error('[Frontend] Code execution error:', err);
+      setOutputError(`Error: ${err.message}`);
+    } finally {
+      setOutputLoading(false);
+    }
+  };
+
+  const handleClearOutput = () => {
+    setOutputResult('');
+    setOutputError('');
+  };
+
   return (
     <div className="app-layout">
       <Sidebar />
@@ -248,6 +297,9 @@ export default function App() {
             <h1>🚀 CodeFlow AI</h1>
           </div>
           <div className="header-right">
+            <button className="run-button" onClick={handleRunCode} disabled={outputLoading} title="Compile and run C++ code">
+              ▶ Run Code
+            </button>
             <ThemeToggle />
           </div>
         </div>
@@ -295,6 +347,14 @@ export default function App() {
             )}
           </div>
         </div>
+        
+        <OutputPanel
+          output={outputResult}
+          isLoading={outputLoading}
+          error={outputError}
+          onClear={handleClearOutput}
+          isVisible={outputPanelVisible}
+        />
         
         <StatusBar 
           symbolCount={symbolCount} 

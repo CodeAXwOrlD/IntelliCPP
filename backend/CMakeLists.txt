@@ -22,6 +22,7 @@ set(SOURCES
     src/trie.cpp
     src/tokenizer.cpp
     src/suggestion_engine.cpp
+    src/code_runner.cpp
     src/binding.cpp
 )
 

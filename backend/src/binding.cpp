@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 #include "suggestion_engine.h"
+#include "code_runner.h"
 
 #define NAPI_CPP_EXCEPTIONS
 
@@ -11,6 +12,7 @@ using namespace Napi;
 class SuggestionEngineWrapper : public ObjectWrap<SuggestionEngineWrapper> {
 private:
     codeflow::SuggestionEngine engine;
+    CodeRunner codeRunner;
     
 public:
     static Napi::Object Init(Napi::Env env, Napi::Object exports) {
@@ -23,6 +25,7 @@ public:
             InstanceMethod("getIncludedLibraries", &SuggestionEngineWrapper::GetIncludedLibraries),
             InstanceMethod("getSymbolTable", &SuggestionEngineWrapper::GetSymbolTable),
             InstanceMethod("isHeaderIncluded", &SuggestionEngineWrapper::IsHeaderIncluded),
+            InstanceMethod("runCode", &SuggestionEngineWrapper::RunCode),
         };
         
         Napi::Function constructor = DefineClass(env, "SuggestionEngine", methods);
@@ -145,6 +148,20 @@ private:
         bool included = engine.isHeaderIncluded(type);
         
         return Napi::Boolean::New(env, included);
+    }
+
+    Napi::Value RunCode(const Napi::CallbackInfo& info) {
+        Napi::Env env = info.Env();
+        
+        if (info.Length() < 1) {
+            Napi::TypeError::New(env, "Expected 1 argument").ThrowAsJavaScriptException();
+            return env.Null();
+        }
+        
+        std::string code = info[0].As<Napi::String>();
+        std::string result = codeRunner.runCode(code);
+        
+        return Napi::String::New(env, result);
     }
 };
 
