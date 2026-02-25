@@ -1,4 +1,4 @@
-#include "suggestion_engine.h"
+#include "../include/suggestion_engine.h"
 #include <algorithm>
 #include <chrono>
 #include <fstream>
@@ -36,7 +36,7 @@ void SuggestionEngine::loadKeywords(const std::string &keywordsPath) {
   }
 }
 
-std::string SuggestionEngine::extractObjectName(const std::string &code, 
+std::string SuggestionEngine::extractObjectName(const std::string &code,
                                                 int cursorPosition) {
   // Find the dot position near cursor
   int dotPos = cursorPosition - 1;
@@ -44,20 +44,24 @@ std::string SuggestionEngine::extractObjectName(const std::string &code,
     dotPos--;
   }
 
-  if (dotPos < 0) return "";
+  if (dotPos < 0)
+    return "";
 
   // Extract identifier before dot
   int idStart = dotPos - 1;
-  while (idStart >= 0 && (std::isalnum(code[idStart]) || code[idStart] == '_')) {
+  while (idStart >= 0 &&
+         (std::isalnum(code[idStart]) || code[idStart] == '_')) {
     idStart--;
   }
   idStart++;
 
-  if (idStart >= dotPos) return "";
+  if (idStart >= dotPos)
+    return "";
   return code.substr(idStart, dotPos - idStart);
 }
 
-std::string SuggestionEngine::getTypeForObject(const std::string &objectName) const {
+std::string
+SuggestionEngine::getTypeForObject(const std::string &objectName) const {
   auto it = symbolTable.find(objectName);
   if (it != symbolTable.end()) {
     return it->second;
@@ -70,11 +74,13 @@ bool SuggestionEngine::isHeaderIncluded(const std::string &type) const {
 }
 
 std::vector<std::string> SuggestionEngine::getIncludedLibraries() const {
-  std::vector<std::string> result(includedLibraries.begin(), includedLibraries.end());
+  std::vector<std::string> result(includedLibraries.begin(),
+                                  includedLibraries.end());
   return result;
 }
 
-std::unordered_map<std::string, std::string> SuggestionEngine::getSymbolTable() const {
+std::unordered_map<std::string, std::string>
+SuggestionEngine::getSymbolTable() const {
   return symbolTable;
 }
 
@@ -85,7 +91,7 @@ std::vector<Suggestion> SuggestionEngine::getSuggestions(
   std::lock_guard<std::mutex> lock(mutex);
 
   std::string actualType = contextType;
-  
+
   // If contextType is empty, try to extract object name from code
   if (contextType.empty() && cursorPosition > 0) {
     std::string objectName = extractObjectName(code, cursorPosition);
@@ -104,24 +110,25 @@ std::vector<Suggestion> SuggestionEngine::getSuggestions(
     }
   }
 
-  // If we have a specific context type with methods defined, return those directly
+  // If we have a specific context type with methods defined, return those
+  // directly
   if (!actualType.empty() && typeToMethods.count(actualType)) {
     const auto &methods = typeToMethods.at(actualType);
     std::vector<Suggestion> suggestions;
-    
+
     // Filter by prefix if provided
     for (const auto &method : methods) {
       if (prefix.empty() || method.find(prefix) == 0) {
         suggestions.push_back({method, "method", "", 0.0f});
       }
     }
-    
+
     // ✅ RULE 4: Rank and return top results
     rankSuggestions(suggestions);
     if (suggestions.size() > (size_t)maxResults) {
       suggestions.resize(maxResults);
     }
-    
+
     return suggestions;
   }
 
@@ -157,8 +164,10 @@ void SuggestionEngine::updateSymbols(const std::string &code) {
   }
 
   // ✅ Parse variable declarations - specifically for STL containers
-  // Patterns: vector<int> v;  map<int,int> m;  stack<double> s; string s; list<int> lst;
-  std::regex varDecl(R"(\b(vector|stack|queue|deque|map|unordered_map|set|unordered_set|string|list|forward_list|priority_queue|array|bitset)(?:<[^>]*>)?\s+(\w+)\s*[=;({])");
+  // Patterns: vector<int> v;  map<int,int> m;  stack<double> s; string s;
+  // list<int> lst;
+  std::regex varDecl(
+      R"(\b(vector|stack|queue|deque|map|unordered_map|set|unordered_set|string|list|forward_list|priority_queue|array|bitset)(?:<[^>]*>)?\s+(\w+)\s*[=;({])");
   for (std::sregex_iterator it(code.begin(), code.end(), varDecl), end;
        it != end; ++it) {
     std::string type = (*it)[1].str();
@@ -196,7 +205,8 @@ SuggestionEngine::filterByContext(const std::vector<std::string> &candidates,
 
 void SuggestionEngine::rankSuggestions(std::vector<Suggestion> &suggestions,
                                        bool useML) {
-  // ✅ RULE 3: Simple ranking - shorter method names first (more common pattern)
+  // ✅ RULE 3: Simple ranking - shorter method names first (more common
+  // pattern)
   std::sort(suggestions.begin(), suggestions.end(),
             [](const Suggestion &a, const Suggestion &b) {
               return a.text.length() < b.text.length();
@@ -211,50 +221,54 @@ void SuggestionEngine::rankSuggestions(std::vector<Suggestion> &suggestions,
 void SuggestionEngine::parseSTLJson(const std::string &jsonData) {
   // Parse JSON array format: "container": ["method1", "method2", ...]
   // Handle both single-line and multi-line arrays
-  
+
   typeToMethods.clear();
-  
+
   // First, find all container keys
   std::regex containerRegex(R"(\"(\w+)\"\s*:\s*\[)");
-  
+
   std::sregex_iterator it(jsonData.begin(), jsonData.end(), containerRegex);
   std::sregex_iterator end;
-  
+
   while (it != end) {
     std::string container = (*it)[1].str();
     size_t arrayStart = it->position() + it->length();
-    
+
     // Find the closing bracket for this array
     int bracketCount = 1;
     size_t pos = arrayStart;
     size_t arrayEnd = arrayStart;
-    
+
     while (pos < jsonData.length() && bracketCount > 0) {
-      if (jsonData[pos] == '[') bracketCount++;
-      else if (jsonData[pos] == ']') bracketCount--;
-      
+      if (jsonData[pos] == '[')
+        bracketCount++;
+      else if (jsonData[pos] == ']')
+        bracketCount--;
+
       if (bracketCount == 0) {
         arrayEnd = pos;
         break;
       }
       pos++;
     }
-    
+
     // Extract array content
-    std::string arrayContent = jsonData.substr(arrayStart, arrayEnd - arrayStart);
-    
+    std::string arrayContent =
+        jsonData.substr(arrayStart, arrayEnd - arrayStart);
+
     // Parse individual method names from the array content
     std::regex methodRegex(R"(\"([^\"]+)\")");
-    std::sregex_iterator methodIt(arrayContent.begin(), arrayContent.end(), methodRegex);
+    std::sregex_iterator methodIt(arrayContent.begin(), arrayContent.end(),
+                                  methodRegex);
     std::sregex_iterator methodEnd;
-    
+
     while (methodIt != methodEnd) {
       std::string method = (*methodIt)[1].str();
       typeToMethods[container].push_back(method);
-      trie.insert(method);  // Insert methods into Trie for fast prefix search
+      trie.insert(method); // Insert methods into Trie for fast prefix search
       ++methodIt;
     }
-    
+
     ++it;
   }
 }

@@ -1,0 +1,3 @@
+/home/indmadmax/Downloads/IntelliCPP/backend/cmake-build/CMakeFiles/codeflow_native.dir
+/home/indmadmax/Downloads/IntelliCPP/backend/cmake-build/CMakeFiles/edit_cache.dir
+/home/indmadmax/Downloads/IntelliCPP/backend/cmake-build/CMakeFiles/rebuild_cache.dir

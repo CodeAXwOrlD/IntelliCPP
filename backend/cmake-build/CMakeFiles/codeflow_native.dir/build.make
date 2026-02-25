@@ -56,7 +56,7 @@ EQUALS = =
 CMAKE_SOURCE_DIR = /home/indmadmax/Downloads/IntelliCPP/backend
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /home/indmadmax/Downloads/IntelliCPP/backend
+CMAKE_BINARY_DIR = /home/indmadmax/Downloads/IntelliCPP/backend/cmake-build
 
 # Include any dependencies generated for this target.
 include CMakeFiles/codeflow_native.dir/depend.make
@@ -70,9 +70,9 @@ include CMakeFiles/codeflow_native.dir/progress.make
 include CMakeFiles/codeflow_native.dir/flags.make
 
 CMakeFiles/codeflow_native.dir/src/trie.cpp.o: CMakeFiles/codeflow_native.dir/flags.make
-CMakeFiles/codeflow_native.dir/src/trie.cpp.o: src/trie.cpp
+CMakeFiles/codeflow_native.dir/src/trie.cpp.o: ../src/trie.cpp
 CMakeFiles/codeflow_native.dir/src/trie.cpp.o: CMakeFiles/codeflow_native.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/indmadmax/Downloads/IntelliCPP/backend/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object CMakeFiles/codeflow_native.dir/src/trie.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/indmadmax/Downloads/IntelliCPP/backend/cmake-build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object CMakeFiles/codeflow_native.dir/src/trie.cpp.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/codeflow_native.dir/src/trie.cpp.o -MF CMakeFiles/codeflow_native.dir/src/trie.cpp.o.d -o CMakeFiles/codeflow_native.dir/src/trie.cpp.o -c /home/indmadmax/Downloads/IntelliCPP/backend/src/trie.cpp
 
 CMakeFiles/codeflow_native.dir/src/trie.cpp.i: cmake_force
@@ -84,9 +84,9 @@ CMakeFiles/codeflow_native.dir/src/trie.cpp.s: cmake_force
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/indmadmax/Downloads/IntelliCPP/backend/src/trie.cpp -o CMakeFiles/codeflow_native.dir/src/trie.cpp.s
 
 CMakeFiles/codeflow_native.dir/src/tokenizer.cpp.o: CMakeFiles/codeflow_native.dir/flags.make
-CMakeFiles/codeflow_native.dir/src/tokenizer.cpp.o: src/tokenizer.cpp
+CMakeFiles/codeflow_native.dir/src/tokenizer.cpp.o: ../src/tokenizer.cpp
 CMakeFiles/codeflow_native.dir/src/tokenizer.cpp.o: CMakeFiles/codeflow_native.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/indmadmax/Downloads/IntelliCPP/backend/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Building CXX object CMakeFiles/codeflow_native.dir/src/tokenizer.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/indmadmax/Downloads/IntelliCPP/backend/cmake-build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Building CXX object CMakeFiles/codeflow_native.dir/src/tokenizer.cpp.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/codeflow_native.dir/src/tokenizer.cpp.o -MF CMakeFiles/codeflow_native.dir/src/tokenizer.cpp.o.d -o CMakeFiles/codeflow_native.dir/src/tokenizer.cpp.o -c /home/indmadmax/Downloads/IntelliCPP/backend/src/tokenizer.cpp
 
 CMakeFiles/codeflow_native.dir/src/tokenizer.cpp.i: cmake_force
@@ -98,9 +98,9 @@ CMakeFiles/codeflow_native.dir/src/tokenizer.cpp.s: cmake_force
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/indmadmax/Downloads/IntelliCPP/backend/src/tokenizer.cpp -o CMakeFiles/codeflow_native.dir/src/tokenizer.cpp.s
 
 CMakeFiles/codeflow_native.dir/src/suggestion_engine.cpp.o: CMakeFiles/codeflow_native.dir/flags.make
-CMakeFiles/codeflow_native.dir/src/suggestion_engine.cpp.o: src/suggestion_engine.cpp
+CMakeFiles/codeflow_native.dir/src/suggestion_engine.cpp.o: ../src/suggestion_engine.cpp
 CMakeFiles/codeflow_native.dir/src/suggestion_engine.cpp.o: CMakeFiles/codeflow_native.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/indmadmax/Downloads/IntelliCPP/backend/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Building CXX object CMakeFiles/codeflow_native.dir/src/suggestion_engine.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/indmadmax/Downloads/IntelliCPP/backend/cmake-build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Building CXX object CMakeFiles/codeflow_native.dir/src/suggestion_engine.cpp.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/codeflow_native.dir/src/suggestion_engine.cpp.o -MF CMakeFiles/codeflow_native.dir/src/suggestion_engine.cpp.o.d -o CMakeFiles/codeflow_native.dir/src/suggestion_engine.cpp.o -c /home/indmadmax/Downloads/IntelliCPP/backend/src/suggestion_engine.cpp
 
 CMakeFiles/codeflow_native.dir/src/suggestion_engine.cpp.i: cmake_force
@@ -112,9 +112,9 @@ CMakeFiles/codeflow_native.dir/src/suggestion_engine.cpp.s: cmake_force
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/indmadmax/Downloads/IntelliCPP/backend/src/suggestion_engine.cpp -o CMakeFiles/codeflow_native.dir/src/suggestion_engine.cpp.s
 
 CMakeFiles/codeflow_native.dir/src/code_runner.cpp.o: CMakeFiles/codeflow_native.dir/flags.make
-CMakeFiles/codeflow_native.dir/src/code_runner.cpp.o: src/code_runner.cpp
+CMakeFiles/codeflow_native.dir/src/code_runner.cpp.o: ../src/code_runner.cpp
 CMakeFiles/codeflow_native.dir/src/code_runner.cpp.o: CMakeFiles/codeflow_native.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/indmadmax/Downloads/IntelliCPP/backend/CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Building CXX object CMakeFiles/codeflow_native.dir/src/code_runner.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/indmadmax/Downloads/IntelliCPP/backend/cmake-build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Building CXX object CMakeFiles/codeflow_native.dir/src/code_runner.cpp.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/codeflow_native.dir/src/code_runner.cpp.o -MF CMakeFiles/codeflow_native.dir/src/code_runner.cpp.o.d -o CMakeFiles/codeflow_native.dir/src/code_runner.cpp.o -c /home/indmadmax/Downloads/IntelliCPP/backend/src/code_runner.cpp
 
 CMakeFiles/codeflow_native.dir/src/code_runner.cpp.i: cmake_force
@@ -126,9 +126,9 @@ CMakeFiles/codeflow_native.dir/src/code_runner.cpp.s: cmake_force
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/indmadmax/Downloads/IntelliCPP/backend/src/code_runner.cpp -o CMakeFiles/codeflow_native.dir/src/code_runner.cpp.s
 
 CMakeFiles/codeflow_native.dir/src/binding.cpp.o: CMakeFiles/codeflow_native.dir/flags.make
-CMakeFiles/codeflow_native.dir/src/binding.cpp.o: src/binding.cpp
+CMakeFiles/codeflow_native.dir/src/binding.cpp.o: ../src/binding.cpp
 CMakeFiles/codeflow_native.dir/src/binding.cpp.o: CMakeFiles/codeflow_native.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/indmadmax/Downloads/IntelliCPP/backend/CMakeFiles --progress-num=$(CMAKE_PROGRESS_5) "Building CXX object CMakeFiles/codeflow_native.dir/src/binding.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/indmadmax/Downloads/IntelliCPP/backend/cmake-build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_5) "Building CXX object CMakeFiles/codeflow_native.dir/src/binding.cpp.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/codeflow_native.dir/src/binding.cpp.o -MF CMakeFiles/codeflow_native.dir/src/binding.cpp.o.d -o CMakeFiles/codeflow_native.dir/src/binding.cpp.o -c /home/indmadmax/Downloads/IntelliCPP/backend/src/binding.cpp
 
 CMakeFiles/codeflow_native.dir/src/binding.cpp.i: cmake_force
@@ -157,7 +157,7 @@ codeflow_native_EXTERNAL_OBJECTS =
 /home/indmadmax/Downloads/IntelliCPP/dist/codeflow_native.node: CMakeFiles/codeflow_native.dir/src/binding.cpp.o
 /home/indmadmax/Downloads/IntelliCPP/dist/codeflow_native.node: CMakeFiles/codeflow_native.dir/build.make
 /home/indmadmax/Downloads/IntelliCPP/dist/codeflow_native.node: CMakeFiles/codeflow_native.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/home/indmadmax/Downloads/IntelliCPP/backend/CMakeFiles --progress-num=$(CMAKE_PROGRESS_6) "Linking CXX shared library /home/indmadmax/Downloads/IntelliCPP/dist/codeflow_native.node"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/home/indmadmax/Downloads/IntelliCPP/backend/cmake-build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_6) "Linking CXX shared library /home/indmadmax/Downloads/IntelliCPP/dist/codeflow_native.node"
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/codeflow_native.dir/link.txt --verbose=$(VERBOSE)
 
 # Rule to build all files generated by this target.
@@ -169,6 +169,6 @@ CMakeFiles/codeflow_native.dir/clean:
 .PHONY : CMakeFiles/codeflow_native.dir/clean
 
 CMakeFiles/codeflow_native.dir/depend:
-	cd /home/indmadmax/Downloads/IntelliCPP/backend && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /home/indmadmax/Downloads/IntelliCPP/backend /home/indmadmax/Downloads/IntelliCPP/backend /home/indmadmax/Downloads/IntelliCPP/backend /home/indmadmax/Downloads/IntelliCPP/backend /home/indmadmax/Downloads/IntelliCPP/backend/CMakeFiles/codeflow_native.dir/DependInfo.cmake --color=$(COLOR)
+	cd /home/indmadmax/Downloads/IntelliCPP/backend/cmake-build && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /home/indmadmax/Downloads/IntelliCPP/backend /home/indmadmax/Downloads/IntelliCPP/backend /home/indmadmax/Downloads/IntelliCPP/backend/cmake-build /home/indmadmax/Downloads/IntelliCPP/backend/cmake-build /home/indmadmax/Downloads/IntelliCPP/backend/cmake-build/CMakeFiles/codeflow_native.dir/DependInfo.cmake --color=$(COLOR)
 .PHONY : CMakeFiles/codeflow_native.dir/depend
 

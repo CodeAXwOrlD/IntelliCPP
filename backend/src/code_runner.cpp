@@ -1,47 +1,63 @@
-#include "code_runner.h"
-#include <fstream>
-#include <sstream>
-#include <cstdlib>
-#include <iostream>
-#include <memory>
+#include "../include/code_runner.h"
 #include <array>
 #include <chrono>
+#include <cstdlib>
+#include <fstream>
+#include <iostream>
+#include <memory>
+#include <sstream>
 
 CodeRunner::CodeRunner() {}
 
-std::string CodeRunner::wrapJson(bool success, const std::string& output, const std::string& error) {
-  std::string result = "{\"success\":" + std::string(success ? "true" : "false") + 
-                      ",\"output\":" + escapeJsonString(output) + 
-                      ",\"error\":" + escapeJsonString(error) + "}";
+std::string CodeRunner::wrapJson(bool success, const std::string &output,
+                                 const std::string &error) {
+  std::string result =
+      "{\"success\":" + std::string(success ? "true" : "false") +
+      ",\"output\":" + escapeJsonString(output) +
+      ",\"error\":" + escapeJsonString(error) + "}";
   return result;
 }
 
-std::string CodeRunner::escapeJsonString(const std::string& str) {
+std::string CodeRunner::escapeJsonString(const std::string &str) {
   std::string result = "\"";
   for (char c : str) {
     switch (c) {
-      case '\\': result += "\\\\"; break;
-      case '"': result += "\\\""; break;
-      case '\n': result += "\\n"; break;
-      case '\r': result += "\\r"; break;
-      case '\t': result += "\\t"; break;
-      case '\b': result += "\\b"; break;
-      case '\f': result += "\\f"; break;
-      default:
-        if (c < 32) {
-          char buf[7];
-          snprintf(buf, sizeof(buf), "\\u%04x", (unsigned char)c);
-          result += buf;
-        } else {
-          result += c;
-        }
+    case '\\':
+      result += "\\\\";
+      break;
+    case '"':
+      result += "\\\"";
+      break;
+    case '\n':
+      result += "\\n";
+      break;
+    case '\r':
+      result += "\\r";
+      break;
+    case '\t':
+      result += "\\t";
+      break;
+    case '\b':
+      result += "\\b";
+      break;
+    case '\f':
+      result += "\\f";
+      break;
+    default:
+      if (c < 32) {
+        char buf[7];
+        snprintf(buf, sizeof(buf), "\\u%04x", (unsigned char)c);
+        result += buf;
+      } else {
+        result += c;
+      }
     }
   }
   result += "\"";
   return result;
 }
 
-std::string CodeRunner::runCode(const std::string& cppCode) {
+std::string CodeRunner::runCode(const std::string &cppCode) {
   // Create temporary directory if it doesn't exist
   system("mkdir -p /tmp/codeflow");
 
@@ -55,8 +71,10 @@ std::string CodeRunner::runCode(const std::string& cppCode) {
   outfile.close();
 
   // Try to compile with g++ and sanitizers
-  std::string compileCmd = "g++ -std=c++20 -D_GLIBCXX_DEBUG -fsanitize=address,undefined /tmp/codeflow/main.cpp -o /tmp/codeflow/program 2>&1";
-  FILE* compileStream = popen(compileCmd.c_str(), "r");
+  std::string compileCmd =
+      "g++ -std=c++20 -D_GLIBCXX_DEBUG -fsanitize=address,undefined "
+      "/tmp/codeflow/main.cpp -o /tmp/codeflow/program 2>&1";
+  FILE *compileStream = popen(compileCmd.c_str(), "r");
   if (!compileStream) {
     return wrapJson(false, "", "Failed to execute compiler");
   }
@@ -75,7 +93,7 @@ std::string CodeRunner::runCode(const std::string& cppCode) {
 
   // Run the compiled program with timeout
   std::string runCmd = "timeout 5 /tmp/codeflow/program 2>&1";
-  FILE* runStream = popen(runCmd.c_str(), "r");
+  FILE *runStream = popen(runCmd.c_str(), "r");
   if (!runStream) {
     return wrapJson(false, "", "Failed to execute program");
   }
@@ -100,7 +118,7 @@ std::string CodeRunner::runCode(const std::string& cppCode) {
   }
 }
 
-std::string CodeRunner::escapeJson(const std::string& str) {
+std::string CodeRunner::escapeJson(const std::string &str) {
   // Deprecated - use escapeJsonString instead
   return escapeJsonString(str);
 }
