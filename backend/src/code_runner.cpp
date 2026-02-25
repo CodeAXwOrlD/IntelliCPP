@@ -54,8 +54,8 @@ std::string CodeRunner::runCode(const std::string& cppCode) {
   outfile << cppCode;
   outfile.close();
 
-  // Try to compile with g++
-  std::string compileCmd = "g++ -std=c++20 /tmp/codeflow/main.cpp -o /tmp/codeflow/program 2>&1";
+  // Try to compile with g++ and sanitizers
+  std::string compileCmd = "g++ -std=c++20 -D_GLIBCXX_DEBUG -fsanitize=address,undefined /tmp/codeflow/main.cpp -o /tmp/codeflow/program 2>&1";
   FILE* compileStream = popen(compileCmd.c_str(), "r");
   if (!compileStream) {
     return wrapJson(false, "", "Failed to execute compiler");
