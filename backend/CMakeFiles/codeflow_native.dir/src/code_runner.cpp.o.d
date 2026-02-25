@@ -1,8 +1,7 @@
-CMakeFiles/codeflow_native.dir/src/suggestion_engine.cpp.o: \
- /home/indmadmax/Downloads/IntelliCPP/backend/src/suggestion_engine.cpp \
+CMakeFiles/codeflow_native.dir/src/code_runner.cpp.o: \
+ /home/indmadmax/Downloads/IntelliCPP/backend/src/code_runner.cpp \
  /usr/include/stdc-predef.h \
- /home/indmadmax/Downloads/IntelliCPP/backend/include/suggestion_engine.h \
- /home/indmadmax/Downloads/IntelliCPP/backend/include/tokenizer.h \
+ /home/indmadmax/Downloads/IntelliCPP/backend/include/code_runner.h \
  /usr/include/c++/11/string \
  /usr/include/x86_64-linux-gnu/c++/11/bits/c++config.h \
  /usr/include/x86_64-linux-gnu/c++/11/bits/os_defines.h \
@@ -140,28 +139,9 @@ CMakeFiles/codeflow_native.dir/src/suggestion_engine.cpp.o: \
  /usr/include/asm-generic/errno.h /usr/include/asm-generic/errno-base.h \
  /usr/include/x86_64-linux-gnu/bits/types/error_t.h \
  /usr/include/c++/11/bits/charconv.h \
- /usr/include/c++/11/bits/basic_string.tcc /usr/include/c++/11/vector \
- /usr/include/c++/11/bits/stl_uninitialized.h \
- /usr/include/c++/11/bits/stl_vector.h \
- /usr/include/c++/11/bits/stl_bvector.h \
- /usr/include/c++/11/bits/vector.tcc /usr/include/c++/11/unordered_map \
- /usr/include/c++/11/ext/aligned_buffer.h \
- /usr/include/c++/11/bits/hashtable.h \
- /usr/include/c++/11/bits/hashtable_policy.h /usr/include/c++/11/tuple \
- /usr/include/c++/11/utility /usr/include/c++/11/bits/stl_relops.h \
- /usr/include/c++/11/array /usr/include/c++/11/bits/uses_allocator.h \
- /usr/include/c++/11/bits/invoke.h \
- /usr/include/c++/11/bits/enable_special_members.h \
- /usr/include/c++/11/bits/node_handle.h \
- /usr/include/c++/11/bits/unordered_map.h \
- /usr/include/c++/11/bits/erase_if.h \
- /home/indmadmax/Downloads/IntelliCPP/backend/include/trie.h \
- /usr/include/c++/11/memory \
- /usr/include/c++/11/bits/stl_raw_storage_iter.h \
- /usr/include/c++/11/bits/align.h /usr/include/c++/11/bit \
- /usr/include/c++/11/bits/unique_ptr.h /usr/include/c++/11/ostream \
- /usr/include/c++/11/ios /usr/include/c++/11/exception \
- /usr/include/c++/11/bits/exception_ptr.h \
+ /usr/include/c++/11/bits/basic_string.tcc /usr/include/c++/11/fstream \
+ /usr/include/c++/11/istream /usr/include/c++/11/ios \
+ /usr/include/c++/11/exception /usr/include/c++/11/bits/exception_ptr.h \
  /usr/include/c++/11/bits/cxxabi_init_exception.h \
  /usr/include/c++/11/typeinfo /usr/include/c++/11/bits/nested_exception.h \
  /usr/include/c++/11/bits/ios_base.h \
@@ -178,12 +158,26 @@ CMakeFiles/codeflow_native.dir/src/suggestion_engine.cpp.o: \
  /usr/include/c++/11/bits/streambuf_iterator.h \
  /usr/include/x86_64-linux-gnu/c++/11/bits/ctype_inline.h \
  /usr/include/c++/11/bits/locale_facets.tcc \
- /usr/include/c++/11/bits/basic_ios.tcc \
+ /usr/include/c++/11/bits/basic_ios.tcc /usr/include/c++/11/ostream \
  /usr/include/c++/11/bits/ostream.tcc \
+ /usr/include/c++/11/bits/istream.tcc /usr/include/c++/11/bits/codecvt.h \
+ /usr/include/x86_64-linux-gnu/c++/11/bits/basic_file.h \
+ /usr/include/x86_64-linux-gnu/c++/11/bits/c++io.h \
+ /usr/include/c++/11/bits/fstream.tcc /usr/include/c++/11/sstream \
+ /usr/include/c++/11/bits/sstream.tcc /usr/include/c++/11/iostream \
+ /usr/include/c++/11/memory /usr/include/c++/11/bits/stl_uninitialized.h \
+ /usr/include/c++/11/bits/stl_raw_storage_iter.h \
+ /usr/include/c++/11/bits/align.h /usr/include/c++/11/bit \
+ /usr/include/c++/11/bits/uses_allocator.h \
+ /usr/include/c++/11/bits/unique_ptr.h /usr/include/c++/11/utility \
+ /usr/include/c++/11/bits/stl_relops.h /usr/include/c++/11/tuple \
+ /usr/include/c++/11/array /usr/include/c++/11/bits/invoke.h \
  /usr/include/c++/11/bits/shared_ptr.h \
  /usr/include/c++/11/bits/shared_ptr_base.h \
  /usr/include/c++/11/bits/allocated_ptr.h \
- /usr/include/c++/11/bits/refwrap.h /usr/include/c++/11/ext/concurrence.h \
+ /usr/include/c++/11/bits/refwrap.h \
+ /usr/include/c++/11/ext/aligned_buffer.h \
+ /usr/include/c++/11/ext/concurrence.h \
  /usr/include/c++/11/bits/shared_ptr_atomic.h \
  /usr/include/c++/11/bits/atomic_base.h \
  /usr/include/c++/11/bits/atomic_lockfree_defines.h \
@@ -214,52 +208,6 @@ CMakeFiles/codeflow_native.dir/src/suggestion_engine.cpp.o: \
  /usr/include/c++/11/bits/stream_iterator.h \
  /usr/include/c++/11/bits/uses_allocator_args.h \
  /usr/include/c++/11/pstl/glue_memory_defs.h \
- /usr/include/c++/11/pstl/execution_defs.h /usr/include/c++/11/future \
- /usr/include/c++/11/mutex /usr/include/c++/11/chrono \
+ /usr/include/c++/11/pstl/execution_defs.h /usr/include/c++/11/chrono \
  /usr/include/c++/11/ratio /usr/include/c++/11/limits \
- /usr/include/c++/11/ctime /usr/include/c++/11/bits/parse_numbers.h \
- /usr/include/c++/11/bits/unique_lock.h \
- /usr/include/c++/11/condition_variable /usr/include/c++/11/stop_token \
- /usr/include/c++/11/atomic /usr/include/c++/11/bits/std_thread.h \
- /usr/include/c++/11/semaphore /usr/include/c++/11/bits/semaphore_base.h \
- /usr/include/c++/11/bits/atomic_timed_wait.h \
- /usr/include/c++/11/bits/this_thread_sleep.h \
- /usr/include/x86_64-linux-gnu/sys/time.h /usr/include/semaphore.h \
- /usr/include/x86_64-linux-gnu/bits/semaphore.h \
- /usr/include/c++/11/bits/atomic_futex.h \
- /usr/include/c++/11/bits/std_function.h /usr/include/c++/11/thread \
- /usr/include/c++/11/unordered_set \
- /usr/include/c++/11/bits/unordered_set.h /usr/include/c++/11/algorithm \
- /usr/include/c++/11/bits/ranges_algo.h \
- /usr/include/c++/11/bits/ranges_util.h \
- /usr/include/c++/11/pstl/glue_algorithm_defs.h \
- /usr/include/c++/11/functional /usr/include/c++/11/fstream \
- /usr/include/c++/11/istream /usr/include/c++/11/bits/istream.tcc \
- /usr/include/c++/11/bits/codecvt.h \
- /usr/include/x86_64-linux-gnu/c++/11/bits/basic_file.h \
- /usr/include/x86_64-linux-gnu/c++/11/bits/c++io.h \
- /usr/include/c++/11/bits/fstream.tcc /usr/include/c++/11/regex \
- /usr/include/c++/11/bitset /usr/include/c++/11/locale \
- /usr/include/c++/11/bits/locale_facets_nonio.h \
- /usr/include/x86_64-linux-gnu/c++/11/bits/time_members.h \
- /usr/include/x86_64-linux-gnu/c++/11/bits/messages_members.h \
- /usr/include/libintl.h /usr/include/c++/11/bits/locale_facets_nonio.tcc \
- /usr/include/c++/11/bits/locale_conv.h /usr/include/c++/11/sstream \
- /usr/include/c++/11/bits/sstream.tcc /usr/include/c++/11/stack \
- /usr/include/c++/11/deque /usr/include/c++/11/bits/stl_deque.h \
- /usr/include/c++/11/bits/deque.tcc /usr/include/c++/11/bits/stl_stack.h \
- /usr/include/c++/11/map /usr/include/c++/11/bits/stl_tree.h \
- /usr/include/c++/11/bits/stl_map.h \
- /usr/include/c++/11/bits/stl_multimap.h /usr/include/c++/11/cstring \
- /usr/include/string.h /usr/include/strings.h \
- /usr/include/c++/11/bits/regex_constants.h \
- /usr/include/c++/11/bits/regex_error.h \
- /usr/include/c++/11/bits/regex_automaton.h \
- /usr/include/c++/11/bits/regex_automaton.tcc \
- /usr/include/c++/11/bits/regex_scanner.h \
- /usr/include/c++/11/bits/regex_scanner.tcc \
- /usr/include/c++/11/bits/regex_compiler.h \
- /usr/include/c++/11/bits/regex_compiler.tcc \
- /usr/include/c++/11/bits/regex.h /usr/include/c++/11/bits/regex.tcc \
- /usr/include/c++/11/bits/regex_executor.h \
- /usr/include/c++/11/bits/regex_executor.tcc
+ /usr/include/c++/11/ctime /usr/include/c++/11/bits/parse_numbers.h

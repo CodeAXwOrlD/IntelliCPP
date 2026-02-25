@@ -16,7 +16,17 @@ public:
 
 private:
   /**
-   * Escape special characters for JSON
+   * Wrap result in JSON format
+   */
+  std::string wrapJson(bool success, const std::string& output, const std::string& error);
+  
+  /**
+   * Escape string for JSON
+   */
+  std::string escapeJsonString(const std::string& str);
+  
+  /**
+   * Legacy method for backwards compatibility
    */
   std::string escapeJson(const std::string& str);
 };

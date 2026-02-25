@@ -57,10 +57,10 @@ RM = /usr/bin/cmake -E rm -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /home/indmadmax/Documents/code_editr/autocomplete-engine/backend
+CMAKE_SOURCE_DIR = /home/indmadmax/Downloads/IntelliCPP/backend
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /home/indmadmax/Documents/code_editr/autocomplete-engine/backend
+CMAKE_BINARY_DIR = /home/indmadmax/Downloads/IntelliCPP/backend
 
 #=============================================================================
 # Targets provided globally by CMake.
@@ -87,9 +87,9 @@ rebuild_cache/fast: rebuild_cache
 
 # The main all target
 all: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/indmadmax/Documents/code_editr/autocomplete-engine/backend/CMakeFiles /home/indmadmax/Documents/code_editr/autocomplete-engine/backend//CMakeFiles/progress.marks
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/indmadmax/Downloads/IntelliCPP/backend/CMakeFiles /home/indmadmax/Downloads/IntelliCPP/backend//CMakeFiles/progress.marks
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 all
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/indmadmax/Documents/code_editr/autocomplete-engine/backend/CMakeFiles 0
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/indmadmax/Downloads/IntelliCPP/backend/CMakeFiles 0
 .PHONY : all
 
 # The main clean target
@@ -152,6 +152,30 @@ src/binding.s: src/binding.cpp.s
 src/binding.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/codeflow_native.dir/build.make CMakeFiles/codeflow_native.dir/src/binding.cpp.s
 .PHONY : src/binding.cpp.s
+
+src/code_runner.o: src/code_runner.cpp.o
+.PHONY : src/code_runner.o
+
+# target to build an object file
+src/code_runner.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/codeflow_native.dir/build.make CMakeFiles/codeflow_native.dir/src/code_runner.cpp.o
+.PHONY : src/code_runner.cpp.o
+
+src/code_runner.i: src/code_runner.cpp.i
+.PHONY : src/code_runner.i
+
+# target to preprocess a source file
+src/code_runner.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/codeflow_native.dir/build.make CMakeFiles/codeflow_native.dir/src/code_runner.cpp.i
+.PHONY : src/code_runner.cpp.i
+
+src/code_runner.s: src/code_runner.cpp.s
+.PHONY : src/code_runner.s
+
+# target to generate assembly for a file
+src/code_runner.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/codeflow_native.dir/build.make CMakeFiles/codeflow_native.dir/src/code_runner.cpp.s
+.PHONY : src/code_runner.cpp.s
 
 src/suggestion_engine.o: src/suggestion_engine.cpp.o
 .PHONY : src/suggestion_engine.o
@@ -237,6 +261,9 @@ help:
 	@echo "... src/binding.o"
 	@echo "... src/binding.i"
 	@echo "... src/binding.s"
+	@echo "... src/code_runner.o"
+	@echo "... src/code_runner.i"
+	@echo "... src/code_runner.s"
 	@echo "... src/suggestion_engine.o"
 	@echo "... src/suggestion_engine.i"
 	@echo "... src/suggestion_engine.s"

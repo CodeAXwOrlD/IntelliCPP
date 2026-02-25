@@ -1,7 +1,7 @@
 CMakeFiles/codeflow_native.dir/src/tokenizer.cpp.o: \
- /home/indmadmax/Documents/code_editr/autocomplete-engine/backend/src/tokenizer.cpp \
+ /home/indmadmax/Downloads/IntelliCPP/backend/src/tokenizer.cpp \
  /usr/include/stdc-predef.h \
- /home/indmadmax/Documents/code_editr/autocomplete-engine/backend/include/tokenizer.h \
+ /home/indmadmax/Downloads/IntelliCPP/backend/include/tokenizer.h \
  /usr/include/c++/11/string \
  /usr/include/x86_64-linux-gnu/c++/11/bits/c++config.h \
  /usr/include/x86_64-linux-gnu/c++/11/bits/os_defines.h \

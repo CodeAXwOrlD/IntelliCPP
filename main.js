@@ -40,17 +40,35 @@ app.on('window-all-closed', function () {
 // Load Native Addon
 let suggestionEngine;
 try {
-  const native = require('./backend/build/Release/codeflow_native.node');
+  // Try common build output locations for the native module
+  const fs = require('fs');
+  const candidates = [
+    path.join(__dirname, 'backend', 'dist', 'codeflow_native.node'),
+    path.join(__dirname, 'backend', 'build', 'Release', 'codeflow_native.node'),
+    path.join(__dirname, 'backend', 'build', 'codeflow_native.node'),
+    path.join(__dirname, 'backend', 'codeflow_native.node'),
+  ];
+
+  let nativePath = null;
+  for (const p of candidates) {
+    if (fs.existsSync(p)) {
+      nativePath = p;
+      break;
+    }
+  }
+
+  if (!nativePath) throw new Error('Native module not found in expected locations');
+
+  const native = require(nativePath);
   suggestionEngine = new native.SuggestionEngine();
-  
-  // ✅ Load C++ keywords
-  suggestionEngine.loadKeywords(path.join(__dirname, 'data', 'cpp_keywords.txt'));
-  
-  // ✅ Load STL functions database (RULE 1: Required for STL suggestions)
-  suggestionEngine.loadSTLData(path.join(__dirname, 'data', 'stl_functions.json'));
-  
-  console.log('[Backend] Native module loaded successfully');
-  console.log('[Backend] STL data loaded');
+
+  // Load C++ keywords and STL database if present
+  const keywordsPath = path.join(__dirname, 'data', 'cpp_keywords.txt');
+  const stlPath = path.join(__dirname, 'data', 'stl_functions.json');
+  if (fs.existsSync(keywordsPath)) suggestionEngine.loadKeywords(keywordsPath);
+  if (fs.existsSync(stlPath)) suggestionEngine.loadSTLData(stlPath);
+
+  console.log('[Backend] Native module loaded from', nativePath);
 } catch (e) {
   console.error('Failed to load native module:', e);
 }

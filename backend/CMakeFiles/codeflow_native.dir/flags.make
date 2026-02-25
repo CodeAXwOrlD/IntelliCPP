@@ -4,7 +4,7 @@
 # compile CXX with /usr/bin/c++
 CXX_DEFINES = -Dcodeflow_native_EXPORTS
 
-CXX_INCLUDES = -I/home/indmadmax/Documents/code_editr/autocomplete-engine/backend/node_modules/node-addon-api -I/home/indmadmax/Documents/code_editr/autocomplete-engine/backend/include
+CXX_INCLUDES = -I/home/indmadmax/Downloads/IntelliCPP/backend/node_modules/node-addon-api -I/home/indmadmax/.nvm/versions/node/v24.13.0/include/node -I/home/indmadmax/Downloads/IntelliCPP/backend/include
 
 CXX_FLAGS = -fPIC -std=gnu++20
 

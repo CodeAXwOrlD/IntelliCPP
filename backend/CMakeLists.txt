@@ -9,10 +9,18 @@ execute_process(COMMAND node -p "require('path').dirname(require.resolve('node-a
     OUTPUT_VARIABLE NODE_ADDON_API_DIR
     OUTPUT_STRIP_TRAILING_WHITESPACE)
 
+# Find Node.js include directory
+execute_process(COMMAND node -p "require('path').join(process.execPath, '..', '..', 'include', 'node')"
+    OUTPUT_VARIABLE NODE_INCLUDE_DIR
+    OUTPUT_STRIP_TRAILING_WHITESPACE)
+
 find_package(Threads REQUIRED)
 
 # Add Node addon API include
 include_directories(${NODE_ADDON_API_DIR})
+
+# Add Node.js include directory
+include_directories(${NODE_INCLUDE_DIR})
 
 # Include our headers
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)

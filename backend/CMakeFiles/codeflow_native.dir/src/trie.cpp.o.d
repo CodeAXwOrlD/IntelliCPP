@@ -1,7 +1,7 @@
 CMakeFiles/codeflow_native.dir/src/trie.cpp.o: \
- /home/indmadmax/Documents/code_editr/autocomplete-engine/backend/src/trie.cpp \
+ /home/indmadmax/Downloads/IntelliCPP/backend/src/trie.cpp \
  /usr/include/stdc-predef.h \
- /home/indmadmax/Documents/code_editr/autocomplete-engine/backend/include/trie.h \
+ /home/indmadmax/Downloads/IntelliCPP/backend/include/trie.h \
  /usr/include/c++/11/string \
  /usr/include/x86_64-linux-gnu/c++/11/bits/c++config.h \
  /usr/include/x86_64-linux-gnu/c++/11/bits/os_defines.h \
