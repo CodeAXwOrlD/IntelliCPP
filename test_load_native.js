@@ -5,6 +5,7 @@ const candidates = [
   path.join(__dirname, 'backend', 'build', 'Release', 'codeflow_native.node'),
   path.join(__dirname, 'backend', 'build', 'codeflow_native.node'),
   path.join(__dirname, 'backend', 'codeflow_native.node'),
+  path.join(__dirname, 'dist', 'codeflow_native.node'),
 ];
 let nativePath = candidates.find(p => fs.existsSync(p));
 console.log('nativePath =', nativePath);

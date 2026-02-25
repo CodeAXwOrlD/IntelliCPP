@@ -7,6 +7,7 @@
 const express = require('express');
 const path = require('path');
 const cors = require('cors');
+const fs = require('fs');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -19,19 +20,33 @@ app.use(express.text({ limit: '50mb' }));
 // Load Native Addon
 let suggestionEngine;
 try {
-  const native = require('./build/Release/codeflow_native.node');
+  // Try common locations for the compiled native module
+  const candidates = [
+    path.join(__dirname, '..', 'dist', 'codeflow_native.node'),
+    path.join(__dirname, 'dist', 'codeflow_native.node'),
+    path.join(__dirname, 'build', 'Release', 'codeflow_native.node'),
+    path.join(__dirname, 'build', 'codeflow_native.node'),
+    path.join(__dirname, 'codeflow_native.node'),
+  ];
+
+  let nativePath = candidates.find(p => fs.existsSync(p));
+  if (!nativePath) {
+    console.error('[HTTP Server] Native module not found. Searched:', candidates);
+    process.exit(1);
+  }
+
+  const native = require(nativePath);
   suggestionEngine = new native.SuggestionEngine();
-  
-  // Load C++ keywords
-  suggestionEngine.loadKeywords(path.join(__dirname, '..', 'data', 'cpp_keywords.txt'));
-  
-  // Load STL functions database
-  suggestionEngine.loadSTLData(path.join(__dirname, '..', 'data', 'stl_functions.json'));
-  
-  console.log('[HTTP Server] Native module loaded successfully');
-  console.log('[HTTP Server] STL data loaded');
+
+  // Load C++ keywords and STL functions if present
+  const keywordsPath = path.join(__dirname, '..', 'data', 'cpp_keywords.txt');
+  const stlPath = path.join(__dirname, '..', 'data', 'stl_functions.json');
+  if (fs.existsSync(keywordsPath)) suggestionEngine.loadKeywords(keywordsPath);
+  if (fs.existsSync(stlPath)) suggestionEngine.loadSTLData(stlPath);
+
+  console.log('[HTTP Server] Native module loaded from', nativePath);
 } catch (e) {
-  console.error('[HTTP Server] Failed to load native module:', e.message);
+  console.error('[HTTP Server] Failed to load native module:', e && e.message ? e.message : e);
   process.exit(1);
 }
 
@@ -44,8 +59,10 @@ app.get('/health', (req, res) => {
 app.post('/api/getSuggestions', (req, res) => {
   try {
     const { prefix = '', contextType = 'global', code = '', cursorPosition = 0 } = req.body;
+    console.log('[HTTP Server] POST /api/getSuggestions', { prefix, contextType, cursorPosition, codeLen: code.length });
     
     if (!suggestionEngine) {
+      console.log('[HTTP Server] Error: suggestionEngine not initialized');
       return res.json([]);
     }
     
@@ -60,6 +77,7 @@ app.post('/api/getSuggestions', (req, res) => {
       cursorPosition,
       10  // Max 10 suggestions
     );
+    console.log('[HTTP Server] Returning', suggestions.length, 'suggestions');
     
     res.json(suggestions || []);
   } catch (err) {
@@ -151,3 +169,16 @@ app.listen(PORT, () => {
   console.log(`  - POST /api/getStats`);
   console.log(`  - POST /api/runCode`);
 });
+
+// Serve prebuilt frontend if available so you can open in Chrome without Electron
+const frontendBuild = path.join(__dirname, '..', 'frontend', 'build');
+if (fs.existsSync(frontendBuild)) {
+  app.use(express.static(frontendBuild));
+  // All other GETs serve index.html for client-side routing
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(frontendBuild, 'index.html'));
+  });
+  console.log('[HTTP Server] Serving frontend from', frontendBuild);
+} else {
+  console.warn('[HTTP Server] Frontend build not found at', frontendBuild, '— build it with `npm run build:frontend`');
+}

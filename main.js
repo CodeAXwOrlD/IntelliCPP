@@ -1,9 +1,14 @@
 const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
+const net = require('net');
 
 let mainWindow;
 
-function createWindow() {
+// Disable hardware acceleration to avoid GL/VSync warnings on headless or
+// GPU-less environments.
+app.disableHardwareAcceleration();
+
+async function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
@@ -17,7 +22,33 @@ function createWindow() {
   // Check if we are in dev mode
   const isDev = !app.isPackaged;
   if (isDev) {
-    mainWindow.loadURL('http://localhost:3000');
+    // Check if the dev server is accepting connections before calling
+    // loadURL to avoid Electron's "Failed to load URL" warning.
+    const devUrl = 'http://localhost:3000';
+    const isUp = await new Promise((resolve) => {
+      const socket = new net.Socket();
+      const onError = () => {
+        socket.destroy();
+        resolve(false);
+      };
+      socket.setTimeout(300);
+      socket.once('error', onError);
+      socket.once('timeout', onError);
+      socket.connect(3000, '127.0.0.1', () => {
+        socket.end();
+        resolve(true);
+      });
+    });
+
+    if (isUp) {
+      mainWindow.loadURL(devUrl).catch((err) => {
+        console.warn('Unexpected loadURL error, falling back to built UI:', err.message || err);
+        mainWindow.loadFile(path.join(__dirname, 'frontend/build/index.html'));
+      });
+    } else {
+      console.log('Dev server not available, loading built UI');
+      mainWindow.loadFile(path.join(__dirname, 'frontend/build/index.html'));
+    }
     // Open the DevTools.
     // mainWindow.webContents.openDevTools();
   } else {
@@ -43,6 +74,7 @@ try {
   // Try common build output locations for the native module
   const fs = require('fs');
   const candidates = [
+    path.join(__dirname, 'dist', 'codeflow_native.node'),
     path.join(__dirname, 'backend', 'dist', 'codeflow_native.node'),
     path.join(__dirname, 'backend', 'build', 'Release', 'codeflow_native.node'),
     path.join(__dirname, 'backend', 'build', 'codeflow_native.node'),

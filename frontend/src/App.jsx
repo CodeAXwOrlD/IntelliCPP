@@ -9,10 +9,12 @@ import { useTheme } from './theme/ThemeContext';
 import './styles/glassmorphism.css';
 
 const STARTING_CODE = `#include <iostream>
+#include <vector>
 using namespace std;
 
 int main() {
-        
+    vector<int> v;
+    
     return 0;
 }`;
 
@@ -173,7 +175,7 @@ export default function App() {
   };
 
   // ✅ RULE 4: LIVE FILTERING - dynamically filter suggestions as user types
-  const triggerSuggestions = () => {
+  const triggerSuggestions = (currentCode) => {
     const editor = editorRef.current;
     if (!editor) return;
 
@@ -189,8 +191,8 @@ export default function App() {
       const objectName = dotMatch[1];
       const prefix = dotMatch[2];  // Captured prefix for filtering
 
-      // Call backend with prefix for live filtering
-      callBackendAPI('getSuggestions', prefix, objectName, code, position.column).then((realSuggestions) => {
+      // Call backend with prefix for live filtering - use currentCode from parameter
+      callBackendAPI('getSuggestions', prefix, objectName, currentCode, position.column).then((realSuggestions) => {
         const elapsed = Date.now() - startTime;
         setLatency(elapsed);
         setSuggestions(realSuggestions || []);
@@ -208,7 +210,8 @@ export default function App() {
         const startTime = Date.now();
         const objectName = match[1];
 
-        callBackendAPI('getSuggestions', '', objectName, code, position.column).then((realSuggestions) => {
+        // Use currentCode from parameter
+        callBackendAPI('getSuggestions', '', objectName, currentCode, position.column).then((realSuggestions) => {
           const elapsed = Date.now() - startTime;
           setLatency(elapsed);
           setSuggestions(realSuggestions || []);
@@ -224,8 +227,8 @@ export default function App() {
       setPopupVisible(false);
     }
 
-    // Update system statistics
-    callBackendAPI('getStats', code).then((stats) => {
+    // Update system statistics - use currentCode from parameter
+    callBackendAPI('getStats', currentCode).then((stats) => {
       setSymbolCount(stats.symbolCount || 0);
       setIncludedLibs(stats.includedLibraries || []);
     }).catch(() => {
@@ -236,12 +239,13 @@ export default function App() {
   };
 
   const handleEditorChange2 = (value) => {
-    setCode(value || '');
-    // Debounce suggestion trigger
+    const newCode = value || '';
+    setCode(newCode);
+    // Debounce suggestion trigger - pass current code directly
     if (triggerTimeout.current) {
       clearTimeout(triggerTimeout.current);
     }
-    triggerTimeout.current = setTimeout(triggerSuggestions, 100);
+    triggerTimeout.current = setTimeout(() => triggerSuggestions(newCode), 100);
   };
 
   const handleRunCode = async () => {
