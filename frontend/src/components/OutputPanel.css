@@ -100,6 +100,63 @@
   word-wrap: break-word;
   margin: 0;
   padding: 0;
+  line-height: 1.6;
+  font-family: 'Fira Code', 'Monaco', monospace;
+}
+
+/* Error formatting classes */
+.error-location {
+  color: #64d8ff;
+  font-weight: 600;
+  margin-bottom: 4px;
+  display: block;
+}
+
+.error-message {
+  color: #ff6b6b;
+  font-weight: 500;
+  margin: 2px 0;
+  display: block;
+}
+
+.warning-message {
+  color: #fbbf24;
+  font-weight: 500;
+  margin: 2px 0;
+  display: block;
+}
+
+.note-message {
+  color: #94a3b8;
+  font-style: italic;
+  margin: 2px 0;
+  display: block;
+}
+
+.suggestion-message {
+  color: #4ade80;
+  font-weight: 500;
+  margin: 4px 0;
+  display: block;
+  padding-left: 12px;
+  border-left: 2px solid #4ade80;
+}
+
+.error-info {
+  color: #cbd5e1;
+  margin: 1px 0;
+  display: block;
+  font-size: 12px;
+}
+
+.output-warning {
+  color: #fbbf24;
+  font-weight: 500;
+}
+
+.output-error {
+  color: #ff6b6b;
+  font-weight: 500;
 }
 
 .output-text {
