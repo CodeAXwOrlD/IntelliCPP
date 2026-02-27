@@ -15,7 +15,7 @@ export default function SuggestionPopup({ suggestions, selectedIndex, onSelect }
       <ul className="suggestion-list">
         {suggestions.map((suggestion, index) => (
           <li
-            key={`${suggestion.text}-${index}`}
+            key={`${suggestion.label || suggestion.text || index}`}
             ref={index === selectedIndex ? selectedItemRef : null}
             className={`suggestion-item ${index === selectedIndex ? 'selected' : ''}`}
             onClick={() => onSelect(suggestion)}
@@ -23,10 +23,10 @@ export default function SuggestionPopup({ suggestions, selectedIndex, onSelect }
             role="option"
             aria-selected={index === selectedIndex}
           >
-            <span className="suggestion-text">{suggestion.text}</span>
-            <span className="suggestion-type">{suggestion.type}</span>
+            <span className="suggestion-text">{suggestion.label || suggestion.text}</span>
+            <span className="suggestion-type">{suggestion.kind || suggestion.type || 'N/A'}</span>
             <span className="suggestion-score">
-              {(suggestion.score * 100).toFixed(0)}%
+              {suggestion.score ? (suggestion.score * 100).toFixed(0) + '%' : 'N/A'}
             </span>
           </li>
         ))}

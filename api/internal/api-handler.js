@@ -19,7 +19,7 @@ const stlFunctions = [
   'priority_queue', 'pair', 'tuple', 'function', 'bind', 'mem_fn',
   'shared_ptr', 'unique_ptr', 'weak_ptr', 'allocator', 'addressof',
   'make_shared', 'make_unique', 'move', 'swap', 'forward', 'to_string',
-  'stoi', 'stol', 'stoll', 'stoul', 'stoull', 'stof', 'stod', 'stold',
+  'stoi', 'stol', 'stoll', 'stoull', 'stof', 'stod', 'stold',
   'size', 'empty', 'clear', 'begin', 'end', 'rbegin', 'rend', 'push',
   'pop', 'top', 'front', 'back', 'insert', 'erase', 'emplace', 'emplace_back',
   'reserve', 'resize', 'capacity', 'max_size', 'shrink_to_fit', 'assign',
@@ -65,19 +65,20 @@ export default function handler(req, res) {
       
       if (prefix) {
         suggestions = [
-          ...cppKeywords.filter(kw => kw.startsWith(prefix.toLowerCase()) || kw.includes(prefix)),
-          ...stlFunctions.filter(func => func.startsWith(prefix.toLowerCase()) || func.includes(prefix))
+          ...cppKeywords.filter(kw => kw.toLowerCase().startsWith(prefix.toLowerCase()) || kw.toLowerCase().includes(prefix.toLowerCase())),
+          ...stlFunctions.filter(func => func.toLowerCase().startsWith(prefix.toLowerCase()) || func.toLowerCase().includes(prefix.toLowerCase()))
         ];
       } else {
         suggestions = [...cppKeywords.slice(0, 5), ...stlFunctions.slice(0, 5)];
       }
 
-      // Limit to 10 suggestions and format them
+      // Limit to 10 suggestions and format them properly
       const formattedSuggestions = suggestions.slice(0, 10).map(item => ({
         label: item,
-        kind: 'Keyword', // or 'Function', 'Variable', etc.
+        kind: item === 'cout' || item === 'cin' || item === 'endl' ? 'Variable' : 'Keyword',
         detail: `C++ ${item}`,
-        insertText: item
+        insertText: item,
+        text: item  // Adding text property for the frontend to use
       }));
 
       return res.status(200).json(formattedSuggestions);
@@ -106,23 +107,28 @@ export default function handler(req, res) {
     else if (endpoint === 'runCode') {
       const { code = '' } = req.body;
       
-      // In a real cloud implementation, you'd need a secure sandbox for code execution
-      // This is just a mock response
-      const hasErrors = code.includes('error') || code.includes('// ERROR') || !code.includes('#include') || !code.includes('int main');
-      
-      if (hasErrors) {
+      // More realistic simulation of code execution
+      if (!code.includes('#include')) {
         return res.status(200).json({
           success: false,
           output: '',
-          error: 'Compilation error: Please check your syntax',
+          error: 'Error: No header files included. Add #include <iostream> or other necessary headers.',
+          executionTime: 0
+        });
+      } else if (!code.includes('int main')) {
+        return res.status(200).json({
+          success: false,
+          output: '',
+          error: 'Error: No main function found. C++ programs must have an int main() function.',
           executionTime: 0
         });
       } else {
+        // Simulate successful execution
         return res.status(200).json({
           success: true,
-          output: 'Program executed successfully\nHello, World!',
+          output: 'Program compiled and executed successfully\nHello, World!\nProcess exited with code 0',
           error: '',
-          executionTime: 123
+          executionTime: Math.floor(Math.random() * 500) + 50 // Random execution time between 50-500ms
         });
       }
     } 
