@@ -25,48 +25,93 @@ const callBackendAPI = async (method, ...args) => {
     return window.api[method](...args);
   }
 
-  // Fallback: HTTP API - use environment-specific base URL
+  // Determine base URL based on environment
   const getBaseUrl = () => {
     if (typeof window !== 'undefined' && window.location.hostname !== 'localhost') {
-      // In production/cloud environment, use relative paths or the same origin
+      // In production/cloud environment, use the same origin
       return '';
     } else {
-      // In development, use the local backend
+      // In development, check if cloud backend is available
       return 'http://localhost:3001';
     }
   };
 
   const baseUrl = getBaseUrl();
+  let apiEndpoint = `${baseUrl}/api/${method}`;
+  
+  // For Vercel deployments, use the direct API route path
+  if (!baseUrl && typeof window !== 'undefined') {
+    apiEndpoint = `/api/${method}`;
+  }
 
   try {
     // Map method names to HTTP endpoints
-    if (method === 'getSuggestions') {
-      const [prefix, contextType, code, cursorPosition] = args;
-      const response = await fetch(`${baseUrl}/api/getSuggestions`, {
+    if (method === 'getSuggestions' || method === 'getStats' || method === 'runCode') {
+      let requestBody = {};
+      
+      if (method === 'getSuggestions') {
+        const [prefix, contextType, code, cursorPosition] = args;
+        requestBody = { prefix, contextType, code, cursorPosition };
+      } else if (method === 'getStats') {
+        const [code] = args;
+        requestBody = { code };
+      } else if (method === 'runCode') {
+        const [code] = args;
+        requestBody = { code };
+      }
+      
+      const response = await fetch(apiEndpoint, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prefix, contextType, code, cursorPosition }),
+        headers: { 
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify(requestBody),
       });
-      if (response.ok) return response.json();
-    } else if (method === 'getStats') {
-      const [code] = args;
-      const response = await fetch(`${baseUrl}/api/getStats`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code }),
-      });
-      if (response.ok) return response.json();
-    } else if (method === 'runCode') {
-      const [code] = args;
-      const response = await fetch(`${baseUrl}/api/runCode`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code }),
-      });
-      if (response.ok) return response.json();
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      return await response.json();
     }
   } catch (err) {
     console.warn('[Frontend] API Error:', err.message);
+    console.warn('[Frontend] Attempting to use fallback API endpoint');
+    
+    // Try alternative endpoint for Vercel
+    try {
+      const altApiEndpoint = `/api/${method}`;
+      let requestBody = {};
+      
+      if (method === 'getSuggestions') {
+        const [prefix, contextType, code, cursorPosition] = args;
+        requestBody = { prefix, contextType, code, cursorPosition };
+      } else if (method === 'getStats') {
+        const [code] = args;
+        requestBody = { code };
+      } else if (method === 'runCode') {
+        const [code] = args;
+        requestBody = { code };
+      }
+      
+      const response = await fetch(altApiEndpoint, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify(requestBody),
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (fallbackErr) {
+      console.error('[Frontend] Fallback API Error:', fallbackErr.message);
+    }
   }
   
   // Return appropriate default values
