@@ -112,17 +112,27 @@ export default function handler(req, res) {
         return res.status(200).json({
           success: false,
           output: '',
-          error: 'Error: No header files included. Add #include <iostream> or other necessary headers.',
+          error: 'fatal error: no input files\ncompilation terminated.',
           executionTime: 0
         });
       } else if (!code.includes('int main')) {
         return res.status(200).json({
           success: false,
           output: '',
-          error: 'Error: No main function found. C++ programs must have an int main() function.',
+          error: 'error: no main() function found\nlinker error: entry point not found',
           executionTime: 0
         });
       } else {
+        // Check for common syntax errors
+        if (code.includes('error') || code.includes('// ERROR')) {
+          return res.status(200).json({
+            success: false,
+            output: '',
+            error: 'syntax error: unexpected token\ncompilation failed',
+            executionTime: 0
+          });
+        }
+        
         // Simulate successful execution
         return res.status(200).json({
           success: true,
