@@ -47,7 +47,7 @@ const stlFunctions = [
   'shift_left', 'shift_right'
 ];
 
-export default function handler(req, res) {
+export default async function handler(req, res) {
   const { method } = req;
   
   if (method !== 'POST') {
@@ -64,10 +64,25 @@ export default function handler(req, res) {
       let suggestions = [];
       
       if (prefix) {
+        // Case insensitive search for better UX
+        const lowerPrefix = prefix.toLowerCase();
         suggestions = [
-          ...cppKeywords.filter(kw => kw.toLowerCase().startsWith(prefix.toLowerCase()) || kw.toLowerCase().includes(prefix.toLowerCase())),
-          ...stlFunctions.filter(func => func.toLowerCase().startsWith(prefix.toLowerCase()) || func.toLowerCase().includes(prefix.toLowerCase()))
+          ...cppKeywords.filter(kw => kw.toLowerCase().startsWith(lowerPrefix)),
+          ...stlFunctions.filter(func => func.toLowerCase().startsWith(lowerPrefix))
         ];
+        
+        // If prefix is 'vector', prioritize vector-related functions
+        if (prefix.toLowerCase().includes('vector')) {
+          // Reorder to put vector-related items first
+          const vectorRelated = suggestions.filter(item => 
+            item.toLowerCase().includes('vector') || 
+            ['push_back', 'pop_back', 'size', 'clear', 'begin', 'end', 'at', 'insert', 'erase'].includes(item)
+          );
+          const otherItems = suggestions.filter(item => 
+            !vectorRelated.includes(item)
+          );
+          suggestions = [...vectorRelated, ...otherItems];
+        }
       } else {
         suggestions = [...cppKeywords.slice(0, 5), ...stlFunctions.slice(0, 5)];
       }
@@ -75,12 +90,17 @@ export default function handler(req, res) {
       // Limit to 10 suggestions and format them properly
       const formattedSuggestions = suggestions.slice(0, 10).map(item => ({
         label: item,
-        kind: item === 'cout' || item === 'cin' || item === 'endl' ? 'Variable' : 'Keyword',
+        kind: item === 'cout' || item === 'cin' || item === 'endl' ? 'Variable' : 
+              ['vector', 'string', 'array', 'map', 'set', 'queue', 'stack', 'list'].includes(item) ? 'Class' :
+              'Keyword',
         detail: `C++ ${item}`,
         insertText: item,
         text: item  // Adding text property for the frontend to use
       }));
 
+      // Simulate small delay for more realistic feel
+      await new Promise(resolve => setTimeout(resolve, 10));
+      
       return res.status(200).json(formattedSuggestions);
     } 
     else if (endpoint === 'getStats') {

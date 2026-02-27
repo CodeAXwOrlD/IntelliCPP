@@ -18,11 +18,30 @@ int main() {
     return 0;
 }`;
 
+// Cache for API responses to improve performance
+const apiCache = new Map();
+const CACHE_DURATION = 500; // 500ms cache duration
+
 // Helper function to call backend API (works in both Electron and cloud environments)
 const callBackendAPI = async (method, ...args) => {
   // Try Electron IPC first
   if (window.api && window.api[method]) {
     return window.api[method](...args);
+  }
+
+  // Create cache key based on method and arguments
+  const cacheKey = `${method}:${JSON.stringify(args)}`;
+  const now = Date.now();
+  
+  // Check if we have a valid cached response
+  if (apiCache.has(cacheKey)) {
+    const cached = apiCache.get(cacheKey);
+    if (now - cached.timestamp < CACHE_DURATION) {
+      return cached.data;
+    } else {
+      // Remove expired cache entry
+      apiCache.delete(cacheKey);
+    }
   }
 
   // For Vercel deployment, use the API routes directly
@@ -56,7 +75,15 @@ const callBackendAPI = async (method, ...args) => {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
-    return await response.json();
+    const result = await response.json();
+    
+    // Cache the response
+    apiCache.set(cacheKey, {
+      data: result,
+      timestamp: now
+    });
+    
+    return result;
   } catch (err) {
     console.error('[Frontend] API Error:', err.message);
     
@@ -294,11 +321,12 @@ export default function App() {
   const handleEditorChange2 = (value) => {
     const newCode = value || '';
     setCode(newCode);
-    // Debounce suggestion trigger - pass current code directly
+    // Debounce suggestion trigger - wait slightly longer for better performance
     if (triggerTimeout.current) {
       clearTimeout(triggerTimeout.current);
     }
-    triggerTimeout.current = setTimeout(() => triggerSuggestions(newCode), 100);
+    // Increase delay to 200ms for better performance in cloud environment
+    triggerTimeout.current = setTimeout(() => triggerSuggestions(newCode), 200);
   };
 
   const handleRunCode = async () => {
