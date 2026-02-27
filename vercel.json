@@ -1,12 +1,6 @@
 {
   "version": 2,
   "name": "intellcpp",
-  "rewrites": [
-    {
-      "source": "/api/:path*",
-      "destination": "/api/:path*"
-    }
-  ],
   "builds": [
     {
       "src": "frontend/package.json",
@@ -14,6 +8,12 @@
       "config": {
         "distDir": "build"
       }
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "/api/:path*"
     }
   ]
 }
