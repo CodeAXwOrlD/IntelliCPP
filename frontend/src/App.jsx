@@ -300,10 +300,24 @@ export default function App() {
           <div className="header-left">
             <h1>🚀 CodeFlow AI</h1>
           </div>
-          <div className="header-right">
-            <button className="run-button" onClick={handleRunCode} disabled={outputLoading} title="Compile and run C++ code">
-              ▶ Run Code
+          <div className="header-center">
+            <button 
+              className={`run-button ${outputLoading ? "loading" : ""}`}
+              onClick={handleRunCode} 
+              disabled={outputLoading} 
+              title="Compile and run C++ code"
+            >
+              {outputLoading ? (
+                <>
+                  <span className="spinner"></span>
+                  Running...
+                </>
+              ) : (
+                "▶ Code"
+              )}
             </button>
+          </div>
+          <div className="header-right">
             <ThemeToggle />
           </div>
         </div>
