@@ -2,8 +2,11 @@
 export function formatCompilerError(errorOutput) {
   if (!errorOutput) return '';
   
+  // Clean encoding issues and special characters
+  let cleanOutput = cleanEncodingIssues(errorOutput);
+  
   // Split by lines and process each line
-  const lines = errorOutput.split('\n');
+  const lines = cleanOutput.split('\n');
   let formattedLines = [];
   
   for (let i = 0; i < lines.length; i++) {
@@ -48,9 +51,55 @@ export function formatCompilerError(errorOutput) {
 export function formatCompilerOutput(output) {
   if (!output) return '';
   
+  // Clean encoding issues first
+  let cleanOutput = cleanEncodingIssues(output);
+  
   // Simple formatting for regular output
-  return output
+  return cleanOutput
     .replace(/\n/g, '<br>')
     .replace(/(warning:)/gi, '<span class="output-warning">$1</span>')
     .replace(/(error:)/gi, '<span class="output-error">$1</span>');
+}
+
+// Function to clean encoding issues and special characters
+function cleanEncodingIssues(text) {
+  if (!text) return '';
+  
+  // Handle common encoding issues
+  let cleanText = text;
+  
+  // Remove byte order marks and other encoding artifacts
+  cleanText = cleanText.replace(/\uFEFF/g, ''); // BOM
+  cleanText = cleanText.replace(/\0/g, ''); // Null bytes
+  
+  // Fix common UTF-8 decoding issues
+  const encodingFixes = [
+    ['â', "'"],
+    ['â', "'"],
+    ['â', '"'],
+    ['â', '"'],
+    ['â', '-'],
+    ['â', '--'],
+    ['â¦', '...'],
+    ['Â', ''],
+    ['â¬¡', "'"],
+    ['â¬¢', "'"],
+    ['â', '"'],
+    ['â', '"'],
+    ['â', '-'],
+    ['â', '--'],
+    ['â¦', '...']
+  ];
+  
+  for (const [bad, good] of encodingFixes) {
+    cleanText = cleanText.split(bad).join(good);
+  }
+  
+  // Remove other problematic characters
+  cleanText = cleanText.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, ''); // eslint-disable-line no-control-regex
+  
+  // Clean up multiple spaces and newlines
+  cleanText = cleanText.replace(/\s+/g, ' ');
+  
+  return cleanText.trim();
 }

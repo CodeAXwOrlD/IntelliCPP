@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { formatCompilerError } from '../utils/errorFormatter';
 import './OutputPanel.css';
 

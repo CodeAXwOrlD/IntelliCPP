@@ -4,10 +4,24 @@
 #include <cstdlib>
 #include <fstream>
 #include <iostream>
+#include <locale>
 #include <memory>
 #include <sstream>
 
-CodeRunner::CodeRunner() {}
+CodeRunner::CodeRunner() {
+  // Set locale to ensure proper UTF-8 handling
+  try {
+    std::locale::global(std::locale("en_US.UTF-8"));
+  } catch (...) {
+    // Fallback to default locale if UTF-8 is not available
+    try {
+      std::locale::global(std::locale("")); // System default
+    } catch (...) {
+      // If all fails, use "C" locale
+      std::locale::global(std::locale("C"));
+    }
+  }
+}
 
 std::string CodeRunner::wrapJson(bool success, const std::string &output,
                                  const std::string &error) {
