@@ -257,7 +257,27 @@ export default function App() {
         });
       }
     } else {
-      setPopupVisible(false);
+      // Check for general keywords/functions when not after a dot
+      const wordMatch = beforeCursor.match(/[a-zA-Z_][a-zA-Z0-9_]*$/);
+      if (wordMatch) {
+        const prefix = wordMatch[0];
+        const startTime = Date.now();
+
+        // Call backend for general suggestions
+        callBackendAPI('getSuggestions', prefix, 'global', currentCode, position.column).then((realSuggestions) => {
+          const elapsed = Date.now() - startTime;
+          setLatency(elapsed);
+          setSuggestions(realSuggestions || []);
+          setSelectedIndex(0);
+          setPopupPosition(calculatePopupPosition());
+          setPopupVisible((realSuggestions || []).length > 0);
+        }).catch(() => {
+          setSuggestions([]);
+          setPopupVisible(false);
+        });
+      } else {
+        setPopupVisible(false);
+      }
     }
 
     // Update system statistics - use currentCode from parameter

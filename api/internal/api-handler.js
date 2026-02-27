@@ -108,6 +108,7 @@ export default function handler(req, res) {
       const { code = '' } = req.body;
       
       // More realistic simulation of code execution
+      // Check for various code issues first
       if (!code.includes('#include')) {
         return res.status(200).json({
           success: false,
@@ -122,9 +123,23 @@ export default function handler(req, res) {
           error: 'error: no main() function found\nlinker error: entry point not found',
           executionTime: 0
         });
+      } else if (code.includes('cout') && !code.includes('<iostream>')) {
+        return res.status(200).json({
+          success: false,
+          output: '',
+          error: 'error: \'cout\' was not declared in this scope\nnote: \'cout\' is defined in header <iostream>',
+          executionTime: 0
+        });
+      } else if (code.includes('vector') && !code.includes('<vector>')) {
+        return res.status(200).json({
+          success: false,
+          output: '',
+          error: 'error: \'vector\' was not declared in this scope\nnote: \'vector\' is defined in header <vector>',
+          executionTime: 0
+        });
       } else {
         // Check for common syntax errors
-        if (code.includes('error') || code.includes('// ERROR')) {
+        if (code.includes('error') || code.includes('// ERROR') || code.includes('***')) {
           return res.status(200).json({
             success: false,
             output: '',
@@ -133,12 +148,40 @@ export default function handler(req, res) {
           });
         }
         
-        // Simulate successful execution
+        // If code looks valid, simulate execution
+        let simulatedOutput = 'Program compiled and executed successfully\n';
+        
+        // Check for specific outputs based on code content
+        if (code.includes('cout << "Hello') || code.includes('cout << "hello') || code.includes('cout<<"Hello')) {
+          const helloMatch = code.match(/cout\s*<<\s*"([^"]+)"/);
+          if (helloMatch) {
+            simulatedOutput += `${helloMatch[1]}\n`;
+          } else {
+            simulatedOutput += 'Hello, World!\n';
+          }
+        } else if (code.includes('cout')) {
+          // Try to extract what would be printed
+          const printMatches = code.match(/cout\s*<<\s*["']([^"']+)["']/g);
+          if (printMatches) {
+            printMatches.forEach(match => {
+              const text = match.match(/["']([^"']+)["']/);
+              if (text) simulatedOutput += `${text[1]}\n`;
+            });
+          } else {
+            simulatedOutput += 'Program output\n';
+          }
+        }
+        
+        simulatedOutput += 'Process exited with code 0';
+        
+        // Simulate execution time
+        const execTime = Math.floor(Math.random() * 300) + 50; // 50-350ms
+        
         return res.status(200).json({
           success: true,
-          output: 'Program compiled and executed successfully\nHello, World!\nProcess exited with code 0',
+          output: simulatedOutput,
           error: '',
-          executionTime: Math.floor(Math.random() * 500) + 50 // Random execution time between 50-500ms
+          executionTime: execTime
         });
       }
     } 
