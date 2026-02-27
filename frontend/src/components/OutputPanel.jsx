@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { formatCompilerError } from '../utils/errorFormatter';
 import './OutputPanel.css';
 
 export default function OutputPanel({ output, isLoading, error, onClear, isVisible }) {
@@ -21,9 +22,10 @@ export default function OutputPanel({ output, isLoading, error, onClear, isVisib
             <span>⚙️ Compiling and running code...</span>
           </div>
         ) : error ? (
-          <pre className="output-error">
-            ❌ Error:\n{error}
-          </pre>
+          <div 
+            className="output-error"
+            dangerouslySetInnerHTML={{ __html: formatCompilerError(error) }}
+          />
         ) : output ? (
           <pre className="output-text">
             {output}
