@@ -1,0 +1,26 @@
+{
+  "name": "codeflow-cloud-backend",
+  "version": "1.0.0",
+  "description": "Cloud-compatible backend for CodeFlow C++ autocompletion",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js"
+  },
+  "dependencies": {
+    "express": "^4.22.1",
+    "cors": "^2.8.5"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  },
+  "keywords": [
+    "cpp",
+    "autocomplete",
+    "cloud",
+    "api",
+    "codeflow"
+  ],
+  "author": "CodeFlow Team",
+  "license": "MIT"
+}

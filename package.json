@@ -12,14 +12,15 @@
     "node": ">=16.0.0"
   },
   "scripts": {
-    "postinstall": "echo skipping build",
+    "postinstall": "npm run build:frontend",
     "install-deps": "npm install && cd backend && npm install",
-    "build": "cd backend && node-gyp configure build && cd .. && npm run build:frontend",
+    "build": "npm run build:frontend",
     "build:frontend": "cd frontend && npm install && npm run build",
     "build:backend": "cd backend && cmake . && make",
     "start": "electron .",
     "dev:frontend": "cd frontend && npm start",
     "dev:backend": "cd backend && node-gyp rebuild --debug",
+    "dev:cloud": "cd cloud-backend && npm install && npm start",
     "test": "jest --coverage && npm run test:cpp",
     "test:cpp": "cd tests && cmake . && ctest --output-on-failure",
     "lint": "eslint frontend/src --fix",

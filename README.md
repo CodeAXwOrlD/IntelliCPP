@@ -1,3 +1,43 @@
+# IntelliCPP - Cloud-Ready C++ Autocompletion Tool
+
+This is a cloud-compatible version of the IntelliCPP application that can be deployed to Vercel or Netlify.
+
+## Deployment Instructions
+
+### Deploy to Vercel
+
+1. Fork this repository to your GitHub account
+2. Go to [Vercel](https://vercel.com) and sign in with your GitHub account
+3. Click "New Project" and select your forked repository
+4. Vercel will automatically detect the project and configure the build settings
+5. Click "Deploy" and your application will be live!
+
+### Deploy to Netlify
+
+1. Fork this repository to your GitHub account
+2. Go to [Netlify](https://netlify.com) and sign in with your GitHub account
+3. Click "Add new site" and select your forked repository
+4. Configure build settings:
+   - Build command: `npm run build:frontend`
+   - Publish directory: `frontend/build`
+5. Click "Deploy site" and your application will be live!
+
+## Features
+
+- Real-time C++ autocompletion
+- Syntax highlighting
+- Code execution simulation
+- Performance statistics
+- Modern glassmorphism UI
+
+## Architecture
+
+- Frontend: React + Monaco Editor
+- Backend: Vercel serverless functions (cloud-compatible)
+- Styling: Custom glassmorphism CSS
+
+Note: The cloud version uses simulated backend functionality for autocompletion and code execution, as native C++ modules cannot run in serverless environments.
+
 # 🚀 CodeFlow AI - Production C++ Autocomplete Engine
 
 ![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)
@@ -110,7 +150,7 @@ If you prefer to avoid the native build, you can still run and develop the front
 
 ### Usage Example
 
-```cpp
+``cpp
 // Type in the editor:
 #include <vector>
 #include <iostream>

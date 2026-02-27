@@ -18,19 +18,31 @@ int main() {
     return 0;
 }`;
 
-// Helper function to call backend API (works in both Electron and dev mode)
+// Helper function to call backend API (works in both Electron and cloud environments)
 const callBackendAPI = async (method, ...args) => {
   // Try Electron IPC first
   if (window.api && window.api[method]) {
     return window.api[method](...args);
   }
 
-  // Fallback: HTTP API for dev mode (if backend HTTP server is available)
+  // Fallback: HTTP API - use environment-specific base URL
+  const getBaseUrl = () => {
+    if (typeof window !== 'undefined' && window.location.hostname !== 'localhost') {
+      // In production/cloud environment, use relative paths or the same origin
+      return '';
+    } else {
+      // In development, use the local backend
+      return 'http://localhost:3001';
+    }
+  };
+
+  const baseUrl = getBaseUrl();
+
   try {
     // Map method names to HTTP endpoints
     if (method === 'getSuggestions') {
       const [prefix, contextType, code, cursorPosition] = args;
-      const response = await fetch('http://localhost:3001/api/getSuggestions', {
+      const response = await fetch(`${baseUrl}/api/getSuggestions`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ prefix, contextType, code, cursorPosition }),
@@ -38,7 +50,7 @@ const callBackendAPI = async (method, ...args) => {
       if (response.ok) return response.json();
     } else if (method === 'getStats') {
       const [code] = args;
-      const response = await fetch('http://localhost:3001/api/getStats', {
+      const response = await fetch(`${baseUrl}/api/getStats`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ code }),
@@ -46,7 +58,7 @@ const callBackendAPI = async (method, ...args) => {
       if (response.ok) return response.json();
     } else if (method === 'runCode') {
       const [code] = args;
-      const response = await fetch('http://localhost:3001/api/runCode', {
+      const response = await fetch(`${baseUrl}/api/runCode`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ code }),
