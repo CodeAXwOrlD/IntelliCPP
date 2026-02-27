@@ -37,5 +37,19 @@ const testApiRoutes = async () => {
   }
 };
 
+// This is just for testing the API routes structure
+export default function handler(req, res) {
+  res.status(200).json({ 
+    status: 'ok', 
+    message: 'API routes are accessible',
+    endpoints: {
+      '/api/getSuggestions': 'POST - Get C++ suggestions',
+      '/api/getStats': 'POST - Get code statistics',
+      '/api/runCode': 'POST - Execute C++ code (simulated)',
+      '/api/health': 'GET/POST - Health check'
+    }
+  });
+}
+
 // This is just for documentation - actual testing happens in the browser
 export { testApiRoutes };

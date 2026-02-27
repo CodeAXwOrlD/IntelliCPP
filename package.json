@@ -27,7 +27,8 @@
     "format": "prettier --write \"frontend/src/**/*.{js,jsx,css}\"",
     "prepackage": "npm run build",
     "package": "electron-builder",
-    "dist": "npm run build && electron-builder --publish=always"
+    "dist": "npm run build && electron-builder --publish=always",
+    "vercel-build": "npm run build:frontend"
   },
   "keywords": [
     "autocomplete",

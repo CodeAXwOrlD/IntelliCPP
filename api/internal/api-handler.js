@@ -48,8 +48,89 @@ const stlFunctions = [
 ];
 
 export default function handler(req, res) {
-  // Redirect to the main API handler with the endpoint parameter
-  req.query.endpoint = 'getSuggestions';
-  const mainHandler = require('./internal/api-handler').default;
-  return mainHandler(req, res);
+  const { method } = req;
+  
+  if (method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  const { endpoint } = req.query;
+  
+  try {
+    if (endpoint === 'getSuggestions') {
+      const { prefix = '', contextType = 'global', code = '', cursorPosition = 0 } = req.body;
+      
+      // Filter keywords and STL functions based on the prefix
+      let suggestions = [];
+      
+      if (prefix) {
+        suggestions = [
+          ...cppKeywords.filter(kw => kw.startsWith(prefix.toLowerCase()) || kw.includes(prefix)),
+          ...stlFunctions.filter(func => func.startsWith(prefix.toLowerCase()) || func.includes(prefix))
+        ];
+      } else {
+        suggestions = [...cppKeywords.slice(0, 5), ...stlFunctions.slice(0, 5)];
+      }
+
+      // Limit to 10 suggestions and format them
+      const formattedSuggestions = suggestions.slice(0, 10).map(item => ({
+        label: item,
+        kind: 'Keyword', // or 'Function', 'Variable', etc.
+        detail: `C++ ${item}`,
+        insertText: item
+      }));
+
+      return res.status(200).json(formattedSuggestions);
+    } 
+    else if (endpoint === 'getStats') {
+      const { code = '' } = req.body;
+      
+      // Count some basic stats from the code
+      const lines = code.split('\n').length;
+      const charCount = code.length;
+      const wordCount = code.trim() ? code.trim().split(/\s+/).length : 0;
+      
+      // Mock included libraries detection
+      const includedLibraries = code.match(/#include\s+<([^>]+)>/g) || [];
+      const extractedLibs = includedLibraries.map(lib => lib.replace('#include <', '').replace('>', ''));
+      
+      return res.status(200).json({
+        symbolCount: Math.min(wordCount, 100), // Mock symbol count
+        includedLibraries: extractedLibs,
+        symbolTable: {},
+        linesOfCode: lines,
+        characterCount: charCount,
+        wordCount: wordCount
+      });
+    } 
+    else if (endpoint === 'runCode') {
+      const { code = '' } = req.body;
+      
+      // In a real cloud implementation, you'd need a secure sandbox for code execution
+      // This is just a mock response
+      const hasErrors = code.includes('error') || code.includes('// ERROR') || !code.includes('#include') || !code.includes('int main');
+      
+      if (hasErrors) {
+        return res.status(200).json({
+          success: false,
+          output: '',
+          error: 'Compilation error: Please check your syntax',
+          executionTime: 0
+        });
+      } else {
+        return res.status(200).json({
+          success: true,
+          output: 'Program executed successfully\nHello, World!',
+          error: '',
+          executionTime: 123
+        });
+      }
+    } 
+    else {
+      return res.status(404).json({ error: 'Endpoint not found' });
+    }
+  } catch (err) {
+    console.error('Error processing request:', err.message);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
 }

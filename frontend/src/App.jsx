@@ -26,13 +26,7 @@ const callBackendAPI = async (method, ...args) => {
   }
 
   // For Vercel deployment, use the API routes directly
-  const getApiUrl = () => {
-    // In Vercel, the API routes are available at /api/[method]
-    // For local development with Vercel CLI, we might need to adjust
-    return `/api/${method}`;
-  };
-
-  const apiUrl = getApiUrl();
+  const apiUrl = `/api/${method}`;
 
   try {
     let requestBody = {};
