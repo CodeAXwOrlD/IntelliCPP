@@ -124,6 +124,9 @@ export default function App() {
     const lineContent = model.getLineContent(position.lineNumber);
     const beforeCursor = lineContent.substring(0, position.column - 1);
 
+    // Extract the actual text to insert from the suggestion
+    const suggestionText = suggestion.insertText || suggestion.label || suggestion.text || '';
+
     // Find the dot position
     const dotPos = beforeCursor.lastIndexOf('.');
     if (dotPos >= 0) {
@@ -140,14 +143,40 @@ export default function App() {
       // Insert method with parentheses
       editor.executeEdits('suggestion', [{
         range: range,
-        text: suggestion.text + '()'
+        text: suggestionText + '()'
       }]);
       
       // ✅ RULE 5: Position cursor inside parentheses
       // After insertion, cursor should be inside the empty parentheses
       const newPosition = {
         lineNumber: position.lineNumber,
-        column: dotPos + 2 + suggestion.text.length + 1  // Position between ()
+        column: dotPos + 2 + suggestionText.length + 1  // Position between ()
+      };
+      editor.setPosition(newPosition);
+    } else {
+      // General case: replace the current word/token with the suggestion
+      // Find the start of the current token
+      let startPos = position.column - 1;
+      while (startPos > 0 && /[a-zA-Z0-9_]/.test(beforeCursor[startPos - 1])) {
+        startPos--;
+      }
+
+      const range = new monaco.Range(
+        position.lineNumber,
+        startPos + 1, // Convert to 1-based
+        position.lineNumber,
+        position.column // Current cursor position (1-based)
+      );
+
+      editor.executeEdits('suggestion', [{
+        range: range,
+        text: suggestionText
+      }]);
+
+      // Position cursor after the inserted text
+      const newPosition = {
+        lineNumber: position.lineNumber,
+        column: startPos + 1 + suggestionText.length
       };
       editor.setPosition(newPosition);
     }
