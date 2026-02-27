@@ -47,7 +47,7 @@ const stlFunctions = [
   'shift_left', 'shift_right'
 ];
 
-export default async function handler(req, res) {
+export default function handler(req, res) {
   const { method } = req;
   
   if (method !== 'POST') {
@@ -98,9 +98,6 @@ export default async function handler(req, res) {
         text: item  // Adding text property for the frontend to use
       }));
 
-      // Simulate small delay for more realistic feel
-      await new Promise(resolve => setTimeout(resolve, 10));
-      
       return res.status(200).json(formattedSuggestions);
     } 
     else if (endpoint === 'getStats') {
