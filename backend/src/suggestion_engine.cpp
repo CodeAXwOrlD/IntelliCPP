@@ -112,6 +112,10 @@ std::vector<Suggestion> SuggestionEngine::getSuggestions(
   // If we have a specific context type with methods defined, return those
   // directly
   if (!actualType.empty() && typeToMethods.count(actualType)) {
+    if (!includedLibraries.count(actualType)) {
+      return {}; // ❌ Required header not included - return empty
+    }
+    
     const auto &methods = typeToMethods.at(actualType);
     std::vector<Suggestion> suggestions;
 
