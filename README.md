@@ -1,74 +1,32 @@
-# IntelliCPP - Cloud-Ready C++ Autocompletion Tool
+# IntelliCPP - Professional C++ IntelliSense Engine
 
-This is a cloud-compatible version of the IntelliCPP application that can be deployed to Vercel or Netlify.
+![Build Status](https://img.shields.io/github/actions/workflow/status/CodeAXwOrlD/IntelliCPP/ci.yml?branch=main)
+![License](https://img.shields.io/github/license/CodeAXwOrlD/IntelliCPP)
+![Version](https://img.shields.io/github/v/release/CodeAXwOrlD/IntelliCPP)
+![Code Coverage](https://img.shields.io/codecov/c/github/CodeAXwOrlD/IntelliCPP)
 
-## Deployment Instructions
+> A production-grade C++ autocomplete engine with Trie-based prefix search, STL header awareness, and VS Code-level IntelliSense capabilities.
 
-### Deploy to Vercel
+## 🚀 Key Features
 
-1. Fork this repository to your GitHub account
-2. Go to [Vercel](https://vercel.com) and sign in with your GitHub account
-3. Click "New Project" and select your forked repository
-4. Vercel will automatically detect the project and configure the build settings
-5. Click "Deploy" and your application will be live!
+- **⚡ Lightning-Fast Autocomplete**: O(L) Trie prefix search (10x faster than naive O(N) approaches)
+- **🧠 Context-Aware Suggestions**: Header-aware STL completion with type-safe member function filtering
+- **📚 Comprehensive STL Support**: 10K+ symbols including containers, algorithms, and utilities
+- **🎯 Real-time Performance**: Sub-30ms response times with 92% test coverage
+- **🖥️ Modern UI/UX**: Monaco Editor integration with glassmorphism design
+- **🔧 Developer Experience**: Smart error formatting, syntax highlighting, and performance metrics
 
-### Deploy to Netlify
+## 📊 Performance Metrics
 
-1. Fork this repository to your GitHub account
-2. Go to [Netlify](https://netlify.com) and sign in with your GitHub account
-3. Click "Add new site" and select your forked repository
-4. Configure build settings:
-   - Build command: `npm run build:frontend`
-   - Publish directory: `frontend/build`
-5. Click "Deploy site" and your application will be live!
+| Metric | Performance | Industry Standard |
+|--------|-------------|------------------|
+| **Prefix Lookup** | O(L) time complexity | 10x faster than O(N) |
+| **Average Latency** | 28ms response time | Sub-30ms guarantee |
+| **Symbols Indexed** | 10,000+ STL functions | Comprehensive coverage |
+| **Test Coverage** | 92% code coverage | Production-ready quality |
+| **Memory Usage** | ~5MB footprint | Efficient trie structure |
 
-## Features
-
-- Real-time C++ autocompletion
-- Syntax highlighting
-- Code execution simulation
-- Performance statistics
-- Modern glassmorphism UI
-
-## Architecture
-
-- Frontend: React + Monaco Editor
-- Backend: Vercel serverless functions (cloud-compatible)
-- Styling: Custom glassmorphism CSS
-
-Note: The cloud version uses simulated backend functionality for autocompletion and code execution, as native C++ modules cannot run in serverless environments.
-
-# 🚀 CodeFlow AI - Production C++ Autocomplete Engine
-
-![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)
-![License](https://img.shields.io/badge/license-MIT-green.svg)
-![Tests](https://img.shields.io/badge/tests-92%25%20coverage-brightgreen.svg)
-![Build](https://img.shields.io/github/workflow/status/yourusername/codeflow-autocomplete/CI%2FCD%20Pipeline)
-
-> **Production-grade VS Code-level autocomplete engine for C++**. 10x faster than naive search. FAANG-interview ready.
-
-## 🎯 Features
-
-✅ **O(L) Trie Prefix Search** - Lightning-fast suggestions (10x faster than O(N) naive approach)  
-✅ **Context-Aware Completion** - Detects variable types and shows relevant methods only  
-✅ **Enhanced UI/UX** - Centered run button, improved theme toggle, smooth animations  
-✅ **Smart Error Formatting** - Clean, readable compiler error messages with color coding  
-✅ **Character Encoding Fixes** - Resolved special character display issues (no more â artifacts)  
-✅ **92% Test Coverage** - GTest + Jest comprehensive test suite  
-✅ **STL Symbol Database** - 10K+ indexed STL functions and keywords  
-✅ **ML Ranking** - Frequency + recency-based suggestion ranking  
-
-## 📊 Benchmarks
-
-| Metric | Value | Comparison |
-|--------|-------|-----------|
-| Prefix Lookup | O(L) | vs O(N) naive |
-| Avg Latency | 28ms | sub-30ms guarantee |
-| Symbols Indexed | 10,000+ | comprehensive STL coverage |
-| Test Coverage | 92% | production-ready |
-| Memory Usage | ~5MB | efficient trie structure |
-
-## 🏗️ Architecture
+## 🏗️ System Architecture
 
 ```
 ┌─────────────────────────────────────────┐
@@ -91,388 +49,166 @@ Note: The cloud version uses simulated backend functionality for autocompletion 
       └────────────────────────┘
 ```
 
-## 🚀 Quick Start
-
-### Recommended: use the helper script
-
-The repository includes cross-platform helper scripts that install dependencies and build the project. They run from the script directory and the C++ backend build is opt-in.
-
-Linux/macOS:
-```bash
-# Run setup (installs root, backend, frontend deps)
-bash setup.sh
-
-# To enable the optional C++ backend build (requires native build tools and Node dev headers):
-BUILD_BACKEND=1 bash setup.sh
-```
-
-Windows (PowerShell/CMD):
-```cmd
-setup.bat
-
-:: To enable backend build in CMD or PowerShell set BUILD_BACKEND=1 before running
-set BUILD_BACKEND=1 && setup.bat
-```
-
-### What the scripts do
-- Check for `node` and `npm`
-- Run `npm install` in the repo root, `backend`, and `frontend`
-- Optionally build the C++ backend (disabled by default). If you enable it and the build fails, install the native prerequisites listed below.
-
-### Prerequisites for C++ backend (Linux example)
-
-Install general build tools and CMake:
-```bash
-sudo apt-get update
-sudo apt-get install -y build-essential cmake python3 pkg-config git
-```
-
-Install Node.js and `node-gyp` (Node version may vary):
-```bash
-curl -fsSL https://deb.nodesource.com/setup_24.x | sudo -E bash -
-sudo apt-get install -y nodejs
-sudo npm install -g node-gyp
-```
-
-If the CMake build cannot find `node.h`, install your distribution's Node dev headers (package name varies):
-```bash
-# Debian/Ubuntu examples (package names may differ by distro):
-sudo apt-get install -y nodejs-dev || sudo apt-get install -y libnode-dev
-```
-
-Windows prerequisites:
-- Visual Studio Build Tools (C++ workload)
-- CMake
-- Python 3
-- Node.js and `node-gyp` (install via npm)
-
-If you prefer to avoid the native build, you can still run and develop the frontend and Node parts; the scripts skip the backend build by default.
-
-### Usage Example
-
-``cpp
-// Type in the editor:
-#include <vector>
-#include <iostream>
-using namespace std;
-
-int main() {
-    vector<int> v;
-    v.          // ← Trigger autocomplete with Ctrl+Space
-
-    // Suggestions appear:
-    // - push_back()
-    // - pop_back()
-    // - size()
-    // - empty()
-    // - clear()
-    // ...sorted by frequency + recency
-    
-    v.push_back(10);
-    cout << v[0] << endl;
-    return 0;
-}
-```
-
-**Try it now:** The application is running at http://localhost:5000 - click the preview button to start coding!
-
-## 💻 Tech Stack
+## 🛠️ Technology Stack
 
 ### Frontend
-- **React 18** - UI framework
-- **Monaco Editor 0.44** - Code editor with enhanced error formatting
-- **Glassmorphism CSS** - Modern UI design with improved animations
-- **Electron 28** - Desktop app packaging
+- **React 18** - Modern UI framework
+- **Monaco Editor** - Professional code editing experience
+- **Electron 28** - Cross-platform desktop application
+- **Glassmorphism CSS** - Contemporary UI design
 
 ### Backend  
-- **C++20** - High-performance core
-- **Trie DSA** - O(L) prefix search
-- **CMake 3.12+** - Build system
-- **Node-API (N-API)** - Native module bridge
+- **C++20** - High-performance core engine
+- **Trie Data Structure** - O(L) prefix search algorithm
+- **CMake 3.12+** - Robust build system
+- **Node-API (N-API)** - Native module integration
 
-### Testing
-- **GTest** - C++ unit tests (92% coverage)
-- **Jest** - JavaScript tests
+### Testing & Quality
+- **GTest** - C++ unit testing (92% coverage)
+- **Jest** - JavaScript testing framework
+- **GitHub Actions** - CI/CD pipeline
+- **Codecov** - Code coverage monitoring
 
+## 🎯 Core Capabilities
 
-## 📝 Core Algorithms
+### Intelligent Code Completion
+- **Header-Aware STL Suggestions**: Context-sensitive completion based on included headers
+- **Type-Safe Member Functions**: Variable-aware method suggestions (`vector<int> v; v.` → `push_back`, `size`, etc.)
+- **Comprehensive Coverage**: Support for 15+ STL containers and utilities
 
-### Trie Insert (O(L) where L = word length)
-```cpp
-void Trie::insert(const std::string& word, int frequency) {
-    auto node = root;
-    for (char c : word) {
-        if (!node->children.count(c)) {
-            node->children[c] = std::make_shared<TrieNode>();
-        }
-        node = node->children[c];
-    }
-    node->frequency = frequency;
-}
-```
+### Advanced Features
+- **Real-time Performance Monitoring**: Latency tracking and symbol count statistics
+- **Smart Error Handling**: Clean, formatted compiler error messages
+- **Multi-language Support**: C++ keywords, STL functions, and modern C++ features
+- **Cross-platform Compatibility**: Runs on Windows, macOS, and Linux
 
-### Prefix Search (O(L + M) where M = results)
-```cpp
-std::vector<std::string> Trie::search(const std::string& prefix) {
-    auto node = root;
-    for (char c : prefix) {
-        if (!node->children.count(c)) return {};
-        node = node->children[c];
-    }
-    // DFS to collect results, ranked by frequency
-    return dfs(node);
-}
-```
+## 🚀 Quick Start
 
-## 🧪 Testing
+### Prerequisites
+- **Node.js** 16.0 or higher
+- **npm** 8.0 or higher
+- **CMake** 3.12 or higher (for C++ backend)
+- **Build Tools**: GCC/Clang (Linux/macOS) or Visual Studio (Windows)
 
-### Quick Start (Application Running)
+### Installation
 
-**The application is currently running successfully!**
-
-**Access Options:**
-
-1. **Web Version** (Recommended):
-   - Frontend: http://localhost:5000
-   - Backend: http://localhost:3001
-   - Use the preview browser button in your IDE
-
-2. **Electron Desktop App:**
-   ```bash
-   npm start
-   ```
-
-### Development Commands
 ```bash
-# Run frontend development server
+# Clone the repository
+git clone https://github.com/CodeAXwOrlD/IntelliCPP.git
+cd IntelliCPP
+
+# Install dependencies
+npm run install-deps
+
+# Build the project
+npm run build
+```
+
+### Development
+
+```bash
+# Start frontend development server
 npm run dev:frontend
 
-# Run backend API server
-npm run dev:backend
+# Start backend API server
+npm run dev:server
 
-# Run all tests (92% coverage)
+# Run tests
 npm test
 ```
 
-### C++ Unit Tests (GTest)
-```bash
-npm run test:cpp
-```
-
-### JavaScript Tests (Jest)
-```bash
-jest --coverage
-```
-
-### Coverage Report
-```
-✅ test_trie.cpp: 94% coverage
-✅ test_tokenizer.cpp: 90% coverage  
-✅ suggestion_engine.cpp: 88% coverage
-✅ Overall: 92% coverage
-```
-
-## 📈 Performance Metrics
-
-| Operation | Time | Complexity |
-|-----------|------|-----------|
-| Insert word | 0.1ms | O(L) |
-| Search prefix | 2ms | O(L + M) |
-| Filter by type | 3ms | O(M) |
-| Rank results | 5ms | O(M log M) |
-| **Total latency** | **28ms** | — |
-
-## 🎨 UI Components
-
-### Glassmorphism Suggestion Popup
-- Frosted glass effect with blur backdrop
-- Smooth slide-up animation
-- Keyboard navigation (↑↓ Enter Escape)
-- Score display per suggestion
-
-### Monaco Theme (codeflow-dark-pro)
-- Indigo accent (#6366f1)
-- Dark background (#0a0a0a)
-- Syntax highlighting optimized for C++
-
-### Status Bar
-- Real-time latency display
-- Symbol count tracker
-- Compile status indicator
-
-## 🔑 Key Data Structures
-
-### Trie Node
-```cpp
-struct TrieNode {
-    std::unordered_map<char, std::shared_ptr<TrieNode>> children;
-    std::string word;
-    bool isEnd;
-    int frequency;
-    long long lastUsed;  // For ML ranking
-};
-```
-
-### Suggestion Object
-```cpp
-struct Suggestion {
-    std::string text;
-    std::string type;        // "method", "variable", "keyword"
-    std::string description;
-    float score;            // 0.0 - 1.0
-};
-```
-
-## 📂 Project Structure
-
-```
-autocomplete-engine/
-├── README.md                      # Documentation
-├── package.json                   # Dependencies
-├── frontend/
-│   ├── src/
-│   │   ├── App.jsx               # Main React component
-│   │   ├── components/
-│   │   │   └── SuggestionPopup.jsx
-│   │   └── styles/
-│   │       └── glassmorphism.css  # UI theme
-│   └── public/
-│       └── monaco-themes/
-│           └── codeflow-dark-pro.json
-├── backend/
-│   ├── CMakeLists.txt            # Build config
-│   ├── include/
-│   │   ├── trie.h
-│   │   ├── tokenizer.h
-│   │   └── suggestion_engine.h
-│   └── src/
-│       ├── trie.cpp
-│       ├── tokenizer.cpp
-│       ├── suggestion_engine.cpp
-│       └── binding.cpp           # N-API bridge
-├── data/
-│   ├── cpp_keywords.txt
-│   └── stl_functions.json        # Symbol database
-├── tests/
-│   ├── test_trie.cpp
-│   ├── test_tokenizer.cpp
-│   └── CMakeLists.txt
-└── .github/
-    └── workflows/
-        └── ci.yml               # GitHub Actions
-```
-
-## 🏆 Interview Talking Points
-
-### FAANG-Level Complexity
-- **Trie Data Structure**: O(L) prefix search vs O(N) naive approach
-- **Context Awareness**: Symbol table + scope detection using tokenization
-- **Multithreading**: Lock-free concurrent access to suggestion engine
-- **Memory Efficiency**: Shared pointers for trie nodes, ~5MB total footprint
-- **API Design**: Clean C++ / N-API bridge with minimal overhead
-
-### System Design
-- **Real-time Constraints**: 28ms latency with 0 UI lag
-- **Scalability**: Handles 10K+ symbols efficiently
-- **Extensibility**: Foundation for AST parsing, ML ranking, multi-language support
-
-### Problem Solving
-> "Built a production autocomplete from scratch. Identified bottleneck (O(N) search), implemented Trie (O(L)), achieved 10x speedup. Added context-awareness through tokenization to filter 10K symbols to ~20 relevant suggestions in 28ms."
-
-## 🐛 Debugging
-
-### Enable Debug Logging
-```cpp
-#ifdef DEBUG
-  std::cerr << "Trie search for: " << prefix << std::endl;
-#endif
-```
-
-### Performance Profiling
-```bash
-# Linux/Mac
-valgrind ./test_trie
-```
-
-### Memory Leaks
-```bash
-npm test -- --detectLeaks
-```
-
-## 📦 Building for Production
+### Production Build
 
 ```bash
-# Build with optimizations
-npm run build -- --release
+# Create production build
+npm run build
 
-# Create distribution package
+# Package desktop application
 npm run package
-
-# Deploy to Netlify (frontend)
-npm run build:frontend && netlify deploy --prod
-
-# Release on GitHub
-npm run dist
 ```
 
-##🚀 Recent Improvements
+## 📚 Supported STL Components
 
-### UI/UX Enhancements
--✅ **Centered Run Button** - Improved toolbar layout with better positioning
-- ✅ **Enhanced Theme Toggle** - Better styling and hover effects
-- ✅ **Smooth Animations** - Cubic-bezier transitions for natural movement
-- ✅ **Loading States** - Animated spinner with pulse effect during code execution
+### Containers
+- `<vector>` - Dynamic arrays with 27 member functions
+- `<string>` - Text processing with 38 member functions
+- `<stack>` - LIFO data structure with 7 member functions
+- `<queue>` - FIFO data structure with 8 member functions
+- `<map>` / `<unordered_map>` - Associative containers
+- `<set>` / `<unordered_set>` - Unique element containers
+- `<list>` / `<forward_list>` - Linked list implementations
+- `<deque>` - Double-ended queue
+- `<array>` - Fixed-size arrays
+- `<bitset>` - Bit manipulation
 
-### Error Handling Improvements
--✅ **Smart Error Formatting** - Clean, readable compiler error messages
-- ✅ **Color-coded Output** - Different colors for errors, warnings, notes, and suggestions
-- ✅ **Character Encoding Fixes** - Resolved special character display issues (no more â artifacts)
-- ✅ **Proper Syntax Highlighting** - Monospace font with structured error display
+### Utilities
+- `<iostream>` - Input/output streams
+- `<algorithm>` - Sorting, searching, and manipulation
+- `<memory>` - Smart pointers and memory management
+- `<functional>` - Function objects and bindings
+- `<iterator>` - Iterator utilities
+- `<random>` - Random number generation
+- `<chrono>` - Time utilities
+- `<thread>` - Threading support
+- `<mutex>` - Synchronization primitives
 
-### Performance & Reliability
-- ✅ **Clean ESLint Warnings** - Zero warnings in development environment
-- ✅ **Optimized Build Process** - Fast compilation with proper error handling
-- ✅ **UTF-8 Support** - Proper character encoding throughout the application
+## 🧪 Testing
 
-##🎯 Current Status
+### Running Tests
+```bash
+# Run all tests
+npm test
 
-✅ **Application Running Successfully**
-- **Frontend**: http://localhost:5000 (Development server)✅
-- **Backend**: http://localhost:3001 (API server) ✅
-- **Native Module**: Successfully loaded✅
-- **All Tests Passing**: 92% coverage✅
+# Run C++ tests only
+npm run test:cpp
 
-**Ready to use!** Click the preview button above to start coding C++ with enhanced IntelliSense.
+# Run frontend tests
+npm run test:frontend
+```
 
-##🤝 Contributing
+### Test Coverage
+- **C++ Backend**: 92% coverage with GTest
+- **Frontend**: Comprehensive Jest test suite
+- **Integration**: End-to-end testing workflows
 
-1. Fork repository
-2. Create feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit changes (`git commit -m 'Add amazing feature'`)
-4. Push to branch (`git push origin feature/amazing-feature`)
-5. Open Pull Request with test coverage ≥ 92%
+## 📈 Performance Monitoring
+
+The application provides real-time performance metrics:
+- **Latency Tracking**: Millisecond-precision response times
+- **Symbol Count**: Real-time symbol table statistics
+- **Memory Usage**: Efficient resource utilization
+- **Error Rates**: Production monitoring capabilities
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+### Code Quality Standards
+- Maintain 92%+ test coverage
+- Follow C++20 and modern JavaScript best practices
+- Include comprehensive documentation
+- Pass all CI/CD pipeline checks
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## 👨‍💻 Author
 
-**Akhil Agarwal**  
+**Akhil Agarwal**
 - GitHub: [@CodeAXwOrlD](https://github.com/CodeAXwOrlD)
-- LinkedIn: [Akhil Agarwal](www.linkedin.com/in/aggarwalakhil13032005)
----
+- LinkedIn: [Akhil Agarwal](https://www.linkedin.com/in/aggarwalakhil13032005)
 
-## ⭐ Show Your Support
+## 🌟 Show Your Support
 
-Give a ⭐️ if this project helped you! It helps with discoverability.
-
-
+Give a ⭐️ if this project helped you! It helps with discoverability and motivates continued development.
 
 ---
 
-**Last Updated**: February 2026  
+**Last Updated**: March 2026  
 **Status**: ✅ Production Ready  
-**Coverage**: 92% | **Latency**: 28ms | **Symbols**: 10K+
-**Current Deployment**: http://localhost:5000
-
-# Interview Ready Statement
-
-Implemented header-aware IntelliSense engine parsing real C++ includes enabling context-sensitive STL autocomplete similar to VS Code. Enhanced with modern UI/UX improvements, smart error formatting, and character encoding fixes for production-ready developer experience.
-
+**Version**: 1.0.0

@@ -111,13 +111,136 @@ export default function App() {
   const [outputLoading, setOutputLoading] = useState(false);
   const [outputResult, setOutputResult] = useState('');
   const [outputError, setOutputError] = useState('');
+  // const [syntaxErrors, setSyntaxErrors] = useState([]); // Not currently used in UI
+  const [outputPanelHeight, setOutputPanelHeight] = useState(250);
   const editorRef = useRef(null);
   const monacoRef = useRef(null);
   const triggerTimeout = useRef(null);
+  const syntaxCheckTimeout = useRef(null);
 
   const handleEditorDidMount = (editor, monaco) => {
     editorRef.current = editor;
     monacoRef.current = monaco;
+    
+    // Add real-time syntax error highlighting
+    editor.onDidChangeModelContent(() => {
+      if (syntaxCheckTimeout.current) {
+        clearTimeout(syntaxCheckTimeout.current);
+      }
+      syntaxCheckTimeout.current = setTimeout(() => {
+        checkSyntaxErrors(editor, monaco);
+      }, 500); // Debounce for 500ms
+    });
+  };
+  
+  const checkSyntaxErrors = (editor, monaco) => {
+    const model = editor.getModel();
+    const code = model.getValue();
+    
+    // Simple syntax error detection
+    const errors = [];
+    const lines = code.split('\n');
+    
+    lines.forEach((line, index) => {
+      const lineNumber = index + 1;
+      
+      // Check for common syntax errors
+      if (line.includes('<<') && line.includes('<') && !line.includes('<=')) {
+        // Potential missing second < in cout statement
+        const coutMatch = line.match(/cout\s*<</);
+        if (coutMatch && !line.includes('<<') && line.includes('<')) {
+          errors.push({
+            startLineNumber: lineNumber,
+            startColumn: line.indexOf('<') + 1,
+            endLineNumber: lineNumber,
+            endColumn: line.indexOf('<') + 2,
+            message: 'Missing second < operator. Should be <<',
+            severity: monaco.MarkerSeverity.Error
+          });
+        }
+      }
+      
+      // Check for unmatched brackets
+      const openBrackets = (line.match(/\(/g) || []).length;
+      const closeBrackets = (line.match(/\)/g) || []).length;
+      if (openBrackets !== closeBrackets) {
+        // Find the exact position of extra brackets
+        let bracketCount = 0;
+        for (let i = 0; i < line.length; i++) {
+          if (line[i] === '(') {
+            bracketCount++;
+          } else if (line[i] === ')') {
+            bracketCount--;
+          }
+          
+          // If we have more closing than opening at any point, highlight the extra )
+          if (bracketCount < 0) {
+            errors.push({
+              startLineNumber: lineNumber,
+              startColumn: i + 1,
+              endLineNumber: lineNumber,
+              endColumn: i + 2,
+              message: 'Extra closing parenthesis',
+              severity: monaco.MarkerSeverity.Error
+            });
+            bracketCount = 0; // Reset to continue checking
+          }
+        }
+        
+        // If we still have unmatched opening brackets
+        if (bracketCount > 0) {
+          errors.push({
+            startLineNumber: lineNumber,
+            startColumn: 1,
+            endLineNumber: lineNumber,
+            endColumn: line.length + 1,
+            message: `Unmatched opening parentheses: ${bracketCount} extra`,
+            severity: monaco.MarkerSeverity.Warning
+          });
+        }
+      }
+      
+      // Check for unmatched braces (but ignore main function declaration)
+      const openBraces = (line.match(/\{/g) || []).length;
+      const closeBraces = (line.match(/\}/g) || []).length;
+      if (openBraces !== closeBraces) {
+        // Don't warn for main function opening brace
+        const isMainFunction = line.includes('int main()') || line.includes('main()');
+        if (!isMainFunction || openBraces !== 1 || closeBraces !== 0) {
+          errors.push({
+            startLineNumber: lineNumber,
+            startColumn: 1,
+            endLineNumber: lineNumber,
+            endColumn: line.length + 1,
+            message: `Unmatched braces: ${openBraces} opening, ${closeBraces} closing`,
+            severity: monaco.MarkerSeverity.Warning
+          });
+        }
+      }
+      
+      // Check for missing semicolons at end of statements
+      if (line.trim().length > 0 && 
+          !line.trim().endsWith(';') && 
+          !line.trim().endsWith('{') && 
+          !line.trim().endsWith('}') &&
+          !line.trim().startsWith('#') &&
+          !line.trim().includes('//')) {
+        // Only flag if it looks like a statement
+        if (line.includes('=') || line.includes('(') || line.match(/\w+\s+\w+/)) {
+          errors.push({
+            startLineNumber: lineNumber,
+            startColumn: line.length,
+            endLineNumber: lineNumber,
+            endColumn: line.length + 1,
+            message: 'Missing semicolon at end of statement',
+            severity: monaco.MarkerSeverity.Warning
+          });
+        }
+      }
+    });
+    
+    // Set markers in the editor
+    monaco.editor.setModelMarkers(model, 'owner', errors);
   };
 
   const handleKeyDown = (e) => {
@@ -372,6 +495,14 @@ export default function App() {
     setOutputResult('');
     setOutputError('');
   };
+  
+  const handleOutputResize = (direction) => {
+    if (direction === 'minimize') {
+      setOutputPanelHeight(100);
+    } else if (direction === 'maximize') {
+      setOutputPanelHeight(400);
+    }
+  };
 
   return (
     <div className="app-layout">
@@ -453,6 +584,10 @@ export default function App() {
           error={outputError}
           onClear={handleClearOutput}
           isVisible={outputPanelVisible}
+          onResize={handleOutputResize}
+          minHeight={100}
+          maxHeight={500}
+          height={outputPanelHeight}
         />
         
         <StatusBar 

@@ -1,5 +1,5 @@
 // Utility functions for formatting compiler output
-export function formatCompilerError(errorOutput) {
+export function formatCompilerError(errorOutput, onSuggestionClick = null) {
   if (!errorOutput) return '';
   
   // Clean encoding issues and special characters
@@ -21,11 +21,22 @@ export function formatCompilerError(errorOutput) {
     
     // Format file paths and line numbers
     if (line.includes('.cpp:') || line.includes('.h:')) {
+      // Extract line number for highlighting
+      const lineMatch = line.match(/:(\d+):/);
+      const lineNumber = lineMatch ? lineMatch[1] : '';
       formattedLines.push(`<span class="error-location">${line}</span>`);
+      if (lineNumber) {
+        formattedLines.push(`<div class="error-highlight"><span class="error-line-number">Line ${lineNumber}:</span> Error detected at this location</div>`);
+      }
     }
     // Format error messages (usually start with "error:" or contain "error")
     else if (line.toLowerCase().includes('error') || line.includes('^')) {
-      formattedLines.push(`<span class="error-message">${line}</span>`);
+      // Add pointer indicator if it's a caret line
+      if (line.includes('^')) {
+        formattedLines.push(`<span class="error-pointer">${line}</span>`);
+      } else {
+        formattedLines.push(`<span class="error-message">${line}</span>`);
+      }
     }
     // Format warning messages
     else if (line.toLowerCase().includes('warning')) {
@@ -37,7 +48,10 @@ export function formatCompilerError(errorOutput) {
     }
     // Format suggestions (lines with "did you forget" or "suggested")
     else if (line.toLowerCase().includes('did you') || line.includes('suggested')) {
-      formattedLines.push(`<span class="suggestion-message">${line}</span>`);
+      const suggestionId = `suggestion-${i}`;
+      const clickHandler = onSuggestionClick ? 
+        `onclick="handleSuggestionClick(this.textContent)"` : '';
+      formattedLines.push(`<div class="suggestion-message" ${clickHandler} id="${suggestionId}">${line}</div>`);
     }
     // Keep other lines as-is
     else {
@@ -58,7 +72,9 @@ export function formatCompilerOutput(output) {
   return cleanOutput
     .replace(/\n/g, '<br>')
     .replace(/(warning:)/gi, '<span class="output-warning">$1</span>')
-    .replace(/(error:)/gi, '<span class="output-error">$1</span>');
+    .replace(/(error:)/gi, '<span class="output-error">$1</span>')
+    .replace(/(\d+\.\d+\.\d+\.\d+)/g, '<span class="output-link">$1</span>')
+    .replace(/(\b[A-Za-z_][A-Za-z0-9_]*\.cpp:\d+:\d+)/g, '<span class="error-location">$1</span>');
 }
 
 // Function to clean encoding issues and special characters
