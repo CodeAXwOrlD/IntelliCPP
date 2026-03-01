@@ -24,6 +24,31 @@ app.use((req, res, next) => {
   next();
 });
 
+// Try to load the native backend module
+let suggestionEngine = null;
+try {
+  // Use absolute path to find the native module
+  const nativePath = path.join(process.cwd(), '../dist/codeflow_native.node');
+  console.log('[Cloud Server] Looking for native module at:', nativePath);
+  
+  if (fs.existsSync(nativePath)) {
+    const native = require(nativePath);
+    suggestionEngine = new native.SuggestionEngine();
+    
+    // Load C++ keywords and STL database
+    const keywordsPath = path.join(process.cwd(), '../data/cpp_keywords.txt');
+    const stlPath = path.join(process.cwd(), '../data/stl_functions.json');
+    if (fs.existsSync(keywordsPath)) suggestionEngine.loadKeywords(keywordsPath);
+    if (fs.existsSync(stlPath)) suggestionEngine.loadSTLData(stlPath);
+    
+    console.log('[Cloud Server] Native backend module loaded successfully');
+  } else {
+    console.warn('[Cloud Server] Native backend module not found, using mock data');
+  }
+} catch (e) {
+  console.error('[Cloud Server] Failed to load native module:', e.message);
+}
+
 // Mock C++ keywords and STL functions (in a real implementation, you'd load these from files)
 const cppKeywords = [
   'auto', 'break', 'case', 'char', 'const', 'continue', 'default', 'do',
@@ -78,13 +103,47 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', backend: 'online', cloudCompatible: true });
 });
 
-// Get suggestions endpoint - mock implementation
+// Get suggestions endpoint
 app.post('/api/getSuggestions', (req, res) => {
   try {
     const { prefix = '', contextType = 'global', code = '', cursorPosition = 0 } = req.body;
     console.log('[Cloud Server] POST /api/getSuggestions', { prefix, contextType, cursorPosition });
 
-    // Filter keywords and STL functions based on the prefix
+    // Use real backend if available, otherwise fallback to mock
+    if (suggestionEngine) {
+      try {
+        // Update symbols and included libraries
+        suggestionEngine.updateSymbols(code);
+        
+        // Get real suggestions from C++ backend
+        const realSuggestions = suggestionEngine.getSuggestions(
+          prefix, 
+          contextType, 
+          code, 
+          cursorPosition,
+          10  // Maximum 10 suggestions
+        );
+        
+        // Format suggestions for frontend
+        const formattedSuggestions = realSuggestions.map(item => ({
+          label: item.text,
+          kind: item.type === 'method' ? 'Method' : 
+                item.type === 'keyword' ? 'Keyword' : 'Unknown',
+          detail: `C++ ${item.type}`,
+          insertText: item.text,
+          text: item.text,
+          score: item.score
+        }));
+        
+        console.log('[Cloud Server] Returning', formattedSuggestions.length, 'real suggestions');
+        return res.json(formattedSuggestions);
+      } catch (err) {
+        console.error('[Cloud Server] Error getting suggestions from backend:', err.message);
+        // Fallback to mock data
+      }
+    }
+    
+    // Fallback to mock data
     let suggestions = [];
     
     if (prefix) {
@@ -104,7 +163,7 @@ app.post('/api/getSuggestions', (req, res) => {
       insertText: item
     }));
 
-    console.log('[Cloud Server] Returning', formattedSuggestions.length, 'suggestions');
+    console.log('[Cloud Server] Returning', formattedSuggestions.length, 'mock suggestions');
     
     res.json(formattedSuggestions);
   } catch (err) {
