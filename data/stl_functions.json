@@ -77,5 +77,56 @@
     "at", "operator[]", "front", "back", "data", "begin", "end",
     "rbegin", "rend", "cbegin", "cend", "crbegin", "crend",
     "empty", "size", "max_size", "fill", "swap", "get_allocator"
+  ],
+  "iostream": [
+    "cout", "cin", "cerr", "clog", "endl", "flush", "ws"
+  ],
+  "fstream": [
+    "ifstream", "ofstream", "fstream", "open", "close", "is_open", "read", "write"
+  ],
+  "sstream": [
+    "stringstream", "istringstream", "ostringstream", "str"
+  ],
+  "iomanip": [
+    "setw", "setfill", "setprecision", "fixed", "scientific", "hex", "oct", "dec"
+  ],
+  "algorithm": [
+    "sort", "reverse", "find", "find_if", "count", "count_if", "min", "max",
+    "min_element", "max_element", "accumulate", "transform", "copy", "fill",
+    "generate", "remove", "unique", "merge", "binary_search", "lower_bound", "upper_bound"
+  ],
+  "memory": [
+    "shared_ptr", "unique_ptr", "weak_ptr", "make_shared", "make_unique",
+    "allocate_shared", "get_deleter", "owner_before"
+  ],
+  "utility": [
+    "pair", "make_pair", "tuple", "make_tuple", "get", "tie", "forward", "move", "swap"
+  ],
+  "functional": [
+    "function", "bind", "mem_fn", "reference_wrapper", "ref", "cref"
+  ],
+  "iterator": [
+    "begin", "end", "cbegin", "cend", "rbegin", "rend", "crbegin", "crend",
+    "advance", "next", "prev", "distance", "iter_swap"
+  ],
+  "numeric": [
+    "accumulate", "inner_product", "partial_sum", "adjacent_difference", "iota"
+  ],
+  "random": [
+    "random_device", "mt19937", "uniform_int_distribution", "uniform_real_distribution",
+    "normal_distribution", "bernoulli_distribution"
+  ],
+  "chrono": [
+    "duration", "time_point", "system_clock", "steady_clock", "high_resolution_clock",
+    "seconds", "milliseconds", "microseconds", "nanoseconds"
+  ],
+  "thread": [
+    "thread", "join", "detach", "get_id", "sleep_for", "sleep_until"
+  ],
+  "mutex": [
+    "mutex", "lock_guard", "unique_lock", "try_lock", "lock", "unlock"
+  ],
+  "future": [
+    "future", "promise", "async", "get", "wait", "wait_for", "wait_until"
   ]
 }

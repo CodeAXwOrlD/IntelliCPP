@@ -132,6 +132,57 @@ std::vector<Suggestion> SuggestionEngine::getSuggestions(
     return suggestions;
   }
 
+  // ✅ Special handling for global context: return STL container class names
+  // when appropriate headers are included
+  if (contextType == "global" && !prefix.empty()) {
+    std::vector<Suggestion> suggestions;
+    
+    // Check which STL containers have their headers included
+    std::vector<std::string> stlContainers = {
+      "vector", "string", "stack", "queue", "deque", "map", "unordered_map",
+      "set", "unordered_set", "list", "forward_list", "priority_queue", 
+      "bitset", "array", "pair", "tuple"
+    };
+    
+    for (const auto &container : stlContainers) {
+      // Check if the container's header is included
+      if (includedLibraries.count(container) && 
+          (prefix.empty() || container.find(prefix) == 0)) {
+        suggestions.push_back({container, "class", "", 0.0f});
+      }
+    }
+    
+    // Also suggest common functions from included headers
+    for (const auto &lib : includedLibraries) {
+      if (typeToMethods.count(lib)) {
+        const auto &functions = typeToMethods.at(lib);
+        for (const auto &func : functions) {
+          if (prefix.empty() || func.find(prefix) == 0) {
+            // Avoid duplicates
+            bool found = false;
+            for (const auto &s : suggestions) {
+              if (s.text == func) {
+                found = true;
+                break;
+              }
+            }
+            if (!found) {
+              suggestions.push_back({func, "function", "", 0.0f});
+            }
+          }
+        }
+      }
+    }
+    
+    if (!suggestions.empty()) {
+      rankSuggestions(suggestions);
+      if (suggestions.size() > (size_t)maxResults) {
+        suggestions.resize(maxResults);
+      }
+      return suggestions;
+    }
+  }
+
   // Fallback: Get raw trie results (for keywords and non-typed suggestions)
   auto raw = trie.search(prefix, maxResults * 2);
 
