@@ -44,8 +44,8 @@ const callBackendAPI = async (method, ...args) => {
     }
   }
 
-  // For Vercel deployment, use the API routes directly
-  const apiUrl = `/api/${method}`;
+  // Call backend API directly
+  const apiUrl = `http://localhost:3001/api/${method}`;
 
   try {
     let requestBody = {};

@@ -20,15 +20,14 @@
     "start": "electron .",
     "dev:frontend": "cd frontend && npm start",
     "dev:backend": "cd backend && node-gyp rebuild --debug",
-    "dev:cloud": "cd cloud-backend && npm install && npm start",
+    "dev:server": "cd backend && npm start",
     "test": "jest --coverage && npm run test:cpp",
     "test:cpp": "cd tests && cmake . && ctest --output-on-failure",
     "lint": "eslint frontend/src --fix",
     "format": "prettier --write \"frontend/src/**/*.{js,jsx,css}\"",
     "prepackage": "npm run build",
     "package": "electron-builder",
-    "dist": "npm run build && electron-builder --publish=always",
-    "vercel-build": "npm run build:frontend"
+    "dist": "npm run build && electron-builder --publish=always"
   },
   "keywords": [
     "autocomplete",
