@@ -181,17 +181,63 @@ The application provides real-time performance metrics:
 
 ## 🤝 Contributing
 
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
+We welcome contributions from the community! Whether you're fixing bugs, adding new features, improving documentation, or suggesting enhancements, your help is appreciated.
+
+### How to Contribute
+
+1. **Fork** the repository
+2. **Clone** your fork: `git clone https://github.com/YOUR_USERNAME/IntelliCPP.git`
+3. **Create** a feature branch: `git checkout -b feature/AmazingFeature`
+4. **Commit** your changes following [conventional commits](https://www.conventionalcommits.org/)
+5. **Push** to your fork: `git push origin feature/AmazingFeature`
+6. **Open** a Pull Request
+
+### Contribution Guidelines
+
+Please read our detailed [CONTRIBUTING.md](CONTRIBUTING.md) guide which covers:
+
+- 📋 Development setup and workflow
+- 🎯 Code style and quality standards
+- 🧪 Testing requirements and coverage
+- 📝 Commit message conventions
+- 🔄 Pull request process
+- 🐛 Issue reporting guidelines
+- 📚 Documentation standards
+- 🎨 UI/UX contribution guidelines
+
+### Good First Issues
+
+New to the project? Start with these beginner-friendly issues:
+
+[![Good First Issues](https://img.shields.io/github/issues/CodeAXwOrlD/IntelliCPP/good%20first%20issue?label=Good%20First%20Issues&color=green)](https://github.com/CodeAXwOrlD/IntelliCPP/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22)
+
+### Help Wanted
+
+Looking for ways to contribute? Check out our [help wanted](https://github.com/CodeAXwOrlD/IntelliCPP/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22) issues:
+
+[![Help Wanted](https://img.shields.io/github/issues/CodeAXwOrlD/IntelliCPP/help%20wanted?label=Help%20Wanted&color=orange)](https://github.com/CodeAXwOrlD/IntelliCPP/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22)
 
 ### Code Quality Standards
-- Maintain 92%+ test coverage
-- Follow C++20 and modern JavaScript best practices
-- Include comprehensive documentation
-- Pass all CI/CD pipeline checks
+
+- ✅ Maintain 92%+ test coverage
+- ✅ Follow C++20 and modern JavaScript best practices
+- ✅ Include comprehensive documentation
+- ✅ Pass all CI/CD pipeline checks
+- ✅ Adhere to performance benchmarks (< 28ms latency)
+
+### Community
+
+- 🗣️ **Discussions**: [GitHub Discussions](https://github.com/CodeAXwOrlD/IntelliCPP/discussions)
+- 🐛 **Issues**: [Report bugs or request features](https://github.com/CodeAXwOrlD/IntelliCPP/issues)
+- 💬 **Chat**: Join our community discussions
+
+### Recognition
+
+Contributors are recognized in:
+- README contributors section
+- GitHub contributors list
+- Release notes
+- Social media shoutouts
 
 ## 📄 License
 
@@ -202,6 +248,19 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 **Akhil Agarwal**
 - GitHub: [@CodeAXwOrlD](https://github.com/CodeAXwOrlD)
 - LinkedIn: [Akhil Agarwal](https://www.linkedin.com/in/aggarwalakhil13032005)
+
+## 🌟 Contributors
+
+Thanks to all the wonderful people who have contributed to IntelliCPP:
+
+<!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
+<!-- prettier-ignore-start -->
+<!-- markdownlint-disable -->
+<!-- markdownlint-restore -->
+<!-- prettier-ignore-end -->
+<!-- ALL-CONTRIBUTORS-LIST:END -->
+
+Want to contribute? Read our [Contributing Guide](CONTRIBUTING.md) and check out our [good first issues](https://github.com/CodeAXwOrlD/IntelliCPP/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22)!
 
 ## 🌟 Show Your Support
 

@@ -1,200 +1,336 @@
-# Contributing to CodeFlow Autocomplete
+# Contributing to IntelliCPP
 
-## Getting Started
+First off, thank you for considering contributing to IntelliCPP! It's people like you that make IntelliCPP such a great tool.
 
-1. Fork the repository
-2. Clone your fork: `git clone https://github.com/YOUR_USERNAME/codeflow-autocomplete.git`
-3. Create feature branch: `git checkout -b feature/amazing-feature`
-4. Install dependencies: `npm install && npm run build:backend`
+## 🎯 What We're Looking For
 
-## Development Workflow
+We welcome contributions of all kinds:
+- **Bug fixes** - Help improve stability and performance
+- **New features** - Enhance the IntelliSense capabilities
+- **Documentation** - Improve guides, examples, and API docs
+- **Performance improvements** - Optimize the trie and tokenizer
+- **Test coverage** - Add more comprehensive tests
+- **UI/UX enhancements** - Improve the Monaco Editor integration
 
-### Code Style
+## 🚀 Quick Start
 
-```bash
-# Format code
-npm run format
+1. **Fork** the repository
+2. **Clone** your fork:
+   ```bash
+   git clone https://github.com/YOUR_USERNAME/IntelliCPP.git
+   cd IntelliCPP
+   ```
+3. **Create a branch** for your feature:
+   ```bash
+   git checkout -b feature/your-awesome-feature
+   ```
+4. **Install dependencies**:
+   ```bash
+   npm run install-deps
+   ```
+5. **Build the project**:
+   ```bash
+   npm run build
+   ```
 
-# Lint code
-npm run lint
+## 📋 Development Workflow
 
-# Fix linting issues
-npm run lint:fix
+### 📁 Project Structure
+```
+IntelliCPP/
+├── backend/          # C++20 core engine
+│   ├── include/      # Public headers
+│   ├── src/          # Implementation files
+│   └── CMakeLists.txt
+├── frontend/         # React + Monaco Editor
+│   ├── src/
+│   │   └── components/
+│   └── package.json
+├── data/             # STL data files
+├── tests/            # C++ and JS tests
+├── dist/             # Build outputs
+└── package.json      # Root configuration
 ```
 
-### Testing
+### 🛠️ Code Quality Standards
 
-```bash
-# Run all tests
-npm test
+#### C++ Backend (92%+ Test Coverage Required)
+- **Language**: C++20 with modern features
+- **Style**: Follow [Google C++ Style Guide](https://google.github.io/styleguide/cppguide.html)
+- **Memory Management**: Use smart pointers (`std::unique_ptr`, `std::shared_ptr`)
+- **Performance**: Keep trie search under 2ms, total latency under 28ms
 
-# Run specific test
-npm test test_trie.cpp
+```cpp
+// ✅ Good
+auto node = std::make_shared<TrieNode>();
+std::vector<std::string> results = trie.search("vec", 10);
 
-# Watch mode
-npm test -- --watch
-
-# Coverage report
-npm test -- --coverage
+// ❌ Avoid
+TrieNode* node = new TrieNode();  // Raw pointers
+delete node;                      // Manual memory management
 ```
 
-### Commit Standards
+#### JavaScript/React Frontend
+- **Framework**: React 18 with functional components
+- **Style**: Follow [Airbnb JavaScript Style Guide](https://github.com/airbnb/javascript)
+- **Components**: Use hooks and functional components
+- **Performance**: Optimize re-renders, use React.memo when appropriate
 
-Use conventional commits:
+```jsx
+// ✅ Good
+const SuggestionPopup = React.memo(({ suggestions, onSelect }) => {
+  return (
+    <div className="suggestion-popup">
+      {suggestions.map((suggestion, index) => (
+        <div key={index} onClick={() => onSelect(suggestion)}>
+          {suggestion}
+        </div>
+      ))}
+    </div>
+  );
+});
+
+// ❌ Avoid
+class SuggestionPopup extends Component {
+  // Class components unless absolutely necessary
+}
+```
+
+### 🧪 Testing Requirements
+
+#### C++ Tests (GTest)
+```bash
+# Run C++ tests
+npm run test:cpp
+
+# Run specific test file
+npm run test:cpp -- test_trie.cpp
+
+# Generate coverage report
+npm run test:cpp -- --coverage
+```
+
+#### JavaScript Tests (Jest)
+```bash
+# Run frontend tests
+npm run test:frontend
+
+# Run tests in watch mode
+npm run test:frontend -- --watch
+
+# Generate coverage
+npm run test:frontend -- --coverage
+```
+
+#### Test Coverage Standards
+- **Minimum**: 92% for C++ backend
+- **Target**: 100% for new features
+- **Requirements**: 
+  - Unit tests for all public APIs
+  - Integration tests for core workflows
+  - Edge case coverage
+
+### 📝 Commit Message Guidelines
+
+Follow [Conventional Commits](https://www.conventionalcommits.org/):
 
 ```
 type(scope): description
 
-feat(trie): add compression algorithm
-fix(tokenizer): handle template syntax
-docs(readme): update benchmark section
+[optional body]
+
+[optional footer]
 ```
 
-Types: `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`
+**Types:**
+- `feat`: New feature
+- `fix`: Bug fix
+- `docs`: Documentation changes
+- `style`: Code style changes (formatting, etc.)
+- `refactor`: Code refactoring
+- `test`: Adding/improving tests
+- `perf`: Performance improvements
+- `chore`: Maintenance tasks
 
-## Pull Request Process
+**Examples:**
+```
+feat(trie): implement compression algorithm for memory optimization
 
-1. Update documentation if needed
-2. Add tests for new features (maintain 92%+ coverage)
-3. Ensure all tests pass locally: `npm test`
-4. Rebase on main: `git rebase origin/main`
-5. Push to fork and create PR
-6. Wait for CI/CD pipeline to pass
-7. Request review from maintainers
+- Added LRU-based node compression
+- Reduced memory usage by 30%
+- Maintained O(L) search complexity
 
-## Coding Standards
+fix(tokenizer): handle template syntax parsing
 
-### C++
+- Fixed parsing of nested templates like vector<vector<int>>
+- Added comprehensive test cases
+- Resolves issue #42
 
-- Use C++20 features
-- Follow Google C++ style guide
-- Use smart pointers, avoid raw `new`/`delete`
-- Add comments for complex algorithms
+docs(readme): update performance benchmarks
 
-```cpp
-// Good
-auto node = std::make_shared<TrieNode>();
-
-// Avoid
-TrieNode* node = new TrieNode();
+- Added new latency measurements
+- Updated STL coverage statistics
+- Improved installation instructions
 ```
 
-### JavaScript
+### 🔄 Pull Request Process
 
-- Use functional components
-- Follow AirBnB JavaScript style
-- No console.log in production
+1. **Before submitting**:
+   - [ ] Run all tests: `npm test`
+   - [ ] Check code formatting: `npm run format`
+   - [ ] Verify linting: `npm run lint`
+   - [ ] Update documentation if needed
+   - [ ] Add tests for new functionality
 
-```jsx
-// Good
-const SuggestionPopup = ({ suggestions, onSelect }) => {
-  return <div>...</div>;
-};
+2. **Create PR**:
+   - Use descriptive title
+   - Link related issues
+   - Provide detailed description
+   - Include before/after screenshots (for UI changes)
 
-// Avoid
-class SuggestionPopup extends Component {
-  // ...
-}
-```
+3. **Code Review**:
+   - Address all feedback
+   - Maintain professional communication
+   - Be open to suggestions
+   - Explain technical decisions
 
-## Architecture Guidelines
+4. **Merge Requirements**:
+   - All CI checks pass
+   - Code coverage maintained ≥92%
+   - Approved by maintainers
+   - Properly rebased on main branch
 
-### Adding Features
+### 📊 Performance Benchmarks
 
-1. **Backend Feature**: Add to C++ files, update tests
-2. **Frontend Feature**: Add React component, add CSS
-3. **Documentation**: Update README.md
+All contributions should maintain or improve these metrics:
 
-### Directory Structure
+| Metric | Target | Current |
+|--------|--------|---------|
+| Trie Search | < 2ms | ~1.5ms |
+| Tokenization | < 5ms | ~3ms |
+| Total Latency | < 28ms | ~25ms |
+| Memory Usage | < 10MB | ~5MB |
+| Test Coverage | ≥ 92% | 92% |
 
-- `backend/include/` - Public headers
-- `backend/src/` - Implementation
-- `frontend/src/components/` - React components
-- `data/` - Data files only
-- `tests/` - All tests
-
-## Performance Optimization
-
-- Keep Trie search under 2ms
-- Keep tokenization under 5ms
-- Total latency goal: 28ms
-
-Use profiling:
+Use the built-in profiler:
 ```bash
-# Linux
-perf record ./test_trie
-perf report
+# Profile C++ performance
+npm run profile:backend
 
-# macOS
-Instruments
+# Profile frontend performance
+npm run profile:frontend
 ```
 
-## Documentation
+## 🐛 Reporting Issues
 
-Add JSDoc/comments for:
-- Public APIs
-- Complex algorithms
-- Edge cases
-- Performance implications
+### Bug Reports
+When reporting bugs, please include:
 
+```markdown
+**Environment:**
+- OS: [e.g., Ubuntu 20.04, Windows 11, macOS 12]
+- Node.js: [version]
+- C++ Compiler: [GCC/Clang version]
+- IntelliCPP Version: [git commit hash]
+
+**Description:**
+[Clear description of the issue]
+
+**Steps to Reproduce:**
+1. [First step]
+2. [Second step]
+3. [What you expected to happen]
+4. [What actually happened]
+
+**Code Sample:**
 ```cpp
-/// Search for prefix in trie
-/// \param prefix Search string
-/// \param maxResults Maximum results to return
-/// \return Sorted vector of suggestions O(L + M)
-std::vector<std::string> search(
-    const std::string& prefix,
-    int maxResults = 8
-);
+// Minimal code to reproduce the issue
 ```
 
-## Version Bumping
-
-```bash
-npm version patch  # 1.0.0 → 1.0.1
-npm version minor  # 1.0.0 → 1.1.0
-npm version major  # 1.0.0 → 2.0.0
+**Additional Context:**
+[Any additional information, screenshots, logs]
 ```
 
-## Release Process
+### Feature Requests
+For new features, provide:
 
-1. Update version: `npm version minor`
-2. Update CHANGELOG.md
-3. Push: `git push --tags`
-4. Create GitHub release
-5. Deploy to production
+- **Use Case**: Why is this feature needed?
+- **Problem**: What problem does it solve?
+- **Alternatives**: Have you considered other approaches?
+- **Implementation**: Any ideas on how to implement it?
+- **Impact**: How will this improve the project?
 
-## Reporting Bugs
+## 🎨 UI/UX Contributions
 
-Include in bug report:
-- OS and version
-- Node.js version
-- Steps to reproduce
-- Expected vs actual behavior
-- Screenshots/logs
+### Design Principles
+- **Consistency**: Follow existing design patterns
+- **Accessibility**: Ensure WCAG 2.1 AA compliance
+- **Performance**: Optimize for 60fps interactions
+- **Responsive**: Work on all screen sizes
 
-## Feature Requests
+### CSS Guidelines
+- Use the existing glassmorphism theme
+- Follow BEM naming convention
+- Mobile-first approach
+- CSS variables for theming
 
-Provide:
-- Use case description
-- Why it's important
-- Proposed implementation (optional)
-- Acceptance criteria
+## 📚 Documentation
 
-## Code Review Comments
+### What to Document
+- New APIs and functions
+- Configuration options
+- Installation procedures
+- Troubleshooting guides
+- Architecture decisions
 
-Keep discussions professional:
-- Suggest improvements, don't demand
-- Explain reasoning
-- Offer alternatives
-- Give praise for good code
+### Documentation Style
+- Clear, concise language
+- Code examples for complex concepts
+- Before/after comparisons
+- Links to related sections
 
-## License
+### Where to Add Documentation
+- **README.md**: High-level overview and quick start
+- **CONTRIBUTING.md**: This file (contribution guidelines)
+- **Inline comments**: Complex algorithms and edge cases
+- **Wiki**: Detailed guides and tutorials
 
-By contributing, you agree your code is licensed under MIT.
+## 🏆 Recognition
+
+Contributors will be recognized in:
+- **README.md** contributors section
+- **GitHub contributors** list
+- **Release notes** for significant contributions
+- **Social media** shoutouts for major features
+
+## 🤝 Community Guidelines
+
+### Code of Conduct
+- Be respectful and inclusive
+- Provide constructive feedback
+- Help others learn and grow
+- Focus on technical merit
+- Maintain professional communication
+
+### Communication Channels
+- **GitHub Issues**: Bug reports and feature requests
+- **GitHub Discussions**: General questions and community chat
+- **Email**: For sensitive matters (see README)
+
+## 🚀 Getting Help
+
+Need help with your contribution?
+- Check the [README.md](README.md) for setup instructions
+- Review existing [issues](https://github.com/CodeAXwOrlD/IntelliCPP/issues)
+- Look at [merged PRs](https://github.com/CodeAXwOrlD/IntelliCPP/pulls?q=is%3Apr+is%3Amerged) for examples
+- Ask questions in [GitHub Discussions](https://github.com/CodeAXwOrlD/IntelliCPP/discussions)
+
+## 📄 License
+
+By contributing to IntelliCPP, you agree that your contributions will be licensed under the MIT License.
 
 ---
 
-**Questions?** Open an issue or email maintainers.
+**Thank you for making IntelliCPP better!** 🙏
 
-**Thank you for contributing!** 🙏
+Questions? Feel free to [open an issue](https://github.com/CodeAXwOrlD/IntelliCPP/issues/new) or reach out to the maintainers.
