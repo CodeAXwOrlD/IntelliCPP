@@ -5,16 +5,18 @@ try {
   const fs = require('fs');
   
   // Try common build output locations for the native module
+  const rootDir = path.join(__dirname, '../../..'); // Go to project root
   const candidates = [
-    path.join(__dirname, '../../backend/build/Release/codeflow_native.node'),
-    path.join(__dirname, '../../dist/codeflow_native.node'),
-    path.join(__dirname, '../../backend/dist/codeflow_native.node'),
-    path.join(__dirname, '../../backend/build/codeflow_native.node'),
-    path.join(__dirname, '../../backend/codeflow_native.node'),
+    path.join(rootDir, 'backend/build/Release/codeflow_native.node'),
+    path.join(process.cwd(), 'dist/codeflow_native.node'), // Use absolute path
+    path.join(rootDir, 'backend/dist/codeflow_native.node'),
+    path.join(rootDir, 'backend/build/codeflow_native.node'),
+    path.join(rootDir, 'backend/codeflow_native.node'),
   ];
 
   let nativePath = null;
   for (const p of candidates) {
+    console.log('[API Handler] Checking path:', p, 'exists:', fs.existsSync(p));
     if (fs.existsSync(p)) {
       nativePath = p;
       break;
