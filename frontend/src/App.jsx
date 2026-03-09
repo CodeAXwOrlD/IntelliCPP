@@ -1,5 +1,6 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Editor } from '@monaco-editor/react';
+import { Play, Square, Trash2 } from 'lucide-react';
 import SuggestionPopup from './components/SuggestionPopup';
 import ThemeToggle from './components/ThemeToggle';
 import Sidebar from './components/Sidebar';
@@ -109,18 +110,75 @@ export default function App() {
   const [includedLibs, setIncludedLibs] = useState([]);
   const [outputPanelVisible, setOutputPanelVisible] = useState(false);
   const [outputLoading, setOutputLoading] = useState(false);
+  const [isRunning, setIsRunning] = useState(false);
   const [outputResult, setOutputResult] = useState('');
   const [outputError, setOutputError] = useState('');
   // const [syntaxErrors, setSyntaxErrors] = useState([]); // Not currently used in UI
-  const [outputPanelHeight, setOutputPanelHeight] = useState(250);
+  const [outputPanelHeight, setOutputPanelHeight] = useState(220);
+  const [cursorPosition, setCursorPosition] = useState({ line: 1, column: 1 });
   const editorRef = useRef(null);
   const monacoRef = useRef(null);
   const triggerTimeout = useRef(null);
   const syntaxCheckTimeout = useRef(null);
+  const cursorUpdateInterval = useRef(null);
+
+  // Cleanup intervals on unmount
+  useEffect(() => {
+    return () => {
+      if (cursorUpdateInterval.current) {
+        clearInterval(cursorUpdateInterval.current);
+      }
+      if (triggerTimeout.current) {
+        clearTimeout(triggerTimeout.current);
+      }
+      if (syntaxCheckTimeout.current) {
+        clearTimeout(syntaxCheckTimeout.current);
+      }
+    };
+  }, []);
 
   const handleEditorDidMount = (editor, monaco) => {
     editorRef.current = editor;
     monacoRef.current = monaco;
+    
+    // Update cursor position immediately on any cursor movement
+    const updateCursorPosition = () => {
+      const position = editor.getPosition();
+      if (position) {
+        console.log('Cursor position:', position.lineNumber, position.column);
+        setCursorPosition({
+          line: position.lineNumber,
+          column: position.column
+        });
+      }
+    };
+    
+    // Add listener for cursor position changes
+    editor.onDidChangeCursorPosition((e) => {
+      console.log('Cursor changed:', e.position);
+      updateCursorPosition();
+    });
+    
+    // Add listener for mouse clicks
+    editor.onMouseDown((e) => {
+      setTimeout(updateCursorPosition, 10);
+    });
+    
+    // Add listener for key presses
+    editor.onKeyDown((e) => {
+      setTimeout(updateCursorPosition, 10);
+    });
+    
+    // Add listener for content changes (typing)
+    editor.onDidChangeModelContent((e) => {
+      updateCursorPosition();
+    });
+    
+    // Set initial position
+    updateCursorPosition();
+    
+    // Start polling as fallback (every 200ms)
+    cursorUpdateInterval.current = setInterval(updateCursorPosition, 200);
     
     // Add real-time syntax error highlighting
     editor.onDidChangeModelContent(() => {
@@ -454,6 +512,7 @@ export default function App() {
 
   const handleRunCode = async () => {
     setOutputLoading(true);
+    setIsRunning(true);
     setOutputError('');
     setOutputResult('');
     setOutputPanelVisible(true);
@@ -488,7 +547,14 @@ export default function App() {
       setOutputError(`Error: ${err.message}`);
     } finally {
       setOutputLoading(false);
+      setIsRunning(false);
     }
+  };
+
+  const handleStopExecution = () => {
+    setOutputLoading(false);
+    setIsRunning(false);
+    setOutputError('Execution stopped by user');
   };
 
   const handleClearOutput = () => {
@@ -506,75 +572,112 @@ export default function App() {
 
   return (
     <div className="app-layout">
-      <Sidebar />
       <div className="main-content">
-        <div className="header">
-          <div className="header-left">
-            <h1>🚀 CodeFlow AI</h1>
+        <div className="toolbar">
+          <div className="toolbar-left">
+            <h1>IntelliCPP</h1>
           </div>
-          <div className="header-center">
-            <button 
-              className={`run-button ${outputLoading ? "loading" : ""}`}
-              onClick={handleRunCode} 
-              disabled={outputLoading} 
-              title="Compile and run C++ code"
-            >
-              {outputLoading ? (
-                <>
-                  <span className="spinner"></span>
-                  Running...
-                </>
+          <div className="toolbar-center">
+            <div className="toolbar-actions">
+              {!isRunning ? (
+                <button 
+                  className="run-button"
+                  onClick={handleRunCode} 
+                  disabled={outputLoading} 
+                  title="Run Code"
+                >
+                  <Play size={16} />
+                  <span>Run Code</span>
+                </button>
               ) : (
-                "▶ Code"
+                <button 
+                  className="stop-button"
+                  onClick={handleStopExecution} 
+                  title="Stop Execution"
+                >
+                  <Square size={16} />
+                  <span>Stop</span>
+                </button>
               )}
-            </button>
+              <button 
+                className="clear-button"
+                onClick={handleClearOutput} 
+                title="Clear Output"
+              >
+                <Trash2 size={16} />
+                <span>Clear Output</span>
+              </button>
+            </div>
           </div>
-          <div className="header-right">
+          <div className="toolbar-right">
             <ThemeToggle />
           </div>
         </div>
 
-        <div className="editor-wrapper">
-          <div className="editor-container" onKeyDown={handleKeyDown}>
-            <Editor
-              height="100%"
-              defaultLanguage="cpp"
-              value={code}
-              onChange={handleEditorChange2}
-              onMount={handleEditorDidMount}
-              theme={theme['--monaco-theme']}
-              options={{
-                minimap: { enabled: false },
-                fontSize: 14,
-                lineHeight: 24,
-                fontFamily: 'Fira Code, monospace',
-                autoClosingBrackets: 'always',
-                autoClosingQuotes: 'always',
-                formatOnPaste: true,
-                formatOnType: true,
-                suggestOnTriggerCharacters: true,
-                wordBasedSuggestions: false,
-                cursorSmoothCaretAnimation: "on",
-                smoothScrolling: true,
-                padding: { top: 20 },
-                automaticLayout: true
-              }}
-            />
+        <div className="editor-area">
+          <Sidebar />
+          <div className="editor-wrapper">
+            <div className="editor-container" onKeyDown={handleKeyDown} onClick={() => {
+              // Update cursor position on click
+              if (editorRef.current) {
+                const position = editorRef.current.getPosition();
+                if (position) {
+                  setCursorPosition({
+                    line: position.lineNumber,
+                    column: position.column
+                  });
+                }
+              }
+            }}>
+              <Editor
+                height="100%"
+                defaultLanguage="cpp"
+                value={code}
+                onChange={handleEditorChange2}
+                onMount={handleEditorDidMount}
+                theme={theme['--monaco-theme']}
+                options={{
+                  minimap: { enabled: true },
+                  fontSize: 14,
+                  lineHeight: 24,
+                  fontFamily: 'JetBrains Mono, "Fira Code", "Cascadia Code", Consolas, monospace',
+                  fontLigatures: true,
+                  autoClosingBrackets: 'always',
+                  autoClosingQuotes: 'always',
+                  formatOnPaste: true,
+                  formatOnType: true,
+                  suggestOnTriggerCharacters: true,
+                  wordBasedSuggestions: false,
+                  cursorSmoothCaretAnimation: "on",
+                  smoothScrolling: true,
+                  padding: { top: 20, bottom: 20 },
+                  automaticLayout: true,
+                  renderLineHighlight: 'line',
+                  renderWhitespace: 'selection',
+                  scrollBeyondLastLine: false,
+                  bracketPairColorization: { enabled: true },
+                  guides: {
+                    bracketPairs: true,
+                    indentation: true
+                  }
+                }}
+              />
 
-            {popupVisible && suggestions.length > 0 && (
-              <div style={{
-                position: 'fixed',
-                top: `${popupPosition.top}px`,
-                left: `${popupPosition.left}px`,
-                zIndex: 1000
-              }}>
-                <SuggestionPopup
-                  suggestions={suggestions}
-                  selectedIndex={selectedIndex}
-                  onSelect={handleSelectSuggestion}
-                />
-              </div>
-            )}
+              {popupVisible && suggestions.length > 0 && (
+                <div style={{
+                  position: 'fixed',
+                  top: `${popupPosition.top}px`,
+                  left: `${popupPosition.left}px`,
+                  zIndex: 1000
+                }}>
+                  <SuggestionPopup
+                    suggestions={suggestions}
+                    selectedIndex={selectedIndex}
+                    onSelect={handleSelectSuggestion}
+                  />
+                </div>
+              )}
+            </div>
           </div>
         </div>
         
@@ -594,6 +697,7 @@ export default function App() {
           symbolCount={symbolCount} 
           latency={latency} 
           includedLibs={includedLibs} 
+          cursorPosition={cursorPosition}
         />
       </div>
     </div>

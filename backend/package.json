@@ -10,7 +10,7 @@
     "build": "node-gyp rebuild",
     "clean": "node-gyp clean",
     "install": "node-gyp rebuild",
-    "server": "node http-server.js"
+    "server": "node server.js"
   },
   "binary": {
     "module_name": "codeflow_native",

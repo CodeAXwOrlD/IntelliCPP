@@ -1,5 +1,0 @@
-CompileFlags:
-  CompilationDatabase: build
-  Add:
-    - -std=gnu++20
-    - -Ibackend/include
