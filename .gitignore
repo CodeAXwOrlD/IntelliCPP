@@ -21,3 +21,5 @@ yarn-error.log*
 .cache/
 .parcel-cache/
 out/
+.vercel
+.env*.local
