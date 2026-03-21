@@ -476,6 +476,8 @@ export default function App() {
         
         // ✅ SPECIAL: Check if typing #include statement
         const includeMatch = beforeCursor.match(/#include\s*[<"]\s*([a-z_]+)\s*[>"]/);
+        const includePartialMatch = beforeCursor.match(/#include\s*[<"]\s*([a-z_]*)/);
+        
         if (includeMatch) {
           const headerName = includeMatch[1];
           const startTime = Date.now();
@@ -495,6 +497,25 @@ export default function App() {
             setSuggestions([]);
             setPopupVisible(false);
           });
+        } else if (includePartialMatch) {
+          // Partial include - suggest header names
+          const partialHeader = includePartialMatch[1];
+          
+          console.log('[Frontend] 🔄 Partial include:', partialHeader);
+          
+          const headerSuggestions = [
+            'vector', 'stack', 'queue', 'deque', 'map', 'set', 'string', 'list',
+            'algorithm', 'iostream', 'fstream', 'sstream', 'iomanip', 'memory',
+            'utility', 'functional', 'iterator', 'numeric', 'random', 'chrono',
+            'thread', 'mutex', 'future'
+          ].filter(header => header.startsWith(partialHeader))
+           .slice(0, 10)
+           .map(header => ({ text: header, type: 'header', score: 1.0 }));
+          
+          setSuggestions(headerSuggestions);
+          setSelectedIndex(0);
+          setPopupPosition(calculatePopupPosition());
+          setPopupVisible(headerSuggestions.length > 0);
         } else {
           const startTime = Date.now();
 
