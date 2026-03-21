@@ -62,7 +62,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { prefix, context = 'global', code, column } = req.body;
+    const { prefix = '', contextType = 'global', code = '', cursorPosition = 0 } = req.body;
 
     if (!suggestionEngine) {
       return res.status(500).json({
@@ -71,15 +71,45 @@ export default async function handler(req, res) {
       });
     }
 
-    if (!prefix || typeof prefix !== 'string') {
-      return res.status(400).json({
-        error: 'Prefix is required and must be a string',
-        suggestions: []
-      });
+    // Update symbol table with current code
+    suggestionEngine.updateSymbols(code || '');
+
+    // Special handling for header context - when user types #include <header>
+    if (contextType && ['vector', 'stack', 'queue', 'deque', 'map', 'set', 'string', 'list', 'algorithm', 'iostream'].includes(contextType)) {
+      console.log('[Suggestions API] 🎯 Header context detected for:', contextType);
+      
+      try {
+        // Load STL functions data directly
+        const stlPath = path.join(__dirname, '..', 'data', 'stl_functions.json');
+        const stlFunctions = JSON.parse(fs.readFileSync(stlPath, 'utf8'));
+        
+        const suggestions = [];
+        
+        // Add the class name itself
+        suggestions.push({ text: contextType, type: 'class', score: 1.0 });
+        
+        // Add methods if they exist in STL data
+        if (stlFunctions[contextType]) {
+          const methods = stlFunctions[contextType];
+          const filteredMethods = prefix ? 
+            methods.filter(method => method.startsWith(prefix)) : 
+            methods.slice(0, 9); // Limit to top 9 methods
+            
+          filteredMethods.forEach(method => {
+            suggestions.push({ text: method, type: 'method', score: 0.8 });
+          });
+        }
+        
+        console.log('[Suggestions API] Header suggestions:', suggestions.length, suggestions);
+        return res.status(200).json(suggestions);
+      } catch (err) {
+        console.error('[Suggestions API] Error in header context:', err.message);
+        // Fall through to normal processing
+      }
     }
 
     // Get suggestions from native engine
-    const suggestions = suggestionEngine.getSuggestions(prefix, context, code || '', column || 0);
+    const suggestions = suggestionEngine.getSuggestions(prefix, contextType, code || '', cursorPosition || 0, 10);
 
     // Format suggestions for frontend
     const formattedSuggestions = suggestions.map(suggestion => ({
@@ -89,10 +119,7 @@ export default async function handler(req, res) {
       insertText: suggestion.insertText || suggestion.text || suggestion
     }));
 
-    res.status(200).json({
-      success: true,
-      suggestions: formattedSuggestions
-    });
+    res.status(200).json(formattedSuggestions);
 
   } catch (error) {
     console.error('[Suggestions API] Error:', error);

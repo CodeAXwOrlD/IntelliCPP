@@ -57,7 +57,7 @@ const callBackendAPI = async (method, ...args) => {
 
     if (method === 'getSuggestions') {
       const [prefix, contextType, code, cursorPosition] = args;
-      requestBody = { prefix, context: contextType, code, column: cursorPosition };
+      requestBody = { prefix, contextType, code, column: cursorPosition };
     } else if (method === 'getStats') {
       const [code] = args;
       requestBody = { code };
