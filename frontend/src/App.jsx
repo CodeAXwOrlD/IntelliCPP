@@ -25,8 +25,9 @@ const CACHE_DURATION = 500; // 500ms cache duration
 
 // Helper function to call backend API (works in both Electron and cloud environments)
 const callBackendAPI = async (method, ...args) => {
-  // Try Electron IPC first
-  if (window.api && window.api[method]) {
+  // Skip Electron IPC in web environment
+  const isElectron = typeof window !== 'undefined' && window.process && window.process.type;
+  if (isElectron && window.api && window.api[method]) {
     return window.api[method](...args);
   }
 
@@ -66,6 +67,8 @@ const callBackendAPI = async (method, ...args) => {
       requestBody = { code };
     }
 
+    console.log('[Frontend] 🚀 API Call:', { method, apiUrl, requestBody });
+
     const response = await fetch(apiUrl, {
       method: 'POST',
       headers: {
@@ -73,30 +76,33 @@ const callBackendAPI = async (method, ...args) => {
         'Accept': 'application/json',
         'Cache-Control': 'no-cache'
       },
-      body: JSON.stringify(requestBody),
+      body: JSON.stringify(requestBody)
     });
 
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     }
 
-    const result = await response.json();
-    
+    const data = await response.json();
+    console.log('[Frontend] 📥 API Response:', data);
+
     // Cache the response
     apiCache.set(cacheKey, {
-      data: result,
+      data,
       timestamp: now
     });
+
+    return data;
+  } catch (error) {
+    console.error('[Frontend] ❌ API Error:', error);
     
-    return result;
-  } catch (err) {
-    console.error('[Frontend] API Error:', err.message);
-    
-    // Return appropriate default values
-    if (method === 'getStats') {
-      return { symbolCount: 0, includedLibraries: [], symbolTable: {} };
+    // Return fallback data for critical functions
+    if (method === 'getSuggestions') {
+      return [];
+    } else if (method === 'getStats') {
+      return { symbolCount: 0, includedLibraries: [] };
     } else if (method === 'runCode') {
-      return { success: false, output: '', error: 'Backend not available' };
+      return { success: false, output: 'Backend not available', error: error.message };
     }
     return [];
   }
