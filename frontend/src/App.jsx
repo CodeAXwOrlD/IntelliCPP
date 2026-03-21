@@ -46,14 +46,18 @@ const callBackendAPI = async (method, ...args) => {
   }
 
   // Call backend API directly
-  const apiUrl = `http://localhost:3001/api/${method}`;
+  // Use relative URL for production/Vercel, localhost for development
+  const isDevelopment = process.env.NODE_ENV === 'development' || window.location.hostname === 'localhost';
+  const apiUrl = isDevelopment 
+    ? `http://localhost:3001/api/${method}`
+    : `/api/${method}`;
 
   try {
     let requestBody = {};
 
     if (method === 'getSuggestions') {
       const [prefix, contextType, code, cursorPosition] = args;
-      requestBody = { prefix, contextType, code, cursorPosition };
+      requestBody = { prefix, context: contextType, code, column: cursorPosition };
     } else if (method === 'getStats') {
       const [code] = args;
       requestBody = { code };
@@ -432,7 +436,7 @@ export default function App() {
       const objectName = dotMatch[1];
       const prefix = dotMatch[2];  // Captured prefix for filtering
 
-      // Call backend with prefix for live filtering - use currentCode from parameter
+      // Call backend with prefix for live filtering - send objectName as context
       callBackendAPI('getSuggestions', prefix, objectName, currentCode, position.column).then((realSuggestions) => {
         const elapsed = Date.now() - startTime;
         setLatency(elapsed);
@@ -469,20 +473,44 @@ export default function App() {
       const wordMatch = beforeCursor.match(/[a-zA-Z_][a-zA-Z0-9_]*$/);
       if (wordMatch) {
         const prefix = wordMatch[0];
-        const startTime = Date.now();
+        
+        // ✅ SPECIAL: Check if typing #include statement
+        const includeMatch = beforeCursor.match(/#include\s*[<"]\s*([a-z_]+)\s*[>"]/);
+        if (includeMatch) {
+          const headerName = includeMatch[1];
+          const startTime = Date.now();
+          
+          console.log('[Frontend] 🎯 Include detected:', headerName);
+          
+          // Show suggestions for the header being included
+          callBackendAPI('getSuggestions', '', headerName, currentCode, position.column).then((realSuggestions) => {
+            const elapsed = Date.now() - startTime;
+            setLatency(elapsed);
+            setSuggestions(realSuggestions || []);
+            setSelectedIndex(0);
+            setPopupPosition(calculatePopupPosition());
+            setPopupVisible((realSuggestions || []).length > 0);
+            console.log('[Frontend] 📝 Include suggestions:', realSuggestions);
+          }).catch(() => {
+            setSuggestions([]);
+            setPopupVisible(false);
+          });
+        } else {
+          const startTime = Date.now();
 
-        // Call backend for general suggestions
-        callBackendAPI('getSuggestions', prefix, 'global', currentCode, position.column).then((realSuggestions) => {
-          const elapsed = Date.now() - startTime;
-          setLatency(elapsed);
-          setSuggestions(realSuggestions || []);
-          setSelectedIndex(0);
-          setPopupPosition(calculatePopupPosition());
-          setPopupVisible((realSuggestions || []).length > 0);
-        }).catch(() => {
-          setSuggestions([]);
-          setPopupVisible(false);
-        });
+          // Call backend for general suggestions
+          callBackendAPI('getSuggestions', prefix, 'global', currentCode, position.column).then((realSuggestions) => {
+            const elapsed = Date.now() - startTime;
+            setLatency(elapsed);
+            setSuggestions(realSuggestions || []);
+            setSelectedIndex(0);
+            setPopupPosition(calculatePopupPosition());
+            setPopupVisible((realSuggestions || []).length > 0);
+          }).catch(() => {
+            setSuggestions([]);
+            setPopupVisible(false);
+          });
+        }
       } else {
         setPopupVisible(false);
       }

@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "description": "Native C++ addon for CodeFlow autocomplete engine",
-  "main": "./dist/index.js",
+  "main": "./server.js",
   "gypfile": true,
   "scripts": {
     "test": "node test.js",

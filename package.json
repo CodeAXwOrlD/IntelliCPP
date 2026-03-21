@@ -21,6 +21,8 @@
     "dev:frontend": "cd frontend && npm start",
     "dev:backend": "cd backend && node-gyp rebuild --debug",
     "dev:server": "cd backend && npm start",
+    "vercel-build": "cd frontend && npm run build",
+    "deploy": "vercel --prod",
     "test": "jest --coverage && npm run test:cpp",
     "test:cpp": "cd tests && cmake . && ctest --output-on-failure",
     "lint": "eslint frontend/src --fix",
