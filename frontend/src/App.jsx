@@ -484,29 +484,27 @@ export default function App() {
         const includeMatch = beforeCursor.match(/#include\s*[<"]\s*([a-z_]+)\s*[>"]/);
         const includePartialMatch = beforeCursor.match(/#include\s*[<"]\s*([a-z_]*)/);
         
+        console.log('[Frontend] 🔍 Checking includes:', { beforeCursor, includeMatch, includePartialMatch });
+        
         if (includeMatch) {
           const headerName = includeMatch[1];
-          const startTime = Date.now();
-          
           console.log('[Frontend] 🎯 Include detected:', headerName);
           
           // Show suggestions for the header being included
           callBackendAPI('getSuggestions', '', headerName, currentCode, position.column).then((realSuggestions) => {
-            const elapsed = Date.now() - startTime;
-            setLatency(elapsed);
+            console.log('[Frontend] 📝 Include suggestions received:', realSuggestions);
             setSuggestions(realSuggestions || []);
             setSelectedIndex(0);
             setPopupPosition(calculatePopupPosition());
             setPopupVisible((realSuggestions || []).length > 0);
-            console.log('[Frontend] 📝 Include suggestions:', realSuggestions);
-          }).catch(() => {
+          }).catch((error) => {
+            console.error('[Frontend] ❌ Include suggestions error:', error);
             setSuggestions([]);
             setPopupVisible(false);
           });
         } else if (includePartialMatch) {
           // Partial include - suggest header names
           const partialHeader = includePartialMatch[1];
-          
           console.log('[Frontend] 🔄 Partial include:', partialHeader);
           
           const headerSuggestions = [
@@ -518,22 +516,21 @@ export default function App() {
            .slice(0, 10)
            .map(header => ({ text: header, type: 'header', score: 1.0 }));
           
+          console.log('[Frontend] 📝 Partial header suggestions:', headerSuggestions);
           setSuggestions(headerSuggestions);
           setSelectedIndex(0);
           setPopupPosition(calculatePopupPosition());
           setPopupVisible(headerSuggestions.length > 0);
         } else {
-          const startTime = Date.now();
-
           // Call backend for general suggestions
           callBackendAPI('getSuggestions', prefix, 'global', currentCode, position.column).then((realSuggestions) => {
-            const elapsed = Date.now() - startTime;
-            setLatency(elapsed);
+            console.log('[Frontend] 📝 Global suggestions received:', realSuggestions);
             setSuggestions(realSuggestions || []);
             setSelectedIndex(0);
             setPopupPosition(calculatePopupPosition());
             setPopupVisible((realSuggestions || []).length > 0);
-          }).catch(() => {
+          }).catch((error) => {
+            console.error('[Frontend] ❌ Global suggestions error:', error);
             setSuggestions([]);
             setPopupVisible(false);
           });
