@@ -75,6 +75,45 @@ try {
   process.exit(1);
 }
 
+// Simple type inference function
+function inferVariableType(variableName, code) {
+  if (!code || !variableName) return null;
+
+  // Split code into lines and look for variable declarations
+  const lines = code.split('\n');
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('//') || trimmed.startsWith('/*')) continue;
+
+    // Look for patterns like: vector<int> v; or std::vector<int> v;
+    // More flexible pattern to capture type before variable name
+    const patterns = [
+      // Standard declaration: Type var;
+      new RegExp(`\\b([a-zA-Z_][a-zA-Z0-9_<>\s]*?)\\s+${variableName}\\s*[;=]`),
+      // With std:: prefix: std::Type var;
+      new RegExp(`\\bstd::([a-zA-Z_][a-zA-Z0-9_<>\s]*?)\\s+${variableName}\\s*[;=]`),
+    ];
+
+    for (const pattern of patterns) {
+      const match = pattern.exec(trimmed);
+      if (match) {
+        let typeDeclaration = match[1] || match[2];
+        if (typeDeclaration) {
+          // Clean up the type declaration
+          typeDeclaration = typeDeclaration.trim();
+          // Extract base type (remove template parameters and qualifiers)
+          const baseType = typeDeclaration.split(/[<\s]/)[0];
+          console.log(`[HTTP Server] Inferred type for ${variableName}: ${baseType} from "${typeDeclaration}"`);
+          return baseType;
+        }
+      }
+    }
+  }
+
+  console.log(`[HTTP Server] Could not infer type for ${variableName}`);
+  return null;
+}
+
 // Health check
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', backend: 'online' });
@@ -87,114 +126,63 @@ app.post('/api/getSuggestions', (req, res) => {
     const { prefix = '', contextType = 'global', code = '', cursorPosition = 0 } = req.body;
     console.log('[HTTP Server] Request data:', { prefix, contextType, codeLength: code ? code.length : 0 });
     
-    // Simple test: if context is stack, return stack methods directly
-    if (contextType === 'stack') {
-      console.log('[HTTP Server] RETURNING STACK METHODS!');
-      const stackMethods = [
-        { text: "stack", type: "class", score: 1.0 },
-        { text: "push", type: "method", score: 0.8 },
-        { text: "pop", type: "method", score: 0.8 },
-        { text: "top", type: "method", score: 0.8 },
-        { text: "empty", type: "method", score: 0.8 },
-        { text: "size", type: "method", score: 0.8 },
-        { text: "emplace", type: "method", score: 0.8 },
-        { text: "swap", type: "method", score: 0.8 }
-      ];
-      res.json(stackMethods);
+    let actualContextType = contextType;
+    
+    // If contextType is not 'global' and not a recognized STL type, try to infer the variable type
+    if (contextType !== 'global' && !['vector', 'stack', 'queue', 'deque', 'map', 'set', 'string', 'list', 'algorithm', 'iostream'].includes(contextType)) {
+      const inferredType = inferVariableType(contextType, code);
+      if (inferredType) {
+        console.log(`[HTTP Server] Using inferred type: ${inferredType} for variable ${contextType}`);
+        actualContextType = inferredType;
+      } else {
+        console.log(`[HTTP Server] Could not infer type for ${contextType}, falling back to global`);
+        actualContextType = 'global';
+      }
+    }
+    
+    // Load STL functions data
+    const stlPath = path.join(__dirname, '..', 'data', 'stl_functions.json');
+    let stlFunctions = {};
+    if (fs.existsSync(stlPath)) {
+      stlFunctions = JSON.parse(fs.readFileSync(stlPath, 'utf8'));
+    }
+    
+    // Handle STL types
+    if (actualContextType !== 'global' && stlFunctions[actualContextType]) {
+      console.log(`[HTTP Server] RETURNING ${actualContextType.toUpperCase()} METHODS!`);
+      const suggestions = [];
+      
+      // Add the class name itself
+      suggestions.push({ text: actualContextType, type: 'class', score: 1.0 });
+      
+      // Add methods
+      const methods = stlFunctions[actualContextType];
+      const filteredMethods = prefix ? 
+        methods.filter(method => method.startsWith(prefix)) : 
+        methods.slice(0, 9); // Limit to top 9 methods
+        
+      filteredMethods.forEach(method => {
+        suggestions.push({ text: method, type: 'method', score: 0.8 });
+      });
+      
+      res.json(suggestions);
       return;
     }
     
-    // Simple test: if context is vector, return vector methods directly
-    if (contextType === 'vector') {
-      console.log('[HTTP Server] RETURNING VECTOR METHODS!');
-      const vectorMethods = [
-        { text: "vector", type: "class", score: 1.0 },
-        { text: "push_back", type: "method", score: 0.8 },
-        { text: "pop_back", type: "method", score: 0.8 },
-        { text: "size", type: "method", score: 0.8 },
-        { text: "empty", type: "method", score: 0.8 },
-        { text: "begin", type: "method", score: 0.8 },
-        { text: "end", type: "method", score: 0.8 },
-        { text: "at", type: "method", score: 0.8 },
-        { text: "front", type: "method", score: 0.8 },
-        { text: "back", type: "method", score: 0.8 }
-      ];
-      res.json(vectorMethods);
-      return;
-    }
-    
-    // Simple test: if context is queue, return queue methods directly
-    if (contextType === 'queue') {
-      console.log('[HTTP Server] RETURNING QUEUE METHODS!');
-      const queueMethods = [
-        { text: "queue", type: "class", score: 1.0 },
-        { text: "push", type: "method", score: 0.8 },
-        { text: "pop", type: "method", score: 0.8 },
-        { text: "front", type: "method", score: 0.8 },
-        { text: "back", type: "method", score: 0.8 },
-        { text: "empty", type: "method", score: 0.8 },
-        { text: "size", type: "method", score: 0.8 },
-        { text: "emplace", type: "method", score: 0.8 },
-        { text: "swap", type: "method", score: 0.8 }
-      ];
-      res.json(queueMethods);
-      return;
-    }
-    
-    // Simple test: if context is map, return map methods directly
-    if (contextType === 'map') {
-      console.log('[HTTP Server] RETURNING MAP METHODS!');
-      const mapMethods = [
-        { text: "map", type: "class", score: 1.0 },
-        { text: "insert", type: "method", score: 0.8 },
-        { text: "erase", type: "method", score: 0.8 },
-        { text: "find", type: "method", score: 0.8 },
-        { text: "count", type: "method", score: 0.8 },
-        { text: "empty", type: "method", score: 0.8 },
-        { text: "size", type: "method", score: 0.8 },
-        { text: "clear", type: "method", score: 0.8 },
-        { text: "begin", type: "method", score: 0.8 },
-        { text: "end", type: "method", score: 0.8 }
-      ];
-      res.json(mapMethods);
-      return;
-    }
-    
-    // Simple test: if context is set, return set methods directly
-    if (contextType === 'set') {
-      console.log('[HTTP Server] RETURNING SET METHODS!');
-      const setMethods = [
-        { text: "set", type: "class", score: 1.0 },
-        { text: "insert", type: "method", score: 0.8 },
-        { text: "erase", type: "method", score: 0.8 },
-        { text: "find", type: "method", score: 0.8 },
-        { text: "count", type: "method", score: 0.8 },
-        { text: "empty", type: "method", score: 0.8 },
-        { text: "size", type: "method", score: 0.8 },
-        { text: "clear", type: "method", score: 0.8 },
-        { text: "begin", type: "method", score: 0.8 },
-        { text: "end", type: "method", score: 0.8 }
-      ];
-      res.json(setMethods);
-      return;
-    }
-    
-    // Simple test: if context is string, return string methods directly
-    if (contextType === 'string') {
-      console.log('[HTTP Server] RETURNING STRING METHODS!');
-      const stringMethods = [
-        { text: "string", type: "class", score: 1.0 },
-        { text: "length", type: "method", score: 0.8 },
-        { text: "size", type: "method", score: 0.8 },
-        { text: "substr", type: "method", score: 0.8 },
-        { text: "find", type: "method", score: 0.8 },
-        { text: "replace", type: "method", score: 0.8 },
-        { text: "append", type: "method", score: 0.8 },
-        { text: "push_back", type: "method", score: 0.8 },
-        { text: "pop_back", type: "method", score: 0.8 },
-        { text: "clear", type: "method", score: 0.8 }
-      ];
-      res.json(stringMethods);
+    // For global context or unknown types, return keywords
+    if (actualContextType === 'global') {
+      const keywordsPath = path.join(__dirname, '..', 'data', 'cpp_keywords.txt');
+      let keywords = [];
+      if (fs.existsSync(keywordsPath)) {
+        keywords = fs.readFileSync(keywordsPath, 'utf8').split('\n').filter(k => k.trim());
+      }
+      
+      const suggestions = keywords
+        .filter(keyword => keyword.startsWith(prefix))
+        .slice(0, 10)
+        .map(keyword => ({ text: keyword, type: 'keyword', score: 0.9 }));
+      
+      res.json(suggestions);
       return;
     }
     

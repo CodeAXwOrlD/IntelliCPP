@@ -9,10 +9,10 @@ const fs = require('fs');
 // Embedded STL functions data to avoid file system issues
 const stlFunctions = {
   "vector": [
-    "push_back", "pop_back", "emplace_back", "insert", "erase", "clear",
+    "push_back", "pop_back", "size", "empty", "clear", "at", "front", "back",
     "begin", "end", "rbegin", "rend", "cbegin", "cend", "crbegin", "crend",
-    "size", "capacity", "max_size", "resize", "reserve", "shrink_to_fit",
-    "data", "at", "front", "back", "empty", "swap", "assign"
+    "emplace_back", "insert", "erase", "resize", "reserve", "capacity",
+    "max_size", "shrink_to_fit", "data", "swap", "assign"
   ],
   "stack": [
     "push", "pop", "emplace", "top", "empty", "size", "swap"
@@ -159,6 +159,45 @@ const keywords = [
   "virtual", "void", "volatile", "wchar_t", "while", "xor", "xor_eq"
 ];
 
+// Simple type inference function
+function inferVariableType(variableName, code) {
+  if (!code || !variableName) return null;
+
+  // Split code into lines and look for variable declarations
+  const lines = code.split('\n');
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('//') || trimmed.startsWith('/*')) continue;
+
+    // Look for patterns like: vector<int> v; or std::vector<int> v;
+    // More flexible pattern to capture type before variable name
+    const patterns = [
+      // Standard declaration: Type var;
+      new RegExp(`\\b([a-zA-Z_][a-zA-Z0-9_<>\s]*?)\\s+${variableName}\\s*[;=]`),
+      // With std:: prefix: std::Type var;
+      new RegExp(`\\bstd::([a-zA-Z_][a-zA-Z0-9_<>\s]*?)\\s+${variableName}\\s*[;=]`),
+    ];
+
+    for (const pattern of patterns) {
+      const match = pattern.exec(trimmed);
+      if (match) {
+        let typeDeclaration = match[1] || match[2];
+        if (typeDeclaration) {
+          // Clean up the type declaration
+          typeDeclaration = typeDeclaration.trim();
+          // Extract base type (remove template parameters and qualifiers)
+          const baseType = typeDeclaration.split(/[<\s]/)[0];
+          console.log(`[Suggestions API] Inferred type for ${variableName}: ${baseType} from "${typeDeclaration}"`);
+          return baseType;
+        }
+      }
+    }
+  }
+
+  console.log(`[Suggestions API] Could not infer type for ${variableName}`);
+  return null;
+}
+
 console.log(`[Suggestions API] Loaded ${keywords.length} C++ keywords`);
 console.log(`[Suggestions API] Loaded ${Object.keys(stlFunctions).length} STL function categories`);
 
@@ -221,16 +260,29 @@ export default async function handler(req, res) {
 
     // Generate suggestions based on context
     let suggestions = [];
+    let actualContextType = contextType;
 
-    if (contextType === 'global') {
+    // If contextType is not 'global' and not a recognized STL type, try to infer the variable type
+    if (contextType !== 'global' && !['vector', 'stack', 'queue', 'deque', 'map', 'set', 'string', 'list', 'algorithm', 'iostream'].includes(contextType)) {
+      const inferredType = inferVariableType(contextType, code);
+      if (inferredType && stlFunctions[inferredType]) {
+        console.log(`[Suggestions API] Using inferred type: ${inferredType} for variable ${contextType}`);
+        actualContextType = inferredType;
+      } else {
+        console.log(`[Suggestions API] Could not infer type for ${contextType}, falling back to global`);
+        actualContextType = 'global';
+      }
+    }
+
+    if (actualContextType === 'global') {
       // Return keywords that match prefix
       suggestions = keywords
         .filter(keyword => keyword.startsWith(prefix))
         .slice(0, 10)
         .map(keyword => ({ text: keyword, type: 'keyword', score: 0.9 }));
-    } else if (includedLibraries.includes(contextType) && stlFunctions[contextType]) {
-      // Return methods for included library
-      const methods = stlFunctions[contextType];
+    } else if (stlFunctions[actualContextType]) {
+      // Return methods for the inferred or specified type
+      const methods = stlFunctions[actualContextType];
       suggestions = methods
         .filter(method => method.startsWith(prefix))
         .slice(0, 10)
@@ -238,7 +290,7 @@ export default async function handler(req, res) {
       
       // Also include the class name if prefix is empty
       if (!prefix) {
-        suggestions.unshift({ text: contextType, type: 'class', score: 1.0 });
+        suggestions.unshift({ text: actualContextType, type: 'class', score: 1.0 });
       }
     }
 
