@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Editor } from '@monaco-editor/react';
-import { Play, Square, Trash2 } from 'lucide-react';
+import { Play, Square, Trash2, Code, Minimap, WrapText, ZoomIn, ZoomOut } from 'lucide-react';
 import SuggestionPopup from './components/SuggestionPopup';
 import ThemeToggle from './components/ThemeToggle';
 import Sidebar from './components/Sidebar';
@@ -123,9 +123,27 @@ export default function App() {
   const [isRunning, setIsRunning] = useState(false);
   const [outputResult, setOutputResult] = useState('');
   const [outputError, setOutputError] = useState('');
-  // const [syntaxErrors, setSyntaxErrors] = useState([]); // Not currently used in UI
   const [outputPanelHeight, setOutputPanelHeight] = useState(220);
   const [cursorPosition, setCursorPosition] = useState({ line: 1, column: 1 });
+
+  // New state for enhanced UI
+  const [activePanel, setActivePanel] = useState('files');
+  const [files, setFiles] = useState([
+    { name: 'main.cpp', content: STARTING_CODE, isActive: true }
+  ]);
+  const [currentFile, setCurrentFile] = useState('main.cpp');
+  const [settings, setSettings] = useState({
+    minimap: true,
+    wordWrap: false,
+    lineNumbers: true,
+    fontSize: 14,
+    autoSave: false,
+    theme: 'vs-dark',
+    suggestions: true,
+    syntaxHighlighting: true,
+    cacheDuration: 500
+  });
+
   const editorRef = useRef(null);
   const monacoRef = useRef(null);
   const triggerTimeout = useRef(null);
@@ -312,22 +330,64 @@ export default function App() {
   };
 
   const handleKeyDown = (e) => {
-    if (!popupVisible || suggestions.length === 0) return;
-
-    if (e.key === 'ArrowDown') {
-      e.preventDefault();
-      setSelectedIndex(prev => (prev + 1) % suggestions.length);
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      setSelectedIndex(prev => (prev - 1 + suggestions.length) % suggestions.length);
-    } else if (e.key === 'Enter' || e.key === 'Tab') {
-      e.preventDefault();
-      if (suggestions[selectedIndex]) {
-        handleSelectSuggestion(suggestions[selectedIndex]);
+    // Handle suggestion popup navigation
+    if (popupVisible && suggestions.length > 0) {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setSelectedIndex(prev => (prev + 1) % suggestions.length);
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setSelectedIndex(prev => (prev - 1 + suggestions.length) % suggestions.length);
+      } else if (e.key === 'Enter' || e.key === 'Tab') {
+        e.preventDefault();
+        if (suggestions[selectedIndex]) {
+          handleSelectSuggestion(suggestions[selectedIndex]);
+        }
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        setPopupVisible(false);
       }
-    } else if (e.key === 'Escape') {
+      return;
+    }
+
+    // Global keyboard shortcuts
+    if (e.ctrlKey || e.metaKey) {
+      switch (e.key) {
+        case 's':
+          e.preventDefault();
+          handleSaveFile();
+          break;
+        case 'o':
+          e.preventDefault();
+          handleOpenFile();
+          break;
+        case 'n':
+          e.preventDefault();
+          handleNewFile();
+          break;
+        case 'f':
+          e.preventDefault();
+          setActivePanel('search');
+          break;
+        case 'b':
+          e.preventDefault();
+          setActivePanel(activePanel === 'files' ? null : 'files');
+          break;
+        case ',':
+          e.preventDefault();
+          setActivePanel('settings');
+          break;
+      }
+    } else if (e.key === 'F5') {
       e.preventDefault();
-      setPopupVisible(false);
+      if (!isRunning) {
+        handleRunCode();
+      }
+    } else if (e.key === 'F6') {
+      e.preventDefault();
+      if (isRunning) {
+        handleStopExecution();
+      }
     }
   };
 
@@ -554,6 +614,12 @@ export default function App() {
   const handleEditorChange2 = (value) => {
     const newCode = value || '';
     setCode(newCode);
+
+    // Update the current file's content
+    setFiles(files.map(f =>
+      f.name === currentFile ? { ...f, content: newCode } : f
+    ));
+
     // Debounce suggestion trigger - wait slightly longer for better performance
     if (triggerTimeout.current) {
       clearTimeout(triggerTimeout.current);
@@ -622,30 +688,142 @@ export default function App() {
     }
   };
 
+  // New handler functions for enhanced UI
+  const handlePanelChange = (panelId) => {
+    setActivePanel(panelId);
+  };
+
+  const handleFileSelect = (file) => {
+    setCurrentFile(file.name);
+    setCode(file.content);
+    // Update files array to mark this file as active
+    setFiles(files.map(f => ({ ...f, isActive: f.name === file.name })));
+  };
+
+  const handleNewFile = () => {
+    const fileName = prompt('Enter file name (with .cpp extension):');
+    if (fileName) {
+      const newFile = {
+        name: fileName,
+        content: `#include <iostream>
+using namespace std;
+
+int main() {
+    cout << "Hello from ${fileName}!" << endl;
+    return 0;
+}`,
+        isActive: true
+      };
+      setFiles(files.map(f => ({ ...f, isActive: false })).concat(newFile));
+      setCurrentFile(fileName);
+      setCode(newFile.content);
+    }
+  };
+
+  const handleSaveFile = () => {
+    const currentFileData = files.find(f => f.name === currentFile);
+    if (currentFileData) {
+      // In a real app, this would save to a backend or local storage
+      const updatedFiles = files.map(f =>
+        f.name === currentFile ? { ...f, content: code } : f
+      );
+      setFiles(updatedFiles);
+      alert(`File ${currentFile} saved successfully!`);
+    }
+  };
+
+  const handleOpenFile = () => {
+    // In a real app, this would open a file dialog
+    alert('File open functionality would be implemented here');
+  };
+
+  const handleSettingsChange = (newSettings) => {
+    setSettings(newSettings);
+    // Apply settings to Monaco editor
+    if (editorRef.current) {
+      const editor = editorRef.current;
+      editor.updateOptions({
+        minimap: { enabled: newSettings.minimap },
+        wordWrap: newSettings.wordWrap ? 'on' : 'off',
+        lineNumbers: newSettings.lineNumbers ? 'on' : 'off',
+        fontSize: newSettings.fontSize
+      });
+    }
+  };
+
+  const handleFormatCode = () => {
+    if (editorRef.current) {
+      editorRef.current.getAction('editor.action.formatDocument').run();
+    }
+  };
+
+  const handleToggleMinimap = () => {
+    const newSettings = { ...settings, minimap: !settings.minimap };
+    setSettings(newSettings);
+    if (editorRef.current) {
+      editorRef.current.updateOptions({
+        minimap: { enabled: newSettings.minimap }
+      });
+    }
+  };
+
+  const handleToggleWordWrap = () => {
+    const newSettings = { ...settings, wordWrap: !settings.wordWrap };
+    setSettings(newSettings);
+    if (editorRef.current) {
+      editorRef.current.updateOptions({
+        wordWrap: newSettings.wordWrap ? 'on' : 'off'
+      });
+    }
+  };
+
   return (
     <div className="app-layout">
       <div className="main-content">
         <div className="toolbar">
           <div className="toolbar-left">
             <h1>IntelliCPP</h1>
+            <span className="current-file">{currentFile}</span>
           </div>
           <div className="toolbar-center">
             <div className="toolbar-actions">
+              <button 
+                className="toolbar-button"
+                onClick={handleFormatCode} 
+                title="Format Code (Shift+Alt+F)"
+              >
+                <Code size={16} />
+              </button>
+              <button 
+                className={`toolbar-button ${settings.minimap ? 'active' : ''}`}
+                onClick={handleToggleMinimap} 
+                title="Toggle Minimap"
+              >
+                <Minimap size={16} />
+              </button>
+              <button 
+                className={`toolbar-button ${settings.wordWrap ? 'active' : ''}`}
+                onClick={handleToggleWordWrap} 
+                title="Toggle Word Wrap"
+              >
+                <WrapText size={16} />
+              </button>
+              <div className="toolbar-separator"></div>
               {!isRunning ? (
                 <button 
                   className="run-button"
                   onClick={handleRunCode} 
                   disabled={outputLoading} 
-                  title="Run Code"
+                  title="Run Code (F5)"
                 >
                   <Play size={16} />
-                  <span>Run Code</span>
+                  <span>Run</span>
                 </button>
               ) : (
                 <button 
                   className="stop-button"
                   onClick={handleStopExecution} 
-                  title="Stop Execution"
+                  title="Stop Execution (F6)"
                 >
                   <Square size={16} />
                   <span>Stop</span>
@@ -657,7 +835,6 @@ export default function App() {
                 title="Clear Output"
               >
                 <Trash2 size={16} />
-                <span>Clear Output</span>
               </button>
             </div>
           </div>
@@ -667,7 +844,70 @@ export default function App() {
         </div>
 
         <div className="editor-area">
-          <Sidebar />
+          <Sidebar
+            activePanel={activePanel}
+            onPanelChange={handlePanelChange}
+            onNewFile={handleNewFile}
+            onSaveFile={handleSaveFile}
+            onOpenFile={handleOpenFile}
+          />
+
+          {/* Side Panel */}
+          {activePanel && (
+            <div className="side-panel">
+              {activePanel === 'files' && (
+                <FileExplorer
+                  onFileSelect={handleFileSelect}
+                  currentFile={currentFile}
+                />
+              )}
+              {activePanel === 'search' && (
+                <SearchPanel
+                  code={code}
+                  onResultSelect={handleSearchResult}
+                />
+              )}
+              {activePanel === 'settings' && (
+                <SettingsPanel
+                  settings={settings}
+                  onSettingsChange={handleSettingsChange}
+                />
+              )}
+              {activePanel === 'run' && (
+                <div className="run-panel">
+                  <h3>RUN & DEBUG</h3>
+                  <div className="run-controls">
+                    <button
+                      className={`run-button ${isRunning ? 'running' : ''}`}
+                      onClick={handleRunCode}
+                      disabled={outputLoading}
+                    >
+                      {isRunning ? 'Running...' : 'Run Code'}
+                    </button>
+                    <button
+                      className="stop-button"
+                      onClick={handleStopExecution}
+                      disabled={!isRunning}
+                    >
+                      Stop
+                    </button>
+                    <button
+                      className="clear-button"
+                      onClick={handleClearOutput}
+                    >
+                      Clear Output
+                    </button>
+                  </div>
+                  <div className="run-info">
+                    <p><strong>Current File:</strong> {currentFile}</p>
+                    <p><strong>Status:</strong> {isRunning ? 'Running' : 'Ready'}</p>
+                    <p><strong>Latency:</strong> {latency}ms</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           <div className="editor-wrapper">
             <div className="editor-container" onKeyDown={handleKeyDown} onClick={() => {
               // Update cursor position on click
@@ -687,10 +927,10 @@ export default function App() {
                 value={code}
                 onChange={handleEditorChange2}
                 onMount={handleEditorDidMount}
-                theme={theme['--monaco-theme']}
+                theme={settings.theme === 'vs-dark' ? 'vs-dark' : settings.theme}
                 options={{
-                  minimap: { enabled: true },
-                  fontSize: 14,
+                  minimap: { enabled: settings.minimap },
+                  fontSize: settings.fontSize,
                   lineHeight: 24,
                   fontFamily: 'JetBrains Mono, "Fira Code", "Cascadia Code", Consolas, monospace',
                   fontLigatures: true,
@@ -706,6 +946,8 @@ export default function App() {
                   automaticLayout: true,
                   renderLineHighlight: 'line',
                   renderWhitespace: 'selection',
+                  wordWrap: settings.wordWrap ? 'on' : 'off',
+                  lineNumbers: settings.lineNumbers ? 'on' : 'off',
                   scrollBeyondLastLine: false,
                   bracketPairColorization: { enabled: true },
                   guides: {
