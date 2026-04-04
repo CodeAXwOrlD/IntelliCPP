@@ -1,14 +1,15 @@
 import React, { useState } from 'react';
-import { Settings, Palette, Keyboard, Code, Zap } from 'lucide-react';
+import { Settings, Palette, Keyboard, Code, Zap, FileText } from 'lucide-react';
+import { codeTemplates } from '../utils/codeTemplates';
 
-export default function SettingsPanel({ settings, onSettingsChange }) {
+export default function SettingsPanel({ settings, onSettingsChange, onTemplateSelect }) {
   const [activeSection, setActiveSection] = useState('editor');
 
   const sections = [
     { id: 'editor', icon: Code, label: 'Editor', component: EditorSettings },
     { id: 'theme', icon: Palette, label: 'Theme', component: ThemeSettings },
     { id: 'shortcuts', icon: Keyboard, label: 'Shortcuts', component: ShortcutsSettings },
-    { id: 'performance', icon: Zap, label: 'Performance', component: PerformanceSettings }
+    { id: 'templates', icon: FileText, label: 'Templates', component: TemplatesSettings }
   ];
 
   const ActiveComponent = sections.find(s => s.id === activeSection)?.component;
@@ -37,7 +38,13 @@ export default function SettingsPanel({ settings, onSettingsChange }) {
         </div>
 
         <div className="settings-main">
-          {ActiveComponent && <ActiveComponent settings={settings} onSettingsChange={onSettingsChange} />}
+          {ActiveComponent && (
+            activeSection === 'templates' ? (
+              <ActiveComponent onTemplateSelect={onTemplateSelect} />
+            ) : (
+              <ActiveComponent settings={settings} onSettingsChange={onSettingsChange} />
+            )
+          )}
         </div>
       </div>
     </div>
@@ -171,45 +178,23 @@ function ShortcutsSettings() {
   );
 }
 
-function PerformanceSettings({ settings, onSettingsChange }) {
+function TemplatesSettings({ onTemplateSelect }) {
   return (
     <div className="settings-section-content">
-      <h4>Performance Settings</h4>
+      <h4>Code Templates</h4>
+      <p className="settings-description">Click on a template to insert it into your code.</p>
 
-      <div className="setting-group">
-        <label>
-          <input
-            type="checkbox"
-            checked={settings.suggestions || true}
-            onChange={(e) => onSettingsChange({ ...settings, suggestions: e.target.checked })}
-          />
-          Enable IntelliSense
-        </label>
-      </div>
-
-      <div className="setting-group">
-        <label>
-          <input
-            type="checkbox"
-            checked={settings.syntaxHighlighting || true}
-            onChange={(e) => onSettingsChange({ ...settings, syntaxHighlighting: e.target.checked })}
-          />
-          Syntax Highlighting
-        </label>
-      </div>
-
-      <div className="setting-group">
-        <label>
-          Cache Duration: {settings.cacheDuration || 500}ms
-          <input
-            type="range"
-            min="100"
-            max="2000"
-            step="100"
-            value={settings.cacheDuration || 500}
-            onChange={(e) => onSettingsChange({ ...settings, cacheDuration: parseInt(e.target.value) })}
-          />
-        </label>
+      <div className="templates-grid">
+        {Object.entries(codeTemplates).map(([name, code]) => (
+          <div
+            key={name}
+            className="template-item"
+            onClick={() => onTemplateSelect && onTemplateSelect(code)}
+          >
+            <h5>{name}</h5>
+            <pre className="template-preview">{code.split('\n').slice(0, 5).join('\n')}{code.split('\n').length > 5 ? '\n...' : ''}</pre>
+          </div>
+        ))}
       </div>
     </div>
   );

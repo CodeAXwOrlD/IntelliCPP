@@ -1,13 +1,64 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Editor } from '@monaco-editor/react';
-import { Play, Square, Trash2, Code, Minimap, WrapText, ZoomIn, ZoomOut } from 'lucide-react';
+import { Play, Square, Trash2, Code, Map as MapIcon, WrapText, Plus, Upload, Save, Search, MoreVertical } from 'lucide-react';
 import SuggestionPopup from './components/SuggestionPopup';
 import ThemeToggle from './components/ThemeToggle';
 import Sidebar from './components/Sidebar';
 import StatusBar from './components/StatusBar';
 import OutputPanel from './components/OutputPanel';
-import { useTheme } from './theme/ThemeContext';
+import FileExplorer from './components/FileExplorer';
+import SearchPanel from './components/SearchPanel';
+import SettingsPanel from './components/SettingsPanel';
+import WelcomeScreen from './components/WelcomeScreen';
 import './styles/glassmorphism.css';
+
+// Improved UI Theme System
+const THEMES = {
+  dark: {
+    bg: "#0d1117",
+    surface: "#161b22",
+    card: "#1c2230",
+    border: "#30363d",
+    accent: "#58a6ff",
+    accentGlow: "#1f6feb44",
+    accentHover: "#79c0ff",
+    text: "#e6edf3",
+    textMuted: "#8b949e",
+    textDim: "#484f58",
+    green: "#3fb950",
+    red: "#f85149",
+    orange: "#d29922",
+    keyword: "#ff7b72",
+    type: "#ffa657",
+    func: "#d2a8ff",
+    string: "#a5d6ff",
+    comment: "#8b949e",
+    macro: "#79c0ff",
+    number: "#79c0ff",
+  },
+  light: {
+    bg: "#f8fafc",
+    surface: "#ffffff",
+    card: "#f1f5f9",
+    border: "#e2e8f0",
+    accent: "#0969da",
+    accentGlow: "#0969da22",
+    accentHover: "#1d75d8",
+    text: "#1e293b",
+    textMuted: "#64748b",
+    textDim: "#94a3b8",
+    green: "#1a7f37",
+    red: "#cf222e",
+    orange: "#9a6700",
+    keyword: "#cf222e",
+    type: "#953800",
+    func: "#6639ba",
+    string: "#0550ae",
+    comment: "#6e7781",
+    macro: "#0550ae",
+    number: "#0550ae",
+  },
+};
 
 const STARTING_CODE = `#include <iostream>
 #include <vector>
@@ -19,35 +70,40 @@ int main() {
     return 0;
 }`;
 
-// Cache for API responses to improve performance
+// Cache for API responses
 const apiCache = new Map();
-const CACHE_DURATION = 500; // 500ms cache duration
+const CACHE_DURATION = 500;
 
-// Helper function to call backend API (works in both Electron and cloud environments)
+// STL Symbol Database (for reference/documentation)
+const STL_CONTAINERS = {
+  vector: { icon: "V", color: "#3fb950", header: "#include <vector>" },
+  string: { icon: "S", color: "#58a6ff", header: "#include <string>" },
+  map: { icon: "M", color: "#d2a8ff", header: "#include <map>" },
+  stack: { icon: "Sk", color: "#ffa657", header: "#include <stack>" },
+  queue: { icon: "Q", color: "#ff7b72", header: "#include <queue>" },
+  set: { icon: "St", color: "#79c0ff", header: "#include <set>" },
+  algorithm: { icon: "A", color: "#79c0ff", header: "#include <algorithm>" },
+};
+
+// Helper function to call backend API (works in both Electron and cloud)
 const callBackendAPI = async (method, ...args) => {
-  // Skip Electron IPC in web environment
   const isElectron = typeof window !== 'undefined' && window.process && window.process.type;
   if (isElectron && window.api && window.api[method]) {
     return window.api[method](...args);
   }
 
-  // Create cache key based on method and arguments
   const cacheKey = `${method}:${JSON.stringify(args)}`;
   const now = Date.now();
   
-  // Check if we have a valid cached response
   if (apiCache.has(cacheKey)) {
     const cached = apiCache.get(cacheKey);
     if (now - cached.timestamp < CACHE_DURATION) {
       return cached.data;
     } else {
-      // Remove expired cache entry
       apiCache.delete(cacheKey);
     }
   }
 
-  // Call backend API directly
-  // Use relative URL for production/Vercel, localhost for development
   const isDevelopment = process.env.NODE_ENV === 'development' || window.location.hostname === 'localhost';
   const apiUrl = isDevelopment 
     ? `http://localhost:3001/api/${method}`
@@ -58,13 +114,22 @@ const callBackendAPI = async (method, ...args) => {
 
     if (method === 'getSuggestions') {
       const [prefix, contextType, code, cursorPosition] = args;
-      requestBody = { prefix, contextType, code, column: cursorPosition };
+      requestBody = { prefix, contextType, code, cursorPosition };
     } else if (method === 'getStats') {
       const [code] = args;
       requestBody = { code };
     } else if (method === 'runCode') {
       const [code] = args;
       requestBody = { code };
+    } else if (method === 'listWorkspace') {
+      const [subpath] = args;
+      requestBody = { subpath };
+    } else if (method === 'readFile') {
+      const [filePath] = args;
+      requestBody = { filePath };
+    } else if (method === 'writeFile') {
+      const [filePath, content] = args;
+      requestBody = { filePath, content };
     }
 
     console.log('[Frontend] 🚀 API Call:', { method, apiUrl, requestBody });
@@ -86,17 +151,11 @@ const callBackendAPI = async (method, ...args) => {
     const data = await response.json();
     console.log('[Frontend] 📥 API Response:', data);
 
-    // Cache the response
-    apiCache.set(cacheKey, {
-      data,
-      timestamp: now
-    });
-
+    apiCache.set(cacheKey, { data, timestamp: now });
     return data;
   } catch (error) {
     console.error('[Frontend] ❌ API Error:', error);
     
-    // Return fallback data for critical functions
     if (method === 'getSuggestions') {
       return [];
     } else if (method === 'getStats') {
@@ -109,71 +168,84 @@ const callBackendAPI = async (method, ...args) => {
 };
 
 export default function App() {
-  const { theme } = useTheme();
+  // Monaco & Code State
   const [code, setCode] = useState(STARTING_CODE);
+  const [currentFile, setCurrentFile] = useState('main.cpp');
+  const [files, setFiles] = useState([
+    { name: 'main.cpp', content: STARTING_CODE, isActive: true }
+  ]);
+
+  // UI Theme & Layout
+  const [uiTheme, setUiTheme] = useState('dark');
+  const t = THEMES[uiTheme];
+  const [activeTab, setActiveTab] = useState('editor'); // editor | search | settings | ai
+  const [showAIPanel, setShowAIPanel] = useState(false);
+
+  // Suggestions & Autocomplete
   const [suggestions, setSuggestions] = useState([]);
   const [popupVisible, setPopupVisible] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [popupPosition, setPopupPosition] = useState({ top: 0, left: 0 });
+
+  // Metrics
   const [symbolCount, setSymbolCount] = useState(0);
   const [latency, setLatency] = useState(0);
   const [includedLibs, setIncludedLibs] = useState([]);
+  const [cursorPosition, setCursorPosition] = useState({ line: 1, column: 1 });
+
+  // Output Panel
   const [outputPanelVisible, setOutputPanelVisible] = useState(false);
   const [outputLoading, setOutputLoading] = useState(false);
   const [isRunning, setIsRunning] = useState(false);
   const [outputResult, setOutputResult] = useState('');
   const [outputError, setOutputError] = useState('');
   const [outputPanelHeight, setOutputPanelHeight] = useState(220);
-  const [cursorPosition, setCursorPosition] = useState({ line: 1, column: 1 });
 
-  // New state for enhanced UI
-  const [activePanel, setActivePanel] = useState('files');
-  const [files, setFiles] = useState([
-    { name: 'main.cpp', content: STARTING_CODE, isActive: true }
-  ]);
-  const [currentFile, setCurrentFile] = useState('main.cpp');
+  // AI Assistant
+  const [aiQuery, setAiQuery] = useState('');
+  const [aiResponse, setAiResponse] = useState('');
+  const [aiLoading, setAiLoading] = useState(false);
+
+  // Workspace
+  const [workspaceTree, setWorkspaceTree] = useState([]);
+  const [workspacePath, setWorkspacePath] = useState('');
+  const [backendStatus, setBackendStatus] = useState({ healthy: false, message: 'Checking backend...' });
+
+  // Settings
   const [settings, setSettings] = useState({
     minimap: true,
     wordWrap: false,
     lineNumbers: true,
     fontSize: 14,
-    autoSave: false,
     theme: 'vs-dark',
     suggestions: true,
-    syntaxHighlighting: true,
-    cacheDuration: 500
   });
 
+  // Refs
   const editorRef = useRef(null);
   const monacoRef = useRef(null);
+  const hiddenFileInputRef = useRef(null);
   const triggerTimeout = useRef(null);
   const syntaxCheckTimeout = useRef(null);
   const cursorUpdateInterval = useRef(null);
 
-  // Cleanup intervals on unmount
+  // Cleanup
   useEffect(() => {
     return () => {
-      if (cursorUpdateInterval.current) {
-        clearInterval(cursorUpdateInterval.current);
-      }
-      if (triggerTimeout.current) {
-        clearTimeout(triggerTimeout.current);
-      }
-      if (syntaxCheckTimeout.current) {
-        clearTimeout(syntaxCheckTimeout.current);
-      }
+      if (cursorUpdateInterval.current) clearInterval(cursorUpdateInterval.current);
+      if (triggerTimeout.current) clearTimeout(triggerTimeout.current);
+      if (syntaxCheckTimeout.current) clearTimeout(syntaxCheckTimeout.current);
     };
   }, []);
 
+  // Monaco Editor Mount
   const handleEditorDidMount = (editor, monaco) => {
     editorRef.current = editor;
     monacoRef.current = monaco;
     
-    // Update cursor position immediately on any cursor movement
     const updateCursorPosition = () => {
       const position = editor.getPosition();
       if (position) {
-        console.log('Cursor position:', position.lineNumber, position.column);
         setCursorPosition({
           line: position.lineNumber,
           column: position.column
@@ -181,85 +253,42 @@ export default function App() {
       }
     };
     
-    // Add listener for cursor position changes
-    editor.onDidChangeCursorPosition((e) => {
-      console.log('Cursor changed:', e.position);
-      updateCursorPosition();
-    });
+    editor.onDidChangeCursorPosition(() => updateCursorPosition());
+    editor.onMouseDown(() => setTimeout(updateCursorPosition, 10));
+    editor.onKeyDown(() => setTimeout(updateCursorPosition, 10));
+    editor.onDidChangeModelContent(() => updateCursorPosition());
     
-    // Add listener for mouse clicks
-    editor.onMouseDown((e) => {
-      setTimeout(updateCursorPosition, 10);
-    });
-    
-    // Add listener for key presses
-    editor.onKeyDown((e) => {
-      setTimeout(updateCursorPosition, 10);
-    });
-    
-    // Add listener for content changes (typing)
-    editor.onDidChangeModelContent((e) => {
-      updateCursorPosition();
-    });
-    
-    // Set initial position
     updateCursorPosition();
-    
-    // Start polling as fallback (every 200ms)
     cursorUpdateInterval.current = setInterval(updateCursorPosition, 200);
     
-    // Add real-time syntax error highlighting
+    // Syntax checking
     editor.onDidChangeModelContent(() => {
-      if (syntaxCheckTimeout.current) {
-        clearTimeout(syntaxCheckTimeout.current);
-      }
+      if (syntaxCheckTimeout.current) clearTimeout(syntaxCheckTimeout.current);
       syntaxCheckTimeout.current = setTimeout(() => {
         checkSyntaxErrors(editor, monaco);
-      }, 500); // Debounce for 500ms
+      }, 500);
     });
   };
-  
+
+  // Syntax Error Detection
   const checkSyntaxErrors = (editor, monaco) => {
     const model = editor.getModel();
     const code = model.getValue();
-    
-    // Simple syntax error detection
     const errors = [];
     const lines = code.split('\n');
     
     lines.forEach((line, index) => {
       const lineNumber = index + 1;
       
-      // Check for common syntax errors
-      if (line.includes('<<') && line.includes('<') && !line.includes('<=')) {
-        // Potential missing second < in cout statement
-        const coutMatch = line.match(/cout\s*<</);
-        if (coutMatch && !line.includes('<<') && line.includes('<')) {
-          errors.push({
-            startLineNumber: lineNumber,
-            startColumn: line.indexOf('<') + 1,
-            endLineNumber: lineNumber,
-            endColumn: line.indexOf('<') + 2,
-            message: 'Missing second < operator. Should be <<',
-            severity: monaco.MarkerSeverity.Error
-          });
-        }
-      }
-      
-      // Check for unmatched brackets
+      // Bracket matching
       const openBrackets = (line.match(/\(/g) || []).length;
       const closeBrackets = (line.match(/\)/g) || []).length;
       if (openBrackets !== closeBrackets) {
-        // Find the exact position of extra brackets
         let bracketCount = 0;
         for (let i = 0; i < line.length; i++) {
-          if (line[i] === '(') {
-            bracketCount++;
-          } else if (line[i] === ')') {
-            bracketCount--;
-          }
+          if (line[i] === '(') bracketCount++;
+          else if (line[i] === ')') bracketCount--;
           
-          // If we have more closing than opening at any point, highlight the extra )
           if (bracketCount < 0) {
             errors.push({
               startLineNumber: lineNumber,
@@ -269,11 +298,10 @@ export default function App() {
               message: 'Extra closing parenthesis',
               severity: monaco.MarkerSeverity.Error
             });
-            bracketCount = 0; // Reset to continue checking
+            bracketCount = 0;
           }
         }
         
-        // If we still have unmatched opening brackets
         if (bracketCount > 0) {
           errors.push({
             startLineNumber: lineNumber,
@@ -285,193 +313,163 @@ export default function App() {
           });
         }
       }
-      
-      // Check for unmatched braces (but ignore main function declaration)
-      const openBraces = (line.match(/\{/g) || []).length;
-      const closeBraces = (line.match(/\}/g) || []).length;
-      if (openBraces !== closeBraces) {
-        // Don't warn for main function opening brace
-        const isMainFunction = line.includes('int main()') || line.includes('main()');
-        if (!isMainFunction || openBraces !== 1 || closeBraces !== 0) {
-          errors.push({
-            startLineNumber: lineNumber,
-            startColumn: 1,
-            endLineNumber: lineNumber,
-            endColumn: line.length + 1,
-            message: `Unmatched braces: ${openBraces} opening, ${closeBraces} closing`,
-            severity: monaco.MarkerSeverity.Warning
-          });
-        }
-      }
-      
-      // Check for missing semicolons at end of statements
-      if (line.trim().length > 0 && 
-          !line.trim().endsWith(';') && 
-          !line.trim().endsWith('{') && 
-          !line.trim().endsWith('}') &&
-          !line.trim().startsWith('#') &&
-          !line.trim().includes('//')) {
-        // Only flag if it looks like a statement
-        if (line.includes('=') || line.includes('(') || line.match(/\w+\s+\w+/)) {
-          errors.push({
-            startLineNumber: lineNumber,
-            startColumn: line.length,
-            endLineNumber: lineNumber,
-            endColumn: line.length + 1,
-            message: 'Missing semicolon at end of statement',
-            severity: monaco.MarkerSeverity.Warning
-          });
-        }
-      }
     });
     
-    // Set markers in the editor
     monaco.editor.setModelMarkers(model, 'owner', errors);
   };
 
-  const handleKeyDown = (e) => {
-    // Handle suggestion popup navigation
-    if (popupVisible && suggestions.length > 0) {
-      if (e.key === 'ArrowDown') {
-        e.preventDefault();
-        setSelectedIndex(prev => (prev + 1) % suggestions.length);
-      } else if (e.key === 'ArrowUp') {
-        e.preventDefault();
-        setSelectedIndex(prev => (prev - 1 + suggestions.length) % suggestions.length);
-      } else if (e.key === 'Enter' || e.key === 'Tab') {
-        e.preventDefault();
-        if (suggestions[selectedIndex]) {
-          handleSelectSuggestion(suggestions[selectedIndex]);
-        }
-      } else if (e.key === 'Escape') {
-        e.preventDefault();
-        setPopupVisible(false);
+  // Backend Health Check
+  const checkBackendHealth = useCallback(async () => {
+    try {
+      const response = await fetch('/health');
+      if (!response.ok) throw new Error('Backend unreachable');
+      setBackendStatus({ healthy: true, message: 'Backend online' });
+      if (!workspaceTree.length) {
+        await refreshWorkspace('');
       }
-      return;
+      return true;
+    } catch (err) {
+      setBackendStatus({ healthy: false, message: 'Backend offline' });
+      return false;
     }
+  }, [workspaceTree.length]);
 
-    // Global keyboard shortcuts
-    if (e.ctrlKey || e.metaKey) {
-      switch (e.key) {
-        case 's':
-          e.preventDefault();
-          handleSaveFile();
-          break;
-        case 'o':
-          e.preventDefault();
-          handleOpenFile();
-          break;
-        case 'n':
-          e.preventDefault();
-          handleNewFile();
-          break;
-        case 'f':
-          e.preventDefault();
-          setActivePanel('search');
-          break;
-        case 'b':
-          e.preventDefault();
-          setActivePanel(activePanel === 'files' ? null : 'files');
-          break;
-        case ',':
-          e.preventDefault();
-          setActivePanel('settings');
-          break;
+  useEffect(() => {
+    checkBackendHealth();
+    const interval = setInterval(checkBackendHealth, 5000);
+    return () => clearInterval(interval);
+  }, [checkBackendHealth]);
+
+  // Workspace Functions
+  const refreshWorkspace = async (subpath = '') => {
+    if (!backendStatus.healthy) return;
+    try {
+      const result = await callBackendAPI('listWorkspace', subpath);
+      if (result && result.entries) {
+        setWorkspaceTree(result.entries);
+        setWorkspacePath(result.path || '');
       }
-    } else if (e.key === 'F5') {
-      e.preventDefault();
-      if (!isRunning) {
-        handleRunCode();
-      }
-    } else if (e.key === 'F6') {
-      e.preventDefault();
-      if (isRunning) {
-        handleStopExecution();
-      }
+    } catch (err) {
+      console.error('Failed to refresh workspace', err);
     }
   };
 
-  // ✅ RULE 5: DOT REPLACEMENT INSERTION
-  const handleSelectSuggestion = (suggestion) => {
+  const openFileFromWorkspace = async (filePath) => {
+    if (!backendStatus.healthy) return;
+    try {
+      const result = await callBackendAPI('readFile', filePath);
+      if (result && typeof result.content === 'string') {
+        setCurrentFile(filePath);
+        setCode(result.content);
+        setFiles((prev) => {
+          const existing = prev.find((f) => f.name === filePath);
+          if (existing) {
+            return prev.map((f) => (f.name === filePath ? { ...f, content: result.content } : f));
+          }
+          return [...prev, { name: filePath, content: result.content }];
+        });
+      }
+    } catch (err) {
+      console.error('Read file failed:', err);
+    }
+  };
+
+  const saveFileToWorkspace = async () => {
+    if (!backendStatus.healthy) {
+      alert('Backend offline, using local download fallback.');
+      handleSaveFile();
+      return;
+    }
+    try {
+      const result = await callBackendAPI('writeFile', currentFile, code);
+      if (result && result.success) {
+        alert(`Saved to workspace: ${currentFile}`);
+      } else {
+        throw new Error(result?.error || 'save failed');
+      }
+    } catch (err) {
+      console.error('writeFile failed', err);
+      alert(`Save failed: ${err.message}`);
+    }
+  };
+
+  // Suggestion Triggering
+  const triggerSuggestions = (currentCode) => {
     const editor = editorRef.current;
-    const monaco = monacoRef.current;
-    if (!editor || !monaco) return;
+    if (!editor) {
+      setPopupVisible(false);
+      return;
+    }
 
     const model = editor.getModel();
     const position = editor.getPosition();
     const lineContent = model.getLineContent(position.lineNumber);
     const beforeCursor = lineContent.substring(0, position.column - 1);
 
-    // Extract the actual text to insert from the suggestion
-    const suggestionText = suggestion.insertText || suggestion.label || suggestion.text || '';
-
-    // Find the dot position
-    const dotPos = beforeCursor.lastIndexOf('.');
-    if (dotPos >= 0) {
-      // Monaco columns are 1-based
-      // dotPos is 0-based index in the line
-      // We want to replace from after the dot to the current cursor
-      const range = new monaco.Range(
-        position.lineNumber,
-        dotPos + 2,  // Column after the dot (1-based: dotPos + 1 for dot, + 1 for after)
-        position.lineNumber,
-        position.column  // Current cursor position (1-based)
-      );
-      
-      // Insert method with parentheses
-      editor.executeEdits('suggestion', [{
-        range: range,
-        text: suggestionText + '()'
-      }]);
-      
-      // ✅ RULE 5: Position cursor inside parentheses
-      // After insertion, cursor should be inside the empty parentheses
-      const newPosition = {
-        lineNumber: position.lineNumber,
-        column: dotPos + 2 + suggestionText.length + 1  // Position between ()
-      };
-      editor.setPosition(newPosition);
-    } else {
-      // General case: replace the current word/token with the suggestion
-      // Find the start of the current token
-      let startPos = position.column - 1;
-      while (startPos > 0 && /[a-zA-Z0-9_]/.test(beforeCursor[startPos - 1])) {
-        startPos--;
-      }
-
-      const range = new monaco.Range(
-        position.lineNumber,
-        startPos + 1, // Convert to 1-based
-        position.lineNumber,
-        position.column // Current cursor position (1-based)
-      );
-
-      editor.executeEdits('suggestion', [{
-        range: range,
-        text: suggestionText
-      }]);
-
-      // Position cursor after the inserted text
-      const newPosition = {
-        lineNumber: position.lineNumber,
-        column: startPos + 1 + suggestionText.length
-      };
-      editor.setPosition(newPosition);
+    if (!beforeCursor || beforeCursor.trim().length === 0) {
+      setPopupVisible(false);
+      return;
     }
 
-    setPopupVisible(false);
-    editor.focus();
+    // Dot suggestion
+    const dotMatch = beforeCursor.match(/(\w+)\.([a-zA-Z_]*)$/);
+    if (dotMatch) {
+      const startTime = Date.now();
+      const objectName = dotMatch[1];
+      const prefix = dotMatch[2];
+
+      if (prefix.length > 0) {
+        callBackendAPI('getSuggestions', prefix, objectName, currentCode, position.column).then((realSuggestions) => {
+          const elapsed = Date.now() - startTime;
+          setLatency(elapsed);
+          setSuggestions(realSuggestions || []);
+          setSelectedIndex(0);
+          setPopupPosition(calculatePopupPosition());
+          setPopupVisible((realSuggestions || []).length > 0);
+        }).catch(() => {
+          setSuggestions([]);
+          setPopupVisible(false);
+        });
+      } else {
+        setPopupVisible(false);
+      }
+    } else if (beforeCursor.endsWith('.')) {
+      const match = beforeCursor.match(/(\w+)\.$/);
+      if (match) {
+        const startTime = Date.now();
+        const objectName = match[1];
+
+        callBackendAPI('getSuggestions', '', objectName, currentCode, position.column).then((realSuggestions) => {
+          const elapsed = Date.now() - startTime;
+          setLatency(elapsed);
+          setSuggestions(realSuggestions || []);
+          setSelectedIndex(0);
+          setPopupPosition(calculatePopupPosition());
+          setPopupVisible((realSuggestions || []).length > 0);
+        }).catch(() => {
+          setSuggestions([]);
+          setPopupVisible(false);
+        });
+      }
+    }
+
+    // Stats
+    callBackendAPI('getStats', currentCode).then((stats) => {
+      setSymbolCount(stats.symbolCount || 0);
+      setIncludedLibs(stats.includedLibraries || []);
+    }).catch(() => {
+      setSymbolCount(0);
+      setIncludedLibs([]);
+    });
   };
 
   const calculatePopupPosition = () => {
     const editor = editorRef.current;
     if (!editor) return { top: 0, left: 0 };
-
     try {
       const position = editor.getPosition();
       const containerDom = editor.getDomNode();
       const editorRect = containerDom.getBoundingClientRect();
-
       const cursorCoords = editor.getScrolledVisiblePosition(position);
       if (!cursorCoords) return { top: 0, left: 0 };
 
@@ -485,149 +483,80 @@ export default function App() {
     }
   };
 
-  // ✅ RULE 4: LIVE FILTERING - dynamically filter suggestions as user types
-  const triggerSuggestions = (currentCode) => {
+  const handleEditorChange = (value) => {
+    const newCode = value || '';
+    setCode(newCode);
+    setFiles(files.map(f =>
+      f.name === currentFile ? { ...f, content: newCode } : f
+    ));
+
+    if (triggerTimeout.current) {
+      clearTimeout(triggerTimeout.current);
+    }
+    triggerTimeout.current = setTimeout(() => triggerSuggestions(newCode), 200);
+  };
+
+  const handleSelectSuggestion = (suggestion) => {
     const editor = editorRef.current;
-    if (!editor) return;
+    const monaco = monacoRef.current;
+    if (!editor || !monaco) return;
 
     const model = editor.getModel();
     const position = editor.getPosition();
     const lineContent = model.getLineContent(position.lineNumber);
     const beforeCursor = lineContent.substring(0, position.column - 1);
 
-    // ✅ RULE 4: Check if cursor is after a dot followed by prefix
-    const dotMatch = beforeCursor.match(/(\w+)\.([a-zA-Z_]*)$/);
-    if (dotMatch) {
-      const startTime = Date.now();
-      const objectName = dotMatch[1];
-      const prefix = dotMatch[2];  // Captured prefix for filtering
+    const suggestionText = suggestion.insertText || suggestion.label || suggestion.text || '';
+    const dotPos = beforeCursor.lastIndexOf('.');
 
-      // Call backend with prefix for live filtering - send objectName as context
-      callBackendAPI('getSuggestions', prefix, objectName, currentCode, position.column).then((realSuggestions) => {
-        const elapsed = Date.now() - startTime;
-        setLatency(elapsed);
-        setSuggestions(realSuggestions || []);
-        setSelectedIndex(0);
-        setPopupPosition(calculatePopupPosition());
-        setPopupVisible((realSuggestions || []).length > 0);
-      }).catch(() => {
-        setSuggestions([]);
-        setPopupVisible(false);
-      });
-    } else if (beforeCursor.endsWith('.')) {
-      // ✅ RULE 3: Initial suggestion (empty prefix) - show all methods
-      const match = beforeCursor.match(/(\w+)\.$/);
-      if (match) {
-        const startTime = Date.now();
-        const objectName = match[1];
-
-        // Use currentCode from parameter
-        callBackendAPI('getSuggestions', '', objectName, currentCode, position.column).then((realSuggestions) => {
-          const elapsed = Date.now() - startTime;
-          setLatency(elapsed);
-          setSuggestions(realSuggestions || []);
-          setSelectedIndex(0);
-          setPopupPosition(calculatePopupPosition());
-          setPopupVisible((realSuggestions || []).length > 0);
-        }).catch(() => {
-          setSuggestions([]);
-          setPopupVisible(false);
-        });
-      }
+    if (dotPos >= 0) {
+      const range = new monaco.Range(
+        position.lineNumber,
+        dotPos + 2,
+        position.lineNumber,
+        position.column
+      );
+      
+      editor.executeEdits('suggestion', [{
+        range: range,
+        text: suggestionText + '()'
+      }]);
+      
+      const newPosition = {
+        lineNumber: position.lineNumber,
+        column: dotPos + 2 + suggestionText.length + 1
+      };
+      editor.setPosition(newPosition);
     } else {
-      // Check for general keywords/functions when not after a dot
-      const wordMatch = beforeCursor.match(/[a-zA-Z_][a-zA-Z0-9_]*$/);
-      if (wordMatch) {
-        const prefix = wordMatch[0];
-        
-        // ✅ SPECIAL: Check if typing #include statement
-        const includeMatch = beforeCursor.match(/#include\s*[<"]\s*([a-z_]+)\s*[>"]/);
-        const includePartialMatch = beforeCursor.match(/#include\s*[<"]\s*([a-z_]*)/);
-        
-        console.log('[Frontend] 🔍 Checking includes:', { beforeCursor, includeMatch, includePartialMatch });
-        
-        if (includeMatch) {
-          const headerName = includeMatch[1];
-          console.log('[Frontend] 🎯 Include detected:', headerName);
-          
-          // Show suggestions for the header being included
-          callBackendAPI('getSuggestions', '', headerName, currentCode, position.column).then((realSuggestions) => {
-            console.log('[Frontend] 📝 Include suggestions received:', realSuggestions);
-            setSuggestions(realSuggestions || []);
-            setSelectedIndex(0);
-            setPopupPosition(calculatePopupPosition());
-            setPopupVisible((realSuggestions || []).length > 0);
-          }).catch((error) => {
-            console.error('[Frontend] ❌ Include suggestions error:', error);
-            setSuggestions([]);
-            setPopupVisible(false);
-          });
-        } else if (includePartialMatch) {
-          // Partial include - suggest header names
-          const partialHeader = includePartialMatch[1];
-          console.log('[Frontend] 🔄 Partial include:', partialHeader);
-          
-          const headerSuggestions = [
-            'vector', 'stack', 'queue', 'deque', 'map', 'set', 'string', 'list',
-            'algorithm', 'iostream', 'fstream', 'sstream', 'iomanip', 'memory',
-            'utility', 'functional', 'iterator', 'numeric', 'random', 'chrono',
-            'thread', 'mutex', 'future'
-          ].filter(header => header.startsWith(partialHeader))
-           .slice(0, 10)
-           .map(header => ({ text: header, type: 'header', score: 1.0 }));
-          
-          console.log('[Frontend] 📝 Partial header suggestions:', headerSuggestions);
-          setSuggestions(headerSuggestions);
-          setSelectedIndex(0);
-          setPopupPosition(calculatePopupPosition());
-          setPopupVisible(headerSuggestions.length > 0);
-        } else {
-          // Call backend for general suggestions
-          callBackendAPI('getSuggestions', prefix, 'global', currentCode, position.column).then((realSuggestions) => {
-            console.log('[Frontend] 📝 Global suggestions received:', realSuggestions);
-            setSuggestions(realSuggestions || []);
-            setSelectedIndex(0);
-            setPopupPosition(calculatePopupPosition());
-            setPopupVisible((realSuggestions || []).length > 0);
-          }).catch((error) => {
-            console.error('[Frontend] ❌ Global suggestions error:', error);
-            setSuggestions([]);
-            setPopupVisible(false);
-          });
-        }
-      } else {
-        setPopupVisible(false);
+      let startPos = position.column - 1;
+      while (startPos > 0 && /[a-zA-Z0-9_]/.test(beforeCursor[startPos - 1])) {
+        startPos--;
       }
+
+      const range = new monaco.Range(
+        position.lineNumber,
+        startPos + 1,
+        position.lineNumber,
+        position.column
+      );
+
+      editor.executeEdits('suggestion', [{
+        range: range,
+        text: suggestionText
+      }]);
+
+      const newPosition = {
+        lineNumber: position.lineNumber,
+        column: startPos + 1 + suggestionText.length
+      };
+      editor.setPosition(newPosition);
     }
 
-    // Update system statistics - use currentCode from parameter
-    callBackendAPI('getStats', currentCode).then((stats) => {
-      setSymbolCount(stats.symbolCount || 0);
-      setIncludedLibs(stats.includedLibraries || []);
-    }).catch(() => {
-      // Fallback to empty if API fails
-      setSymbolCount(0);
-      setIncludedLibs([]);
-    });
+    setPopupVisible(false);
+    editor.focus();
   };
 
-  const handleEditorChange2 = (value) => {
-    const newCode = value || '';
-    setCode(newCode);
-
-    // Update the current file's content
-    setFiles(files.map(f =>
-      f.name === currentFile ? { ...f, content: newCode } : f
-    ));
-
-    // Debounce suggestion trigger - wait slightly longer for better performance
-    if (triggerTimeout.current) {
-      clearTimeout(triggerTimeout.current);
-    }
-    // Increase delay to 200ms for better performance in cloud environment
-    triggerTimeout.current = setTimeout(() => triggerSuggestions(newCode), 200);
-  };
-
+  // Run Code
   const handleRunCode = async () => {
     setOutputLoading(true);
     setIsRunning(true);
@@ -638,7 +567,6 @@ export default function App() {
     try {
       const result = await callBackendAPI('runCode', code);
       
-      // Handle both JSON string (from HTTP) and already-parsed JSON (from Electron IPC)
       let parsed = result;
       if (typeof result === 'string') {
         try {
@@ -669,6 +597,84 @@ export default function App() {
     }
   };
 
+  // AI Assistant
+  const askAI = async () => {
+    if (!aiQuery.trim()) return;
+    setAiLoading(true);
+    setAiResponse("");
+    try {
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-20250514",
+          max_tokens: 1000,
+          system: "You are IntelliCPP, an expert C++ assistant. Answer concisely. Use code blocks.",
+          messages: [{ role: "user", content: aiQuery }],
+        }),
+      });
+      const data = await res.json();
+      const text = data.content?.map((c) => c.text || "").join("") || "No response.";
+      setAiResponse(text);
+    } catch (e) {
+      setAiResponse("Error contacting AI. Check network and API key.");
+    }
+    setAiLoading(false);
+  };
+
+  // UI Handlers
+  const handleKeyDown = (e) => {
+    if (popupVisible && suggestions.length > 0) {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setSelectedIndex(prev => (prev + 1) % suggestions.length);
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setSelectedIndex(prev => (prev - 1 + suggestions.length) % suggestions.length);
+      } else if (e.key === 'Enter' || e.key === 'Tab') {
+        e.preventDefault();
+        if (suggestions[selectedIndex]) {
+          handleSelectSuggestion(suggestions[selectedIndex]);
+        }
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        setPopupVisible(false);
+      }
+      return;
+    }
+
+    if (e.ctrlKey || e.metaKey) {
+      switch (e.key) {
+        case 's':
+          e.preventDefault();
+          handleSaveFile();
+          break;
+        case 'o':
+          e.preventDefault();
+          handleOpenFile();
+          break;
+        case 'n':
+          e.preventDefault();
+          handleNewFile();
+          break;
+        case 'j':
+          e.preventDefault();
+          setShowAIPanel(!showAIPanel);
+          break;
+        default:
+          break;
+      }
+    } else if (e.key === 'F5') {
+      e.preventDefault();
+      if (!isRunning) handleRunCode();
+    } else if (e.key === 'F6') {
+      e.preventDefault();
+      if (isRunning) handleStopExecution();
+    }
+  };
+
   const handleStopExecution = () => {
     setOutputLoading(false);
     setIsRunning(false);
@@ -678,26 +684,6 @@ export default function App() {
   const handleClearOutput = () => {
     setOutputResult('');
     setOutputError('');
-  };
-  
-  const handleOutputResize = (direction) => {
-    if (direction === 'minimize') {
-      setOutputPanelHeight(100);
-    } else if (direction === 'maximize') {
-      setOutputPanelHeight(400);
-    }
-  };
-
-  // New handler functions for enhanced UI
-  const handlePanelChange = (panelId) => {
-    setActivePanel(panelId);
-  };
-
-  const handleFileSelect = (file) => {
-    setCurrentFile(file.name);
-    setCode(file.content);
-    // Update files array to mark this file as active
-    setFiles(files.map(f => ({ ...f, isActive: f.name === file.name })));
   };
 
   const handleNewFile = () => {
@@ -721,40 +707,71 @@ int main() {
   };
 
   const handleSaveFile = () => {
-    const currentFileData = files.find(f => f.name === currentFile);
+    const currentFileData = files.find((f) => f.name === currentFile);
     if (currentFileData) {
-      // In a real app, this would save to a backend or local storage
-      const updatedFiles = files.map(f =>
-        f.name === currentFile ? { ...f, content: code } : f
-      );
-      setFiles(updatedFiles);
+      const blob = new Blob([code], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = currentFile;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
       alert(`File ${currentFile} saved successfully!`);
     }
   };
 
-  const handleOpenFile = () => {
-    // In a real app, this would open a file dialog
-    alert('File open functionality would be implemented here');
+  const handleOpenFile = async () => {
+    const health = await checkBackendHealth();
+    if (health && backendStatus.healthy) {
+      await refreshWorkspace('');
+      return;
+    }
+
+    if (hiddenFileInputRef.current) {
+      hiddenFileInputRef.current.click();
+    }
   };
 
-  const handleSettingsChange = (newSettings) => {
-    setSettings(newSettings);
-    // Apply settings to Monaco editor
-    if (editorRef.current) {
-      const editor = editorRef.current;
-      editor.updateOptions({
-        minimap: { enabled: newSettings.minimap },
-        wordWrap: newSettings.wordWrap ? 'on' : 'off',
-        lineNumbers: newSettings.lineNumbers ? 'on' : 'off',
-        fontSize: newSettings.fontSize
+  const handleFileInputChange = async (event) => {
+    const selectedFiles = Array.from(event.target.files || []);
+    if (selectedFiles.length === 0) return;
+
+    const loadedFiles = await Promise.all(selectedFiles.map((file) => {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          resolve({
+            name: file.name,
+            type: 'file',
+            content: reader.result || ''
+          });
+        };
+        reader.onerror = () => reject(reader.error);
+        reader.readAsText(file);
       });
-    }
-  };
+    }));
 
-  const handleFormatCode = () => {
-    if (editorRef.current) {
-      editorRef.current.getAction('editor.action.formatDocument').run();
+    setFiles((prevFiles) => {
+      const nextFiles = [...prevFiles];
+      loadedFiles.forEach((file) => {
+        const existing = nextFiles.find((f) => f.name === file.name);
+        if (existing) {
+          existing.content = file.content;
+        } else {
+          nextFiles.push(file);
+        }
+      });
+      return nextFiles;
+    });
+
+    if (loadedFiles[0]) {
+      setCurrentFile(loadedFiles[0].name);
+      setCode(loadedFiles[0].content);
     }
+
+    event.target.value = '';
   };
 
   const handleToggleMinimap = () => {
@@ -777,223 +794,364 @@ int main() {
     }
   };
 
+  const handleFormatCode = () => {
+    if (editorRef.current) {
+      editorRef.current.getAction('editor.action.formatDocument').run();
+    }
+  };
+
   return (
-    <div className="app-layout">
-      <div className="main-content">
-        <div className="toolbar">
-          <div className="toolbar-left">
-            <h1>IntelliCPP</h1>
-            <span className="current-file">{currentFile}</span>
-          </div>
-          <div className="toolbar-center">
-            <div className="toolbar-actions">
-              <button 
-                className="toolbar-button"
-                onClick={handleFormatCode} 
-                title="Format Code (Shift+Alt+F)"
-              >
-                <Code size={16} />
-              </button>
-              <button 
-                className={`toolbar-button ${settings.minimap ? 'active' : ''}`}
-                onClick={handleToggleMinimap} 
-                title="Toggle Minimap"
-              >
-                <Minimap size={16} />
-              </button>
-              <button 
-                className={`toolbar-button ${settings.wordWrap ? 'active' : ''}`}
-                onClick={handleToggleWordWrap} 
-                title="Toggle Word Wrap"
-              >
-                <WrapText size={16} />
-              </button>
-              <div className="toolbar-separator"></div>
-              {!isRunning ? (
-                <button 
-                  className="run-button"
-                  onClick={handleRunCode} 
-                  disabled={outputLoading} 
-                  title="Run Code (F5)"
-                >
-                  <Play size={16} />
-                  <span>Run</span>
-                </button>
-              ) : (
-                <button 
-                  className="stop-button"
-                  onClick={handleStopExecution} 
-                  title="Stop Execution (F6)"
-                >
-                  <Square size={16} />
-                  <span>Stop</span>
-                </button>
-              )}
-              <button 
-                className="clear-button"
-                onClick={handleClearOutput} 
-                title="Clear Output"
-              >
-                <Trash2 size={16} />
-              </button>
-            </div>
-          </div>
-          <div className="toolbar-right">
-            <ThemeToggle />
+    <div style={{ minHeight: '100vh', background: t.bg, color: t.text, fontFamily: 'inherit' }} onKeyDown={handleKeyDown}>
+      <input
+        ref={hiddenFileInputRef}
+        type="file"
+        webkitdirectory="true"
+        directory="true"
+        multiple
+        style={{ display: 'none' }}
+        onChange={handleFileInputChange}
+      />
+
+      {/* Header */}
+      <div style={{
+        background: t.surface,
+        borderBottom: `1px solid ${t.border}`,
+        padding: '0 24px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        height: 56,
+        position: 'sticky',
+        top: 0,
+        zIndex: 100,
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{
+            width: 32, height: 32, borderRadius: 8,
+            background: `linear-gradient(135deg, #58a6ff, #3fb950)`,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 16, fontWeight: 700,
+          }}>⚡</div>
+          <div>
+            <div style={{ fontWeight: 700, fontSize: 15, letterSpacing: '-0.3px' }}>IntelliCPP</div>
+            <div style={{ fontSize: 11, color: t.textMuted }}>C++ IntelliSense Engine</div>
           </div>
         </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <button
+            className="toolbar-button-primary"
+            onClick={handleRunCode}
+            disabled={outputLoading}
+            title="Run Code (F5)"
+            style={{
+              background: t.accent, color: '#fff', border: 'none', borderRadius: 6,
+              padding: '8px 14px', cursor: outputLoading ? 'not-allowed' : 'pointer',
+              fontSize: 13, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6,
+            }}
+          >
+            <Play size={14} /> Run
+          </button>
+          <button
+            style={{
+              background: t.card, border: `1px solid ${t.border}`, borderRadius: 6,
+              padding: '6px 12px', color: t.text, cursor: 'pointer', fontSize: 13,
+            }}
+            onClick={handleFormatCode}
+            title="Format Code"
+          >
+            <Code size={14} />
+          </button>
+          <button
+            onClick={() => setUiTheme(uiTheme === 'dark' ? 'light' : 'dark')}
+            style={{
+              background: t.card, border: `1px solid ${t.border}`, borderRadius: 6,
+              padding: '6px 12px', color: t.text, cursor: 'pointer', fontSize: 13,
+            }}
+          >{uiTheme === 'dark' ? '☀ Light' : '🌙 Dark'}</button>
+          <div style={{ marginRight: 12, color: backendStatus.healthy ? t.green : t.red, fontSize: '12px' }}>
+            {backendStatus.message}
+          </div>
+        </div>
+      </div>
 
-        <div className="editor-area">
-          <Sidebar
-            activePanel={activePanel}
-            onPanelChange={handlePanelChange}
-            onNewFile={handleNewFile}
-            onSaveFile={handleSaveFile}
-            onOpenFile={handleOpenFile}
+      {/* Metrics Bar */}
+      <div style={{
+        background: t.surface,
+        borderBottom: `1px solid ${t.border}`,
+        padding: '8px 24px',
+        display: 'flex', gap: 24, alignItems: 'center',
+        fontSize: 12, color: t.textMuted,
+      }}>
+        {[
+          { label: "Symbols", val: symbolCount },
+          { label: "Libraries", val: includedLibs.length },
+          { label: "Latency", val: latency ? `${latency}ms` : "—" },
+          { label: "Cursor", val: `${cursorPosition.line}:${cursorPosition.column}` },
+        ].map((m) => (
+          <div key={m.label} style={{ display: 'flex', gap: 6 }}>
+            <span style={{ color: t.textDim }}>{m.label}:</span>
+            <span style={{ color: t.accent, fontWeight: 600, fontFamily: 'monospace' }}>{m.val}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* File Tabs */}
+      <div style={{
+        background: t.surface,
+        borderBottom: `1px solid ${t.border}`,
+        padding: '0 12px',
+        display: 'flex',
+        gap: 4,
+        overflowX: 'auto',
+      }}>
+        {files.map((file) => (
+          <div
+            key={file.name}
+            onClick={() => {
+              setCurrentFile(file.name);
+              setCode(file.content);
+            }}
+            style={{
+              padding: '8px 12px',
+              borderBottom: currentFile === file.name ? `2px solid ${t.accent}` : 'none',
+              color: currentFile === file.name ? t.accent : t.textMuted,
+              cursor: 'pointer',
+              fontSize: 13,
+              userSelect: 'none',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              minHeight: 40,
+              whiteSpace: 'nowrap',
+            }}
+          >
+            <span>{file.name}</span>
+            <button
+              style={{
+                background: 'none',
+                border: 'none',
+                color: t.textMuted,
+                cursor: 'pointer',
+                padding: 0,
+                fontSize: 12,
+              }}
+              onClick={(e) => {
+                e.stopPropagation();
+                setFiles(files.filter((f) => f.name !== file.name));
+                if (currentFile === file.name) {
+                  const nextFile = files.find((f) => f.name !== file.name);
+                  if (nextFile) {
+                    setCurrentFile(nextFile.name);
+                    setCode(nextFile.content);
+                  }
+                }
+              }}
+            >
+              ✕
+            </button>
+          </div>
+        ))}
+        <button
+          onClick={handleNewFile}
+          style={{
+            background: 'none',
+            border: 'none',
+            color: t.textMuted,
+            cursor: 'pointer',
+            padding: '8px 12px',
+            fontSize: 12,
+            minHeight: 40,
+            display: 'flex',
+            alignItems: 'center',
+          }}
+          title="New File"
+        >
+          +
+        </button>
+      </div>
+
+      {/* Main Layout */}
+      <div style={{ display: 'flex', height: 'calc(100vh - 152px)', overflow: 'hidden' }}>
+        {/* Editor */}
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+          <Editor
+            height="100%"
+            defaultLanguage="cpp"
+            value={code}
+            onChange={handleEditorChange}
+            onMount={handleEditorDidMount}
+            theme={uiTheme === 'dark' ? 'vs-dark' : 'vs-light'}
+            options={{
+              minimap: { enabled: settings.minimap },
+              fontSize: settings.fontSize,
+              lineHeight: 24,
+              fontFamily: 'JetBrains Mono, "Fira Code", "Cascadia Code", Consolas, monospace',
+              fontLigatures: true,
+              autoClosingBrackets: 'always',
+              autoClosingQuotes: 'always',
+              formatOnPaste: true,
+              formatOnType: true,
+              wordWrap: settings.wordWrap ? 'on' : 'off',
+              lineNumbers: settings.lineNumbers ? 'on' : 'off',
+              scrollBeyondLastLine: false,
+              bracketPairColorization: { enabled: true },
+              guides: { bracketPairs: true, indentation: true },
+              padding: { top: 20, bottom: 20 },
+              automaticLayout: true,
+              renderLineHighlight: 'line',
+            }}
           />
 
-          {/* Side Panel */}
-          {activePanel && (
-            <div className="side-panel">
-              {activePanel === 'files' && (
-                <FileExplorer
-                  onFileSelect={handleFileSelect}
-                  currentFile={currentFile}
-                />
-              )}
-              {activePanel === 'search' && (
-                <SearchPanel
-                  code={code}
-                  onResultSelect={handleSearchResult}
-                />
-              )}
-              {activePanel === 'settings' && (
-                <SettingsPanel
-                  settings={settings}
-                  onSettingsChange={handleSettingsChange}
-                />
-              )}
-              {activePanel === 'run' && (
-                <div className="run-panel">
-                  <h3>RUN & DEBUG</h3>
-                  <div className="run-controls">
-                    <button
-                      className={`run-button ${isRunning ? 'running' : ''}`}
-                      onClick={handleRunCode}
-                      disabled={outputLoading}
-                    >
-                      {isRunning ? 'Running...' : 'Run Code'}
-                    </button>
-                    <button
-                      className="stop-button"
-                      onClick={handleStopExecution}
-                      disabled={!isRunning}
-                    >
-                      Stop
-                    </button>
-                    <button
-                      className="clear-button"
-                      onClick={handleClearOutput}
-                    >
-                      Clear Output
-                    </button>
-                  </div>
-                  <div className="run-info">
-                    <p><strong>Current File:</strong> {currentFile}</p>
-                    <p><strong>Status:</strong> {isRunning ? 'Running' : 'Ready'}</p>
-                    <p><strong>Latency:</strong> {latency}ms</p>
-                  </div>
-                </div>
-              )}
+          {popupVisible && suggestions.length > 0 && (
+            <div
+              style={{
+                position: 'fixed',
+                top: `${popupPosition.top}px`,
+                left: `${popupPosition.left}px`,
+                zIndex: 1000
+              }}
+            >
+              <SuggestionPopup
+                suggestions={suggestions}
+                selectedIndex={selectedIndex}
+                onSelect={handleSelectSuggestion}
+              />
             </div>
           )}
+        </div>
 
-          <div className="editor-wrapper">
-            <div className="editor-container" onKeyDown={handleKeyDown} onClick={() => {
-              // Update cursor position on click
-              if (editorRef.current) {
-                const position = editorRef.current.getPosition();
-                if (position) {
-                  setCursorPosition({
-                    line: position.lineNumber,
-                    column: position.column
-                  });
-                }
-              }
+        {/* AI Panel (Right Side) */}
+        {showAIPanel && (
+          <div style={{
+            width: 320,
+            background: t.surface,
+            borderLeft: `1px solid ${t.border}`,
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden',
+          }}>
+            <div style={{
+              padding: '12px 16px',
+              borderBottom: `1px solid ${t.border}`,
+              fontSize: 13,
+              fontWeight: 600,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
             }}>
-              <Editor
-                height="100%"
-                defaultLanguage="cpp"
-                value={code}
-                onChange={handleEditorChange2}
-                onMount={handleEditorDidMount}
-                theme={settings.theme === 'vs-dark' ? 'vs-dark' : settings.theme}
-                options={{
-                  minimap: { enabled: settings.minimap },
-                  fontSize: settings.fontSize,
-                  lineHeight: 24,
-                  fontFamily: 'JetBrains Mono, "Fira Code", "Cascadia Code", Consolas, monospace',
-                  fontLigatures: true,
-                  autoClosingBrackets: 'always',
-                  autoClosingQuotes: 'always',
-                  formatOnPaste: true,
-                  formatOnType: true,
-                  suggestOnTriggerCharacters: true,
-                  wordBasedSuggestions: false,
-                  cursorSmoothCaretAnimation: "on",
-                  smoothScrolling: true,
-                  padding: { top: 20, bottom: 20 },
-                  automaticLayout: true,
-                  renderLineHighlight: 'line',
-                  renderWhitespace: 'selection',
-                  wordWrap: settings.wordWrap ? 'on' : 'off',
-                  lineNumbers: settings.lineNumbers ? 'on' : 'off',
-                  scrollBeyondLastLine: false,
-                  bracketPairColorization: { enabled: true },
-                  guides: {
-                    bracketPairs: true,
-                    indentation: true
-                  }
+              <span>🤖 AI Assistant</span>
+              <button
+                onClick={() => setShowAIPanel(false)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: t.textMuted,
+                  cursor: 'pointer',
+                  fontSize: 12,
+                  padding: 0,
                 }}
-              />
-
-              {popupVisible && suggestions.length > 0 && (
+              >
+                ✕
+              </button>
+            </div>
+            <div style={{ flex: 1, overflowY: 'auto', padding: '12px' }}>
+              {aiResponse && (
                 <div style={{
-                  position: 'fixed',
-                  top: `${popupPosition.top}px`,
-                  left: `${popupPosition.left}px`,
-                  zIndex: 1000
+                  background: t.card,
+                  border: `1px solid ${t.border}`,
+                  borderRadius: 6,
+                  padding: '10px 12px',
+                  fontSize: 12,
+                  color: t.text,
+                  lineHeight: 1.6,
+                  whiteSpace: 'pre-wrap',
+                  fontFamily: 'monospace',
+                  marginBottom: 12,
                 }}>
-                  <SuggestionPopup
-                    suggestions={suggestions}
-                    selectedIndex={selectedIndex}
-                    onSelect={handleSelectSuggestion}
-                  />
+                  {aiResponse}
+                </div>
+              )}
+              {!aiResponse && !aiLoading && (
+                <div style={{ color: t.textDim, textAlign: 'center', marginTop: 20, fontSize: 12 }}>
+                  <div style={{ fontSize: 30, marginBottom: 8 }}>🤖</div>
+                  <div>Ask me anything about C++!</div>
+                </div>
+              )}
+              {aiLoading && (
+                <div style={{ color: t.accent, textAlign: 'center', marginTop: 20 }}>
+                  <div style={{ fontSize: 18, marginBottom: 8 }}>⚡</div>
+                  Generating...
                 </div>
               )}
             </div>
+            <div style={{
+              padding: '8px',
+              borderTop: `1px solid ${t.border}`,
+              display: 'flex',
+              gap: 6,
+              background: t.surface,
+              flexShrink: 0,
+            }}>
+              <input
+                value={aiQuery}
+                onChange={(e) => setAiQuery(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && askAI()}
+                placeholder="Ask about C++..."
+                style={{
+                  flex: 1,
+                  background: t.card,
+                  border: `1px solid ${t.border}`,
+                  borderRadius: 6,
+                  padding: '6px 8px',
+                  color: t.text,
+                  fontFamily: 'monospace',
+                  fontSize: 11,
+                  outline: 'none',
+                }}
+              />
+              <button
+                onClick={askAI}
+                disabled={aiLoading}
+                style={{
+                  background: t.accent,
+                  border: 'none',
+                  borderRadius: 6,
+                  padding: '6px 10px',
+                  color: '#fff',
+                  cursor: aiLoading ? 'not-allowed' : 'pointer',
+                  fontSize: 11,
+                  fontWeight: 600,
+                  opacity: aiLoading ? 0.6 : 1,
+                }}
+              >
+                {aiLoading ? '…' : '→'}
+              </button>
+            </div>
           </div>
-        </div>
-        
+        )}
+      </div>
+
+      {/* Output Panel */}
+      {outputPanelVisible && (
         <OutputPanel
           output={outputResult}
           isLoading={outputLoading}
           error={outputError}
           onClear={handleClearOutput}
           isVisible={outputPanelVisible}
-          onResize={handleOutputResize}
           minHeight={100}
           maxHeight={500}
           height={outputPanelHeight}
         />
-        
-        <StatusBar 
-          symbolCount={symbolCount} 
-          latency={latency} 
-          includedLibs={includedLibs} 
-          cursorPosition={cursorPosition}
-        />
-      </div>
+      )}
+
+      {/* Status Bar */}
+      <StatusBar
+        symbolCount={symbolCount}
+        latency={latency}
+        includedLibs={includedLibs}
+        cursorPosition={cursorPosition}
+      />
     </div>
   );
 }

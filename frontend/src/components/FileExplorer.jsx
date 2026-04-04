@@ -1,76 +1,42 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronRight, ChevronDown, File, Folder, FolderOpen, Plus, Search } from 'lucide-react';
+import { ChevronRight, ChevronDown, File, Folder, FolderOpen, Plus, Save, Upload } from 'lucide-react';
 
-export default function FileExplorer({ onFileSelect, currentFile }) {
-  const [files, setFiles] = useState([
-    {
-      name: 'main.cpp',
-      type: 'file',
-      content: `#include <iostream>
-#include <vector>
-using namespace std;
+export default function FileExplorer({
+  files,
+  currentFile,
+  workspaceTree = [],
+  onFileSelect,
+  onNewFile,
+  onSaveFile,
+  onOpenFile,
+  onWorkspaceFileClick,
+  onRefreshWorkspace
+}) {
+  const [expandedFolders, setExpandedFolders] = useState(new Set(['workspace']));
+  const [selectedFile, setSelectedFile] = useState(currentFile || (files && files.length > 0 ? files[0].name : ''));
 
-int main() {
-    vector<int> v;
-
-    return 0;
-}`
-    },
-    {
-      name: 'utils.cpp',
-      type: 'file',
-      content: `#include <iostream>
-#include <string>
-
-// Utility functions
-std::string greet(std::string name) {
-    return "Hello, " + name + "!";
-}`
-    },
-    {
-      name: 'utils.h',
-      type: 'file',
-      content: `#ifndef UTILS_H
-#define UTILS_H
-
-#include <string>
-
-std::string greet(std::string name);
-
-#endif`
-    }
-  ]);
-
-  const [expandedFolders, setExpandedFolders] = useState(new Set(['src']));
-  const [selectedFile, setSelectedFile] = useState(currentFile || 'main.cpp');
+  useEffect(() => {
+    setSelectedFile(currentFile || '');
+  }, [currentFile]);
 
   const toggleFolder = (folderName) => {
-    const newExpanded = new Set(expandedFolders);
-    if (newExpanded.has(folderName)) {
-      newExpanded.delete(folderName);
+    const next = new Set(expandedFolders);
+    if (next.has(folderName)) {
+      next.delete(folderName);
     } else {
-      newExpanded.add(folderName);
+      next.add(folderName);
     }
-    setExpandedFolders(newExpanded);
+    setExpandedFolders(next);
   };
 
-  const handleFileClick = (fileName) => {
-    setSelectedFile(fileName);
-    const file = files.find(f => f.name === fileName);
-    if (file && onFileSelect) {
-      onFileSelect(file);
+  const handleFileClick = (entry) => {
+    setSelectedFile(entry.path);
+    if (onWorkspaceFileClick) {
+      onWorkspaceFileClick(entry.path);
+      return;
     }
-  };
-
-  const addNewFile = () => {
-    const fileName = prompt('Enter file name:');
-    if (fileName) {
-      const newFile = {
-        name: fileName,
-        type: 'file',
-        content: '// New file\n'
-      };
-      setFiles([...files, newFile]);
+    if (onFileSelect) {
+      onFileSelect(entry);
     }
   };
 
@@ -79,41 +45,49 @@ std::string greet(std::string name);
       <div className="file-explorer-header">
         <h3>EXPLORER</h3>
         <div className="file-explorer-actions">
-          <button onClick={addNewFile} title="New File">
+          <button onClick={onNewFile} title="New File">
             <Plus size={16} />
+          </button>
+          <button onClick={onOpenFile} title="Open Workspace">
+            <Upload size={16} />
+          </button>
+          <button onClick={onSaveFile} title="Save Current File">
+            <Save size={16} />
           </button>
         </div>
       </div>
 
       <div className="file-tree">
         <div className="file-tree-item folder-item">
-          <div
-            className="file-tree-toggle"
-            onClick={() => toggleFolder('src')}
-          >
-            {expandedFolders.has('src') ?
-              <ChevronDown size={16} /> :
-              <ChevronRight size={16} />
-            }
-            {expandedFolders.has('src') ?
-              <FolderOpen size={16} /> :
-              <Folder size={16} />
-            }
-            <span>src</span>
+          <div className="file-tree-toggle" onClick={() => toggleFolder('workspace')}>
+            {expandedFolders.has('workspace') ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+            {expandedFolders.has('workspace') ? <FolderOpen size={16} /> : <Folder size={16} />}
+            <span>Workspace</span>
+            <button
+              style={{ marginLeft: 'auto', border: 'none', background: 'none', color: '#8b93a8', cursor: 'pointer' }}
+              onClick={onRefreshWorkspace}
+              title="Refresh"
+            >
+              ↻
+            </button>
           </div>
 
-          {expandedFolders.has('src') && (
+          {expandedFolders.has('workspace') && (
             <div className="file-tree-children">
-              {files.map((file) => (
-                <div
-                  key={file.name}
-                  className={`file-tree-item file-item ${selectedFile === file.name ? 'selected' : ''}`}
-                  onClick={() => handleFileClick(file.name)}
-                >
-                  <File size={16} />
-                  <span>{file.name}</span>
-                </div>
-              ))}
+              {workspaceTree.length > 0 ? (
+                workspaceTree.map((entry) => (
+                  <div
+                    key={entry.path}
+                    className={`file-tree-item file-item ${selectedFile === entry.path ? 'selected' : ''}`}
+                    onClick={() => entry.isDirectory ? toggleFolder(entry.path) : handleFileClick(entry)}
+                  >
+                    {entry.isDirectory ? <Folder size={16} /> : <File size={16} />}
+                    <span>{entry.name}</span>
+                  </div>
+                ))
+              ) : (
+                <div className="file-tree-item">No workspace files loaded</div>
+              )}
             </div>
           )}
         </div>

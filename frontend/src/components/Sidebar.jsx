@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Folder, Search, Play, Puzzle, Settings, FileText, Save, Download, Upload } from 'lucide-react';
+import { Folder, Search, Play, Puzzle, Settings, FileText, Save, Upload } from 'lucide-react';
 
 export default function Sidebar({ activePanel, onPanelChange, onNewFile, onSaveFile, onOpenFile }) {
   const [activeItem, setActiveItem] = useState(activePanel || 'files');
