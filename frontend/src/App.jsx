@@ -1,1157 +1,690 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Editor } from '@monaco-editor/react';
-import { Play, Square, Trash2, Code, Map as MapIcon, WrapText, Plus, Upload, Save, Search, MoreVertical } from 'lucide-react';
+import { Play, Code, Plus, Save, Upload } from 'lucide-react';
 import SuggestionPopup from './components/SuggestionPopup';
-import ThemeToggle from './components/ThemeToggle';
-import Sidebar from './components/Sidebar';
-import StatusBar from './components/StatusBar';
-import OutputPanel from './components/OutputPanel';
-import FileExplorer from './components/FileExplorer';
-import SearchPanel from './components/SearchPanel';
-import SettingsPanel from './components/SettingsPanel';
-import WelcomeScreen from './components/WelcomeScreen';
 import './styles/glassmorphism.css';
 
-// Improved UI Theme System
+// ─────────────────────────────────────────────
+// THEME
+// ─────────────────────────────────────────────
 const THEMES = {
   dark: {
-    bg: "#0d1117",
-    surface: "#161b22",
-    card: "#1c2230",
-    border: "#30363d",
-    accent: "#58a6ff",
-    accentGlow: "#1f6feb44",
-    accentHover: "#79c0ff",
-    text: "#e6edf3",
-    textMuted: "#8b949e",
-    textDim: "#484f58",
-    green: "#3fb950",
-    red: "#f85149",
-    orange: "#d29922",
-    keyword: "#ff7b72",
-    type: "#ffa657",
-    func: "#d2a8ff",
-    string: "#a5d6ff",
-    comment: "#8b949e",
-    macro: "#79c0ff",
-    number: "#79c0ff",
+    bg: '#0d1117', surface: '#161b22', card: '#1c2230',
+    border: '#30363d', accent: '#58a6ff', accentGlow: '#1f6feb33',
+    text: '#e6edf3', textMuted: '#8b949e', textDim: '#484f58',
+    green: '#3fb950', red: '#f85149', orange: '#d29922',
   },
   light: {
-    bg: "#f8fafc",
-    surface: "#ffffff",
-    card: "#f1f5f9",
-    border: "#e2e8f0",
-    accent: "#0969da",
-    accentGlow: "#0969da22",
-    accentHover: "#1d75d8",
-    text: "#1e293b",
-    textMuted: "#64748b",
-    textDim: "#94a3b8",
-    green: "#1a7f37",
-    red: "#cf222e",
-    orange: "#9a6700",
-    keyword: "#cf222e",
-    type: "#953800",
-    func: "#6639ba",
-    string: "#0550ae",
-    comment: "#6e7781",
-    macro: "#0550ae",
-    number: "#0550ae",
+    bg: '#f6f8fa', surface: '#ffffff', card: '#f1f5f9',
+    border: '#d0d7de', accent: '#0969da', accentGlow: '#0969da22',
+    text: '#1f2328', textMuted: '#656d76', textDim: '#9198a1',
+    green: '#1a7f37', red: '#cf222e', orange: '#9a6700',
   },
 };
 
-const STARTING_CODE = `#include <iostream>
+// ─────────────────────────────────────────────
+// DEFAULT CODE
+// ─────────────────────────────────────────────
+const DEFAULT_CODE = `#include <iostream>
 #include <vector>
 using namespace std;
 
 int main() {
-    vector<int> v;
+    vector<int> v = {3, 1, 4, 1, 5};
     
+    // Try typing v.  to see vector suggestions
+    // Add #include <map> to get map suggestions
+    
+    cout << "Hello, IntelliCPP!" << endl;
     return 0;
 }`;
 
-// Cache for API responses
-const apiCache = new Map();
-const CACHE_DURATION = 500;
+// ─────────────────────────────────────────────
+// API HELPER
+// Always points to local backend on port 3001.
+// No Electron, no Vercel serverless.
+// ─────────────────────────────────────────────
+const API_BASE = 'http://localhost:3001/api';
 
-// STL Symbol Database (for reference/documentation)
-const STL_CONTAINERS = {
-  vector: { icon: "V", color: "#3fb950", header: "#include <vector>" },
-  string: { icon: "S", color: "#58a6ff", header: "#include <string>" },
-  map: { icon: "M", color: "#d2a8ff", header: "#include <map>" },
-  stack: { icon: "Sk", color: "#ffa657", header: "#include <stack>" },
-  queue: { icon: "Q", color: "#ff7b72", header: "#include <queue>" },
-  set: { icon: "St", color: "#79c0ff", header: "#include <set>" },
-  algorithm: { icon: "A", color: "#79c0ff", header: "#include <algorithm>" },
-};
+// Small cache so rapid identical calls don't spam backend
+const cache = new Map();
 
-// Helper function to call backend API (works in both Electron and cloud)
-const callBackendAPI = async (method, ...args) => {
-  const isElectron = typeof window !== 'undefined' && window.process && window.process.type;
-  if (isElectron && window.api && window.api[method]) {
-    return window.api[method](...args);
-  }
-
-  const cacheKey = `${method}:${JSON.stringify(args)}`;
+async function callAPI(endpoint, body) {
+  const key = endpoint + JSON.stringify(body);
   const now = Date.now();
-  
-  if (apiCache.has(cacheKey)) {
-    const cached = apiCache.get(cacheKey);
-    if (now - cached.timestamp < CACHE_DURATION) {
-      return cached.data;
-    } else {
-      apiCache.delete(cacheKey);
-    }
+  if (cache.has(key)) {
+    const { data, ts } = cache.get(key);
+    if (now - ts < 300) return data; // 300ms cache
+    cache.delete(key);
   }
-
-  const isDevelopment = process.env.NODE_ENV === 'development' || window.location.hostname === 'localhost';
-  const apiUrl = isDevelopment 
-    ? `http://localhost:3001/api/${method}`
-    : `/api/${method}`;
-
   try {
-    let requestBody = {};
-
-    if (method === 'getSuggestions') {
-      const [prefix, contextType, code, cursorPosition] = args;
-      requestBody = { prefix, contextType, code, cursorPosition };
-    } else if (method === 'getStats') {
-      const [code] = args;
-      requestBody = { code };
-    } else if (method === 'runCode') {
-      const [code] = args;
-      requestBody = { code };
-    } else if (method === 'listWorkspace') {
-      const [subpath] = args;
-      requestBody = { subpath };
-    } else if (method === 'readFile') {
-      const [filePath] = args;
-      requestBody = { filePath };
-    } else if (method === 'writeFile') {
-      const [filePath, content] = args;
-      requestBody = { filePath, content };
-    }
-
-    console.log('[Frontend] 🚀 API Call:', { method, apiUrl, requestBody });
-
-    const response = await fetch(apiUrl, {
+    const res = await fetch(`${API_BASE}/${endpoint}`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'Cache-Control': 'no-cache'
-      },
-      body: JSON.stringify(requestBody)
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
     });
-
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-    }
-
-    const data = await response.json();
-    console.log('[Frontend] 📥 API Response:', data);
-
-    apiCache.set(cacheKey, { data, timestamp: now });
+    if (!res.ok) return null;
+    const data = await res.json();
+    cache.set(key, { data, ts: now });
     return data;
-  } catch (error) {
-    console.error('[Frontend] ❌ API Error:', error);
-    
-    if (method === 'getSuggestions') {
-      return [];
-    } else if (method === 'getStats') {
-      return { symbolCount: 0, includedLibraries: [] };
-    } else if (method === 'runCode') {
-      return { success: false, output: 'Backend not available', error: error.message };
-    }
-    return [];
+  } catch {
+    return null;
   }
-};
+}
 
+// ─────────────────────────────────────────────
+// MAIN APP
+// ─────────────────────────────────────────────
 export default function App() {
-  // Monaco & Code State
-  const [code, setCode] = useState(STARTING_CODE);
-  const [currentFile, setCurrentFile] = useState('main.cpp');
-  const [files, setFiles] = useState([
-    { name: 'main.cpp', content: STARTING_CODE, isActive: true }
-  ]);
-
-  // UI Theme & Layout
+  // Theme
   const [uiTheme, setUiTheme] = useState('dark');
   const t = THEMES[uiTheme];
-  const [activeTab, setActiveTab] = useState('editor'); // editor | search | settings | ai
-  const [showAIPanel, setShowAIPanel] = useState(false);
 
-  // Suggestions & Autocomplete
+  // Files / tabs
+  const [files, setFiles] = useState([{ id: 1, name: 'main.cpp', content: DEFAULT_CODE, dirty: false }]);
+  const [activeFileId, setActiveFileId] = useState(1);
+  const nextId = useRef(2);
+
+  const activeFile = files.find(f => f.id === activeFileId) || files[0];
+  const code = activeFile?.content || '';
+
+  // Editor refs
+  const editorRef = useRef(null);
+  const monacoRef = useRef(null);
+
+  // Suggestions
   const [suggestions, setSuggestions] = useState([]);
   const [popupVisible, setPopupVisible] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
-  const [popupPosition, setPopupPosition] = useState({ top: 0, left: 0 });
+  const [popupPos, setPopupPos] = useState({ top: 0, left: 0 });
+  const triggerTimer = useRef(null);
+  const popupVisibleRef = useRef(false);
+  const suggestionsRef = useRef([]);
+  const selectedIndexRef = useRef(0);
 
-  // Metrics
-  const [symbolCount, setSymbolCount] = useState(0);
-  const [latency, setLatency] = useState(0);
-  const [includedLibs, setIncludedLibs] = useState([]);
-  const [cursorPosition, setCursorPosition] = useState({ line: 1, column: 1 });
-
-  // Output Panel
-  const [outputPanelVisible, setOutputPanelVisible] = useState(false);
-  const [outputLoading, setOutputLoading] = useState(false);
-  const [isRunning, setIsRunning] = useState(false);
+  // Output panel
+  const [outputVisible, setOutputVisible] = useState(false);
   const [outputResult, setOutputResult] = useState('');
   const [outputError, setOutputError] = useState('');
-  const [outputPanelHeight, setOutputPanelHeight] = useState(220);
+  const [isRunning, setIsRunning] = useState(false);
+  const [outputHeight, setOutputHeight] = useState(220);
+  const [outputMinimized, setOutputMinimized] = useState(false);
+  const [outputMaximized, setOutputMaximized] = useState(false);
+  const isDragging = useRef(false);
+  const dragStartY = useRef(0);
+  const dragStartH = useRef(0);
 
-  // AI Assistant
-  const [aiQuery, setAiQuery] = useState('');
-  const [aiResponse, setAiResponse] = useState('');
-  const [aiLoading, setAiLoading] = useState(false);
-
-  // Workspace
-  const [workspaceTree, setWorkspaceTree] = useState([]);
-  const [workspacePath, setWorkspacePath] = useState('');
-  const [backendStatus, setBackendStatus] = useState({ healthy: false, message: 'Checking backend...' });
+  // Status bar
+  const [latency, setLatency] = useState(0);
+  const [cursorPos, setCursorPos] = useState({ line: 1, column: 1 });
+  const [includedLibs, setIncludedLibs] = useState([]);
+  const [backendOk, setBackendOk] = useState(false);
 
   // Settings
-  const [settings, setSettings] = useState({
-    minimap: true,
-    wordWrap: false,
-    lineNumbers: true,
-    fontSize: 14,
-    theme: 'vs-dark',
-    suggestions: true,
-  });
+  const [settings, setSettings] = useState({ minimap: true, wordWrap: false, fontSize: 14 });
 
-  // Refs
-  const editorRef = useRef(null);
-  const monacoRef = useRef(null);
-  const hiddenFileInputRef = useRef(null);
-  const triggerTimeout = useRef(null);
-  const syntaxCheckTimeout = useRef(null);
-  const cursorUpdateInterval = useRef(null);
+  const hiddenInput = useRef(null);
 
-  // Cleanup
+  // ─── Backend health check ───
   useEffect(() => {
-    return () => {
-      if (cursorUpdateInterval.current) clearInterval(cursorUpdateInterval.current);
-      if (triggerTimeout.current) clearTimeout(triggerTimeout.current);
-      if (syntaxCheckTimeout.current) clearTimeout(syntaxCheckTimeout.current);
-    };
+    const check = () =>
+      fetch('http://localhost:3001/health')
+        .then(r => setBackendOk(r.ok))
+        .catch(() => setBackendOk(false));
+    check();
+    const id = setInterval(check, 5000);
+    return () => clearInterval(id);
   }, []);
+  useEffect(() => { popupVisibleRef.current = popupVisible; }, [popupVisible]);
+  useEffect(() => { suggestionsRef.current = suggestions; }, [suggestions]);
+  useEffect(() => { selectedIndexRef.current = selectedIndex; }, [selectedIndex]);
 
-  // Monaco Editor Mount
-  const handleEditorDidMount = (editor, monaco) => {
+  // ─── Editor mount ───
+  const onEditorMount = (editor, monaco) => {
     editorRef.current = editor;
     monacoRef.current = monaco;
-    
-    const updateCursorPosition = () => {
-      const position = editor.getPosition();
-      if (position) {
-        setCursorPosition({
-          line: position.lineNumber,
-          column: position.column
-        });
+    editor.onDidChangeCursorPosition(() => {
+      const p = editor.getPosition();
+      if (p) setCursorPos({ line: p.lineNumber, column: p.column });
+    });
+    editor.onKeyDown((event) => {
+      const key = event.browserEvent.key;
+      if (!popupVisibleRef.current || suggestionsRef.current.length === 0) return;
+      if (key === 'ArrowDown') {
+        event.preventDefault();
+        event.stopPropagation();
+        setSelectedIndex(i => Math.min(i + 1, suggestionsRef.current.length - 1));
+        return;
       }
-    };
-    
-    editor.onDidChangeCursorPosition(() => updateCursorPosition());
-    editor.onMouseDown(() => setTimeout(updateCursorPosition, 10));
-    editor.onKeyDown(() => setTimeout(updateCursorPosition, 10));
-    editor.onDidChangeModelContent(() => updateCursorPosition());
-    
-    updateCursorPosition();
-    cursorUpdateInterval.current = setInterval(updateCursorPosition, 200);
-    
-    // Syntax checking
-    editor.onDidChangeModelContent(() => {
-      if (syntaxCheckTimeout.current) clearTimeout(syntaxCheckTimeout.current);
-      syntaxCheckTimeout.current = setTimeout(() => {
-        checkSyntaxErrors(editor, monaco);
-      }, 500);
+      if (key === 'ArrowUp') {
+        event.preventDefault();
+        event.stopPropagation();
+        setSelectedIndex(i => Math.max(i - 1, 0));
+        return;
+      }
+      if (key === 'Tab' || key === 'Enter') {
+        event.preventDefault();
+        event.stopPropagation();
+        acceptSuggestion(suggestionsRef.current[selectedIndexRef.current]);
+        return;
+      }
+      if (key === 'Escape') {
+        event.preventDefault();
+        event.stopPropagation();
+        setPopupVisible(false);
+        return;
+      }
     });
   };
 
-  // Syntax Error Detection
-  const checkSyntaxErrors = (editor, monaco) => {
-    const model = editor.getModel();
-    const code = model.getValue();
-    const errors = [];
-    const lines = code.split('\n');
-    
-    lines.forEach((line, index) => {
-      const lineNumber = index + 1;
-      
-      // Bracket matching
-      const openBrackets = (line.match(/\(/g) || []).length;
-      const closeBrackets = (line.match(/\)/g) || []).length;
-      if (openBrackets !== closeBrackets) {
-        let bracketCount = 0;
-        for (let i = 0; i < line.length; i++) {
-          if (line[i] === '(') bracketCount++;
-          else if (line[i] === ')') bracketCount--;
-          
-          if (bracketCount < 0) {
-            errors.push({
-              startLineNumber: lineNumber,
-              startColumn: i + 1,
-              endLineNumber: lineNumber,
-              endColumn: i + 2,
-              message: 'Extra closing parenthesis',
-              severity: monaco.MarkerSeverity.Error
-            });
-            bracketCount = 0;
-          }
-        }
-        
-        if (bracketCount > 0) {
-          errors.push({
-            startLineNumber: lineNumber,
-            startColumn: 1,
-            endLineNumber: lineNumber,
-            endColumn: line.length + 1,
-            message: `Unmatched opening parentheses: ${bracketCount} extra`,
-            severity: monaco.MarkerSeverity.Warning
-          });
-        }
-      }
-    });
-    
-    monaco.editor.setModelMarkers(model, 'owner', errors);
+  // ─── Code change ───
+  const onCodeChange = (value) => {
+    const newCode = value || '';
+    setFiles(prev => prev.map(f => f.id === activeFileId ? { ...f, content: newCode, dirty: true } : f));
+    if (triggerTimer.current) clearTimeout(triggerTimer.current);
+    triggerTimer.current = setTimeout(() => triggerSuggestions(newCode), 180);
   };
 
-  // Backend Health Check
-  const checkBackendHealth = useCallback(async () => {
-    try {
-      const response = await fetch('/health');
-      if (!response.ok) throw new Error('Backend unreachable');
-      setBackendStatus({ healthy: true, message: 'Backend online' });
-      if (!workspaceTree.length) {
-        await refreshWorkspace('');
-      }
-      return true;
-    } catch (err) {
-      setBackendStatus({ healthy: false, message: 'Backend offline' });
-      return false;
-    }
-  }, [workspaceTree.length]);
-
-  useEffect(() => {
-    checkBackendHealth();
-    const interval = setInterval(checkBackendHealth, 5000);
-    return () => clearInterval(interval);
-  }, [checkBackendHealth]);
-
-  // Workspace Functions
-  const refreshWorkspace = async (subpath = '') => {
-    if (!backendStatus.healthy) return;
-    try {
-      const result = await callBackendAPI('listWorkspace', subpath);
-      if (result && result.entries) {
-        setWorkspaceTree(result.entries);
-        setWorkspacePath(result.path || '');
-      }
-    } catch (err) {
-      console.error('Failed to refresh workspace', err);
-    }
-  };
-
-  const openFileFromWorkspace = async (filePath) => {
-    if (!backendStatus.healthy) return;
-    try {
-      const result = await callBackendAPI('readFile', filePath);
-      if (result && typeof result.content === 'string') {
-        setCurrentFile(filePath);
-        setCode(result.content);
-        setFiles((prev) => {
-          const existing = prev.find((f) => f.name === filePath);
-          if (existing) {
-            return prev.map((f) => (f.name === filePath ? { ...f, content: result.content } : f));
-          }
-          return [...prev, { name: filePath, content: result.content }];
-        });
-      }
-    } catch (err) {
-      console.error('Read file failed:', err);
-    }
-  };
-
-  const saveFileToWorkspace = async () => {
-    if (!backendStatus.healthy) {
-      alert('Backend offline, using local download fallback.');
-      handleSaveFile();
-      return;
-    }
-    try {
-      const result = await callBackendAPI('writeFile', currentFile, code);
-      if (result && result.success) {
-        alert(`Saved to workspace: ${currentFile}`);
-      } else {
-        throw new Error(result?.error || 'save failed');
-      }
-    } catch (err) {
-      console.error('writeFile failed', err);
-      alert(`Save failed: ${err.message}`);
-    }
-  };
-
-  // Suggestion Triggering
-  const triggerSuggestions = (currentCode) => {
+  // ─── Suggestion trigger ───
+  const triggerSuggestions = async (currentCode) => {
     const editor = editorRef.current;
-    if (!editor) {
-      setPopupVisible(false);
-      return;
-    }
+    if (!editor) return;
 
     const model = editor.getModel();
     const position = editor.getPosition();
+    if (!model || !position) return;
+
     const lineContent = model.getLineContent(position.lineNumber);
     const beforeCursor = lineContent.substring(0, position.column - 1);
 
-    if (!beforeCursor || beforeCursor.trim().length === 0) {
-      setPopupVisible(false);
+    // Parse what's before the cursor
+    // Case 1: after a dot  →  obj.prefix
+    const dotMatch = beforeCursor.match(/(\w+)\.(\w*)$/);
+    if (dotMatch) {
+      const objectName = dotMatch[1];
+      const prefix = dotMatch[2];
+      await fetchSuggestions(prefix, objectName, currentCode, position);
       return;
     }
 
-    // Dot suggestion
-    const dotMatch = beforeCursor.match(/(\w+)\.([a-zA-Z_]*)$/);
-    if (dotMatch) {
-      const startTime = Date.now();
-      const objectName = dotMatch[1];
-      const prefix = dotMatch[2];
-
-      if (prefix.length > 0) {
-        callBackendAPI('getSuggestions', prefix, objectName, currentCode, position.column).then((realSuggestions) => {
-          const elapsed = Date.now() - startTime;
-          setLatency(elapsed);
-          setSuggestions(realSuggestions || []);
-          setSelectedIndex(0);
-          setPopupPosition(calculatePopupPosition());
-          setPopupVisible((realSuggestions || []).length > 0);
-        }).catch(() => {
-          setSuggestions([]);
-          setPopupVisible(false);
-        });
-      } else {
-        setPopupVisible(false);
-      }
-    } else if (beforeCursor.endsWith('.')) {
-      const match = beforeCursor.match(/(\w+)\.$/);
-      if (match) {
-        const startTime = Date.now();
-        const objectName = match[1];
-
-        callBackendAPI('getSuggestions', '', objectName, currentCode, position.column).then((realSuggestions) => {
-          const elapsed = Date.now() - startTime;
-          setLatency(elapsed);
-          setSuggestions(realSuggestions || []);
-          setSelectedIndex(0);
-          setPopupPosition(calculatePopupPosition());
-          setPopupVisible((realSuggestions || []).length > 0);
-        }).catch(() => {
-          setSuggestions([]);
-          setPopupVisible(false);
-        });
-      }
+    // Case 2: just typed a dot →  obj.
+    const justDot = beforeCursor.match(/(\w+)\.$/);
+    if (justDot) {
+      await fetchSuggestions('', justDot[1], currentCode, position);
+      return;
     }
 
-    // Stats
-    callBackendAPI('getStats', currentCode).then((stats) => {
-      setSymbolCount(stats.symbolCount || 0);
-      setIncludedLibs(stats.includedLibraries || []);
-    }).catch(() => {
-      setSymbolCount(0);
-      setIncludedLibs([]);
+    // No dot trigger → hide popup
+    setPopupVisible(false);
+
+    // Still update stats
+    callAPI('getStats', { code: currentCode }).then(stats => {
+      if (stats) setIncludedLibs(stats.includedLibraries || []);
     });
   };
 
-  const calculatePopupPosition = () => {
+  const fetchSuggestions = async (prefix, contextType, currentCode, position) => {
+    const start = Date.now();
+    const data = await callAPI('getSuggestions', { prefix, contextType, code: currentCode, cursorPosition: position.column });
+    const elapsed = Date.now() - start;
+    setLatency(elapsed);
+
+    const results = Array.isArray(data) ? data : [];
+    setSuggestions(results);
+    setSelectedIndex(0);
+    setPopupVisible(results.length > 0);
+
+    if (results.length > 0) {
+      setPopupPos(calcPopupPos(position));
+    }
+
+    // Update stats
+    callAPI('getStats', { code: currentCode }).then(stats => {
+      if (stats) setIncludedLibs(stats.includedLibraries || []);
+    });
+  };
+
+  const calcPopupPos = (position) => {
     const editor = editorRef.current;
     if (!editor) return { top: 0, left: 0 };
     try {
-      const position = editor.getPosition();
-      const containerDom = editor.getDomNode();
-      const editorRect = containerDom.getBoundingClientRect();
-      const cursorCoords = editor.getScrolledVisiblePosition(position);
-      if (!cursorCoords) return { top: 0, left: 0 };
-
+      const domNode = editor.getDomNode();
+      const coords = editor.getScrolledVisiblePosition(position);
+      if (!coords) return { top: 0, left: 0 };
+      const popupWidth = 240;
+      const editorRect = domNode.getBoundingClientRect();
+      const maxTop = Math.max(0, editorRect.height - 28);
+      const maxLeft = Math.max(0, editorRect.width - popupWidth - 16);
       return {
-        top: editorRect.top + cursorCoords.top + 24,
-        left: editorRect.left + cursorCoords.left
+        top: Math.min(coords.top + 18, maxTop),
+        left: Math.min(coords.left, maxLeft),
       };
-    } catch (err) {
-      console.error('Error calculating popup position:', err);
-      return { top: 0, left: 0 };
-    }
+    } catch { return { top: 0, left: 0 }; }
   };
 
-  const handleEditorChange = (value) => {
-    const newCode = value || '';
-    setCode(newCode);
-    setFiles(files.map(f =>
-      f.name === currentFile ? { ...f, content: newCode } : f
-    ));
-
-    if (triggerTimeout.current) {
-      clearTimeout(triggerTimeout.current);
-    }
-    triggerTimeout.current = setTimeout(() => triggerSuggestions(newCode), 200);
-  };
-
-  const handleSelectSuggestion = (suggestion) => {
+  // ─── Accept suggestion ───
+  const acceptSuggestion = useCallback((suggestion) => {
     const editor = editorRef.current;
     const monaco = monacoRef.current;
-    if (!editor || !monaco) return;
+    if (!editor || !monaco || !suggestion) return;
 
     const model = editor.getModel();
     const position = editor.getPosition();
     const lineContent = model.getLineContent(position.lineNumber);
     const beforeCursor = lineContent.substring(0, position.column - 1);
-
-    const suggestionText = suggestion.insertText || suggestion.label || suggestion.text || '';
     const dotPos = beforeCursor.lastIndexOf('.');
 
+    const text = suggestion.text || suggestion.label || '';
+    // Add () for methods that take parameters
+    const isFnLike = suggestion.type === 'method' && suggestion.sig && suggestion.sig.includes('(') && !suggestion.sig.endsWith('()');
+    const insertText = isFnLike ? text + '()' : text;
+
     if (dotPos >= 0) {
-      const range = new monaco.Range(
-        position.lineNumber,
-        dotPos + 2,
-        position.lineNumber,
-        position.column
-      );
-      
-      editor.executeEdits('suggestion', [{
-        range: range,
-        text: suggestionText + '()'
-      }]);
-      
-      const newPosition = {
-        lineNumber: position.lineNumber,
-        column: dotPos + 2 + suggestionText.length + 1
-      };
-      editor.setPosition(newPosition);
-    } else {
-      let startPos = position.column - 1;
-      while (startPos > 0 && /[a-zA-Z0-9_]/.test(beforeCursor[startPos - 1])) {
-        startPos--;
+      const range = new monaco.Range(position.lineNumber, dotPos + 2, position.lineNumber, position.column);
+      editor.executeEdits('intellicpp', [{ range, text: insertText }]);
+      const newCol = dotPos + 2 + insertText.length;
+      // Move cursor inside parens if method
+      if (isFnLike) {
+        editor.setPosition({ lineNumber: position.lineNumber, column: newCol - 1 });
+      } else {
+        editor.setPosition({ lineNumber: position.lineNumber, column: newCol });
       }
-
-      const range = new monaco.Range(
-        position.lineNumber,
-        startPos + 1,
-        position.lineNumber,
-        position.column
-      );
-
-      editor.executeEdits('suggestion', [{
-        range: range,
-        text: suggestionText
-      }]);
-
-      const newPosition = {
-        lineNumber: position.lineNumber,
-        column: startPos + 1 + suggestionText.length
-      };
-      editor.setPosition(newPosition);
+    } else {
+      // keyword/global insert
+      let start = position.column - 1;
+      while (start > 0 && /\w/.test(beforeCursor[start - 1])) start--;
+      const range = new monaco.Range(position.lineNumber, start + 1, position.lineNumber, position.column);
+      editor.executeEdits('intellicpp', [{ range, text }]);
+      editor.setPosition({ lineNumber: position.lineNumber, column: start + 1 + text.length });
     }
 
     setPopupVisible(false);
     editor.focus();
-  };
+  }, []);
 
-  // Run Code
-  const handleRunCode = async () => {
-    setOutputLoading(true);
+  // ─── Run code ───
+  const handleRun = useCallback(async () => {
     setIsRunning(true);
-    setOutputError('');
     setOutputResult('');
-    setOutputPanelVisible(true);
+    setOutputError('');
+    setOutputVisible(true);
+    setOutputMinimized(false);
 
-    try {
-      const result = await callBackendAPI('runCode', code);
-      
-      let parsed = result;
-      if (typeof result === 'string') {
-        try {
-          parsed = JSON.parse(result);
-        } catch (e) {
-          setOutputError('Invalid response format from backend');
-          return;
-        }
-      }
-      
-      if (parsed && typeof parsed === 'object') {
-        if (parsed.success) {
-          setOutputResult(parsed.output || 'Code executed successfully');
-          setOutputError('');
-        } else {
-          setOutputError(parsed.error || 'Unknown error occurred');
-          setOutputResult(parsed.output || '');
-        }
-      } else {
-        setOutputError('Unexpected response format from backend');
-      }
-    } catch (err) {
-      console.error('[Frontend] Code execution error:', err);
-      setOutputError(`Error: ${err.message}`);
-    } finally {
-      setOutputLoading(false);
-      setIsRunning(false);
-    }
-  };
-
-  // AI Assistant
-  const askAI = async () => {
-    if (!aiQuery.trim()) return;
-    setAiLoading(true);
-    setAiResponse("");
-    try {
-      const res = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "claude-sonnet-4-20250514",
-          max_tokens: 1000,
-          system: "You are IntelliCPP, an expert C++ assistant. Answer concisely. Use code blocks.",
-          messages: [{ role: "user", content: aiQuery }],
-        }),
-      });
-      const data = await res.json();
-      const text = data.content?.map((c) => c.text || "").join("") || "No response.";
-      setAiResponse(text);
-    } catch (e) {
-      setAiResponse("Error contacting AI. Check network and API key.");
-    }
-    setAiLoading(false);
-  };
-
-  // UI Handlers
-  const handleKeyDown = (e) => {
-    if (popupVisible && suggestions.length > 0) {
-      if (e.key === 'ArrowDown') {
-        e.preventDefault();
-        setSelectedIndex(prev => (prev + 1) % suggestions.length);
-      } else if (e.key === 'ArrowUp') {
-        e.preventDefault();
-        setSelectedIndex(prev => (prev - 1 + suggestions.length) % suggestions.length);
-      } else if (e.key === 'Enter' || e.key === 'Tab') {
-        e.preventDefault();
-        if (suggestions[selectedIndex]) {
-          handleSelectSuggestion(suggestions[selectedIndex]);
-        }
-      } else if (e.key === 'Escape') {
-        e.preventDefault();
-        setPopupVisible(false);
-      }
-      return;
-    }
-
-    if (e.ctrlKey || e.metaKey) {
-      switch (e.key) {
-        case 's':
-          e.preventDefault();
-          handleSaveFile();
-          break;
-        case 'o':
-          e.preventDefault();
-          handleOpenFile();
-          break;
-        case 'n':
-          e.preventDefault();
-          handleNewFile();
-          break;
-        case 'j':
-          e.preventDefault();
-          setShowAIPanel(!showAIPanel);
-          break;
-        default:
-          break;
-      }
-    } else if (e.key === 'F5') {
-      e.preventDefault();
-      if (!isRunning) handleRunCode();
-    } else if (e.key === 'F6') {
-      e.preventDefault();
-      if (isRunning) handleStopExecution();
-    }
-  };
-
-  const handleStopExecution = () => {
-    setOutputLoading(false);
+    const result = await callAPI('runCode', { code });
     setIsRunning(false);
-    setOutputError('Execution stopped by user');
-  };
 
-  const handleClearOutput = () => {
-    setOutputResult('');
-    setOutputError('');
-  };
-
-  const handleNewFile = () => {
-    const fileName = prompt('Enter file name (with .cpp extension):');
-    if (fileName) {
-      const newFile = {
-        name: fileName,
-        content: `#include <iostream>
-using namespace std;
-
-int main() {
-    cout << "Hello from ${fileName}!" << endl;
-    return 0;
-}`,
-        isActive: true
-      };
-      setFiles(files.map(f => ({ ...f, isActive: false })).concat(newFile));
-      setCurrentFile(fileName);
-      setCode(newFile.content);
-    }
-  };
-
-  const handleSaveFile = () => {
-    const currentFileData = files.find((f) => f.name === currentFile);
-    if (currentFileData) {
-      const blob = new Blob([code], { type: 'text/plain' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = currentFile;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      URL.revokeObjectURL(url);
-      alert(`File ${currentFile} saved successfully!`);
-    }
-  };
-
-  const handleOpenFile = async () => {
-    const health = await checkBackendHealth();
-    if (health && backendStatus.healthy) {
-      await refreshWorkspace('');
+    if (!result) {
+      setOutputError('Backend unreachable. Is the server running on port 3001?');
       return;
     }
-
-    if (hiddenFileInputRef.current) {
-      hiddenFileInputRef.current.click();
+    if (result.success) {
+      setOutputResult(result.output || '(no output)');
+      setOutputError(result.error || '');
+    } else {
+      setOutputError(result.error || 'Unknown error');
+      setOutputResult(result.output || '');
     }
-  };
+  }, [code]);
 
-  const handleFileInputChange = async (event) => {
-    const selectedFiles = Array.from(event.target.files || []);
-    if (selectedFiles.length === 0) return;
+  // ─── File operations ───
+  const handleNewFile = useCallback(() => {
+    const name = `untitled-${nextId.current}.cpp`;
+    const newFile = {
+      id: nextId.current++,
+      name,
+      content: `#include <iostream>\nusing namespace std;\n\nint main() {\n    cout << "Hello!" << endl;\n    return 0;\n}\n`,
+      dirty: false,
+    };
+    setFiles(prev => [...prev, newFile]);
+    setActiveFileId(newFile.id);
+  }, []);
 
-    const loadedFiles = await Promise.all(selectedFiles.map((file) => {
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => {
-          resolve({
-            name: file.name,
-            type: 'file',
-            content: reader.result || ''
-          });
-        };
-        reader.onerror = () => reject(reader.error);
-        reader.readAsText(file);
-      });
-    }));
+  const handleSave = useCallback(() => {
+    if (!activeFile) return;
+    const blob = new Blob([code], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = activeFile.name;
+    a.click();
+    URL.revokeObjectURL(url);
+    setFiles(prev => prev.map(f => f.id === activeFileId ? { ...f, dirty: false } : f));
+  }, [activeFile, activeFileId, code]);
 
-    setFiles((prevFiles) => {
-      const nextFiles = [...prevFiles];
-      loadedFiles.forEach((file) => {
-        const existing = nextFiles.find((f) => f.name === file.name);
-        if (existing) {
-          existing.content = file.content;
-        } else {
-          nextFiles.push(file);
-        }
-      });
-      return nextFiles;
+  const handleOpenFile = (e) => {
+    const selectedFiles = Array.from(e.target.files || []);
+    selectedFiles.forEach(file => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const id = nextId.current++;
+        setFiles(prev => [...prev, { id, name: file.name, content: reader.result, dirty: false }]);
+        setActiveFileId(id);
+      };
+      reader.readAsText(file);
     });
-
-    if (loadedFiles[0]) {
-      setCurrentFile(loadedFiles[0].name);
-      setCode(loadedFiles[0].content);
-    }
-
-    event.target.value = '';
+    e.target.value = '';
   };
 
-  const handleToggleMinimap = () => {
-    const newSettings = { ...settings, minimap: !settings.minimap };
-    setSettings(newSettings);
-    if (editorRef.current) {
-      editorRef.current.updateOptions({
-        minimap: { enabled: newSettings.minimap }
-      });
+  const handleCloseFile = (fileId) => {
+    setFiles(prev => {
+      const next = prev.filter(f => f.id !== fileId);
+      if (next.length === 0) {
+        const newFile = { id: nextId.current++, name: 'main.cpp', content: DEFAULT_CODE, dirty: false };
+        setActiveFileId(newFile.id);
+        return [newFile];
+      }
+      if (activeFileId === fileId) setActiveFileId(next[next.length - 1].id);
+      return next;
+    });
+  };
+
+  // ─── Keyboard shortcuts ───
+  useEffect(() => {
+    const onKey = (e) => {
+      if (popupVisible && suggestions.length > 0) {
+        if (e.key === 'ArrowDown') { e.preventDefault(); setSelectedIndex(i => Math.min(i + 1, suggestions.length - 1)); return; }
+        if (e.key === 'ArrowUp')   { e.preventDefault(); setSelectedIndex(i => Math.max(i - 1, 0)); return; }
+        if (e.key === 'Escape')    { e.preventDefault(); setPopupVisible(false); return; }
+      }
+      if (e.ctrlKey || e.metaKey) {
+        if (e.key === 's') { e.preventDefault(); handleSave(); }
+        if (e.key === 'n') { e.preventDefault(); handleNewFile(); }
+        if (e.key === 'o') { e.preventDefault(); hiddenInput.current?.click(); }
+        if (e.key === '`') { e.preventDefault(); setOutputVisible(v => !v); }
+      }
+      if (e.key === 'F5') { e.preventDefault(); if (!isRunning) handleRun(); }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [popupVisible, suggestions, isRunning, handleSave, handleNewFile, handleRun]);
+
+  const onEditorKeyDown = (editorEvent) => {
+    if (!popupVisible || suggestions.length === 0) return;
+    const key = editorEvent.event.browserEvent.key;
+    if (key === 'ArrowDown') {
+      editorEvent.event.preventDefault();
+      editorEvent.event.stopPropagation();
+      setSelectedIndex(i => Math.min(i + 1, suggestions.length - 1));
+      return;
+    }
+    if (key === 'ArrowUp') {
+      editorEvent.event.preventDefault();
+      editorEvent.event.stopPropagation();
+      setSelectedIndex(i => Math.max(i - 1, 0));
+      return;
+    }
+    if (key === 'Tab' || key === 'Enter') {
+      editorEvent.event.preventDefault();
+      editorEvent.event.stopPropagation();
+      acceptSuggestion(suggestions[selectedIndex]);
+      return;
+    }
+    if (key === 'Escape') {
+      editorEvent.event.preventDefault();
+      editorEvent.event.stopPropagation();
+      setPopupVisible(false);
+      return;
     }
   };
 
-  const handleToggleWordWrap = () => {
-    const newSettings = { ...settings, wordWrap: !settings.wordWrap };
-    setSettings(newSettings);
-    if (editorRef.current) {
-      editorRef.current.updateOptions({
-        wordWrap: newSettings.wordWrap ? 'on' : 'off'
-      });
-    }
+  // ─── Output resize (drag) ───
+  const onDragStart = (e) => {
+    isDragging.current = true;
+    dragStartY.current = e.clientY;
+    dragStartH.current = outputHeight;
+    document.body.style.cursor = 'row-resize';
+    document.body.style.userSelect = 'none';
   };
 
-  const handleFormatCode = () => {
-    if (editorRef.current) {
-      editorRef.current.getAction('editor.action.formatDocument').run();
+  useEffect(() => {
+    const onMove = (e) => {
+      if (!isDragging.current) return;
+      const delta = dragStartY.current - e.clientY;
+      const newH = Math.min(Math.max(dragStartH.current + delta, 80), Math.floor(window.innerHeight * 0.6));
+      setOutputHeight(newH);
+      setOutputMinimized(false);
+      setOutputMaximized(newH >= Math.floor(window.innerHeight * 0.58));
+    };
+    const onUp = () => {
+      isDragging.current = false;
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+    return () => { document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp); };
+  }, [outputHeight]);
+
+  const handleMinimize = () => { setOutputMinimized(true); setOutputMaximized(false); };
+  const handleMaximize = () => {
+    if (outputMaximized) {
+      setOutputHeight(220); setOutputMaximized(false);
+    } else {
+      setOutputHeight(Math.floor(window.innerHeight * 0.6)); setOutputMaximized(true);
     }
+    setOutputMinimized(false);
   };
+
+  const formatCode = () => editorRef.current?.getAction('editor.action.formatDocument')?.run();
 
   return (
-    <div style={{ minHeight: '100vh', background: t.bg, color: t.text, fontFamily: 'inherit' }} onKeyDown={handleKeyDown}>
-      <input
-        ref={hiddenFileInputRef}
-        type="file"
-        webkitdirectory="true"
-        directory="true"
-        multiple
-        style={{ display: 'none' }}
-        onChange={handleFileInputChange}
-      />
+    <div style={{ height: '100vh', minHeight: '100vh', background: t.bg, color: t.text, fontFamily: "'Segoe UI', system-ui, sans-serif", display: 'flex', flexDirection: 'column' }}>
 
-      {/* Header */}
-      <div style={{
-        background: t.surface,
-        borderBottom: `1px solid ${t.border}`,
-        padding: '0 24px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        height: 56,
-        position: 'sticky',
-        top: 0,
-        zIndex: 100,
-      }}>
+      {/* Hidden file input */}
+      <input ref={hiddenInput} type="file" accept=".cpp,.h,.hpp,.cc,.cxx,.c,.txt" multiple style={{ display: 'none' }} onChange={handleOpenFile} />
+
+      {/* ─── Header ─── */}
+      <div style={{ height: 56, background: t.surface, borderBottom: `1px solid ${t.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 16px', flexShrink: 0, position: 'sticky', top: 0, zIndex: 200 }}>
+        {/* Left: Logo + file buttons */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div style={{
-            width: 32, height: 32, borderRadius: 8,
-            background: `linear-gradient(135deg, #58a6ff, #3fb950)`,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 16, fontWeight: 700,
-          }}>⚡</div>
-          <div>
-            <div style={{ fontWeight: 700, fontSize: 15, letterSpacing: '-0.3px' }}>IntelliCPP</div>
-            <div style={{ fontSize: 11, color: t.textMuted }}>C++ IntelliSense Engine</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{ width: 28, height: 28, borderRadius: 6, background: 'linear-gradient(135deg,#58a6ff,#3fb950)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14 }}>⚡</div>
+            <span style={{ fontWeight: 700, fontSize: 14, letterSpacing: '-0.3px' }}>IntelliCPP</span>
           </div>
+          <div style={{ width: 1, height: 20, background: t.border }} />
+          <ToolBtn icon={<Plus size={14} />} label="New (Ctrl+N)" onClick={handleNewFile} t={t} />
+          <ToolBtn icon={<Upload size={14} />} label="Open (Ctrl+O)" onClick={() => hiddenInput.current?.click()} t={t} />
+          <ToolBtn icon={<Save size={14} />} label="Save (Ctrl+S)" onClick={handleSave} t={t} />
+          <ToolBtn icon={<Code size={14} />} label="Format" onClick={formatCode} t={t} />
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+
+        {/* Right: Run, theme, backend status */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <button
-            className="toolbar-button-primary"
-            onClick={handleRunCode}
-            disabled={outputLoading}
-            title="Run Code (F5)"
-            style={{
-              background: t.accent, color: '#fff', border: 'none', borderRadius: 6,
-              padding: '8px 14px', cursor: outputLoading ? 'not-allowed' : 'pointer',
-              fontSize: 13, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6,
-            }}
+            onClick={handleRun}
+            disabled={isRunning}
+            title="Run (F5)"
+            style={{ display: 'flex', alignItems: 'center', gap: 6, background: isRunning ? t.card : t.accent, color: isRunning ? t.textMuted : '#fff', border: 'none', borderRadius: 6, padding: '7px 14px', cursor: isRunning ? 'not-allowed' : 'pointer', fontSize: 13, fontWeight: 600 }}
           >
-            <Play size={14} /> Run
-          </button>
-          <button
-            style={{
-              background: t.card, border: `1px solid ${t.border}`, borderRadius: 6,
-              padding: '6px 12px', color: t.text, cursor: 'pointer', fontSize: 13,
-            }}
-            onClick={handleFormatCode}
-            title="Format Code"
-          >
-            <Code size={14} />
+            <Play size={13} /> {isRunning ? 'Running…' : 'Run'}
           </button>
           <button
             onClick={() => setUiTheme(uiTheme === 'dark' ? 'light' : 'dark')}
-            style={{
-              background: t.card, border: `1px solid ${t.border}`, borderRadius: 6,
-              padding: '6px 12px', color: t.text, cursor: 'pointer', fontSize: 13,
-            }}
-          >{uiTheme === 'dark' ? '☀ Light' : '🌙 Dark'}</button>
-          <div style={{ marginRight: 12, color: backendStatus.healthy ? t.green : t.red, fontSize: '12px' }}>
-            {backendStatus.message}
+            style={{ background: t.card, border: `1px solid ${t.border}`, borderRadius: 6, padding: '6px 10px', color: t.text, cursor: 'pointer', fontSize: 12 }}
+          >{uiTheme === 'dark' ? '☀' : '🌙'}</button>
+          <div style={{ fontSize: 11, color: backendOk ? t.green : t.red, display: 'flex', alignItems: 'center', gap: 4 }}>
+            <span style={{ width: 7, height: 7, borderRadius: '50%', background: backendOk ? t.green : t.red, display: 'inline-block' }} />
+            {backendOk ? 'Backend online' : 'Backend offline'}
           </div>
         </div>
       </div>
 
-      {/* Metrics Bar */}
-      <div style={{
-        background: t.surface,
-        borderBottom: `1px solid ${t.border}`,
-        padding: '8px 24px',
-        display: 'flex', gap: 24, alignItems: 'center',
-        fontSize: 12, color: t.textMuted,
-      }}>
-        {[
-          { label: "Symbols", val: symbolCount },
-          { label: "Libraries", val: includedLibs.length },
-          { label: "Latency", val: latency ? `${latency}ms` : "—" },
-          { label: "Cursor", val: `${cursorPosition.line}:${cursorPosition.column}` },
-        ].map((m) => (
-          <div key={m.label} style={{ display: 'flex', gap: 6 }}>
-            <span style={{ color: t.textDim }}>{m.label}:</span>
-            <span style={{ color: t.accent, fontWeight: 600, fontFamily: 'monospace' }}>{m.val}</span>
-          </div>
-        ))}
+      {/* ─── Metrics bar ─── */}
+      <div style={{ height: 36, background: t.surface, borderBottom: `1px solid ${t.border}`, display: 'flex', alignItems: 'center', padding: '0 16px', gap: 20, fontSize: 11, color: t.textMuted, flexShrink: 0 }}>
+        <MetricItem label="Headers" value={includedLibs.length ? includedLibs.join(', ') : 'none'} accent={t.accent} dim={t.textDim} />
+        <MetricItem label="Latency" value={latency ? `${latency}ms` : '—'} accent={t.accent} dim={t.textDim} />
+        <MetricItem label="Cursor" value={`${cursorPos.line}:${cursorPos.column}`} accent={t.accent} dim={t.textDim} />
+        <MetricItem label="Engine" value="Trie O(L)" accent={t.green} dim={t.textDim} />
+        <span style={{ fontSize: 10, color: t.textDim }}>Ctrl+` toggles terminal · F5 runs</span>
       </div>
 
-      {/* File Tabs */}
-      <div style={{
-        background: t.surface,
-        borderBottom: `1px solid ${t.border}`,
-        padding: '0 12px',
-        display: 'flex',
-        gap: 4,
-        overflowX: 'auto',
-      }}>
-        {files.map((file) => (
+      {/* ─── File tabs ─── */}
+      <div style={{ height: 40, background: t.surface, borderBottom: `1px solid ${t.border}`, display: 'flex', alignItems: 'center', padding: '0 8px', gap: 2, overflowX: 'auto', flexShrink: 0 }}>
+        {files.map(file => (
           <div
-            key={file.name}
-            onClick={() => {
-              setCurrentFile(file.name);
-              setCode(file.content);
-            }}
+            key={file.id}
+            onClick={() => setActiveFileId(file.id)}
             style={{
-              padding: '8px 12px',
-              borderBottom: currentFile === file.name ? `2px solid ${t.accent}` : 'none',
-              color: currentFile === file.name ? t.accent : t.textMuted,
-              cursor: 'pointer',
-              fontSize: 13,
-              userSelect: 'none',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8,
-              minHeight: 40,
-              whiteSpace: 'nowrap',
+              display: 'flex', alignItems: 'center', gap: 6, padding: '4px 10px', borderRadius: 4,
+              background: file.id === activeFileId ? t.card : 'transparent',
+              border: `1px solid ${file.id === activeFileId ? t.border : 'transparent'}`,
+              color: file.id === activeFileId ? t.text : t.textMuted,
+              cursor: 'pointer', fontSize: 12, userSelect: 'none', whiteSpace: 'nowrap',
             }}
           >
-            <span>{file.name}</span>
+            <span style={{ fontSize: 10, color: file.name.endsWith('.cpp') || file.name.endsWith('.h') ? t.accent : t.textMuted }}>◈</span>
+            <span>{file.name}{file.dirty ? ' ●' : ''}</span>
             <button
-              style={{
-                background: 'none',
-                border: 'none',
-                color: t.textMuted,
-                cursor: 'pointer',
-                padding: 0,
-                fontSize: 12,
-              }}
-              onClick={(e) => {
-                e.stopPropagation();
-                setFiles(files.filter((f) => f.name !== file.name));
-                if (currentFile === file.name) {
-                  const nextFile = files.find((f) => f.name !== file.name);
-                  if (nextFile) {
-                    setCurrentFile(nextFile.name);
-                    setCode(nextFile.content);
-                  }
-                }
-              }}
-            >
-              ✕
-            </button>
+              onClick={e => { e.stopPropagation(); handleCloseFile(file.id); }}
+              style={{ background: 'none', border: 'none', color: t.textDim, cursor: 'pointer', padding: '0 2px', fontSize: 11, lineHeight: 1 }}
+            >✕</button>
           </div>
         ))}
-        <button
-          onClick={handleNewFile}
-          style={{
-            background: 'none',
-            border: 'none',
-            color: t.textMuted,
-            cursor: 'pointer',
-            padding: '8px 12px',
-            fontSize: 12,
-            minHeight: 40,
-            display: 'flex',
-            alignItems: 'center',
-          }}
-          title="New File"
-        >
-          +
-        </button>
+        <button onClick={handleNewFile} style={{ background: 'none', border: 'none', color: t.textMuted, cursor: 'pointer', padding: '4px 8px', fontSize: 16, lineHeight: 1 }} title="New file">+</button>
       </div>
 
-      {/* Main Layout */}
-      <div style={{ display: 'flex', height: 'calc(100vh - 152px)', overflow: 'hidden' }}>
-        {/* Editor */}
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-          <Editor
-            height="100%"
-            defaultLanguage="cpp"
-            value={code}
-            onChange={handleEditorChange}
-            onMount={handleEditorDidMount}
-            theme={uiTheme === 'dark' ? 'vs-dark' : 'vs-light'}
-            options={{
-              minimap: { enabled: settings.minimap },
-              fontSize: settings.fontSize,
-              lineHeight: 24,
-              fontFamily: 'JetBrains Mono, "Fira Code", "Cascadia Code", Consolas, monospace',
-              fontLigatures: true,
-              autoClosingBrackets: 'always',
-              autoClosingQuotes: 'always',
-              formatOnPaste: true,
-              formatOnType: true,
-              wordWrap: settings.wordWrap ? 'on' : 'off',
-              lineNumbers: settings.lineNumbers ? 'on' : 'off',
-              scrollBeyondLastLine: false,
-              bracketPairColorization: { enabled: true },
-              guides: { bracketPairs: true, indentation: true },
-              padding: { top: 20, bottom: 20 },
-              automaticLayout: true,
-              renderLineHighlight: 'line',
-            }}
-          />
+      {/* ─── Editor ─── */}
+      <div style={{ flex: 1, minHeight: 320, minWidth: 0, position: 'relative', overflow: 'hidden', zIndex: 1 }}>
+        <Editor
+          height="100%"
+          language="cpp"
+          value={code}
+          onChange={onCodeChange}
+          onMount={onEditorMount}
+          theme={uiTheme === 'dark' ? 'vs-dark' : 'vs-light'}
+          options={{
+            fontSize: settings.fontSize,
+            fontFamily: '"JetBrains Mono", "Fira Code", Consolas, monospace',
+            fontLigatures: true,
+            minimap: { enabled: settings.minimap },
+            wordWrap: settings.wordWrap ? 'on' : 'off',
+            lineNumbers: 'on',
+            scrollBeyondLastLine: false,
+            autoClosingBrackets: 'always',
+            autoClosingQuotes: 'always',
+            formatOnPaste: true,
+            bracketPairColorization: { enabled: true },
+            guides: { bracketPairs: true, indentation: true },
+            padding: { top: 16, bottom: 16 },
+            automaticLayout: true,
+            renderLineHighlight: 'line',
+            // Disable built-in C++ completions to avoid conflict with our popup
+            quickSuggestions: false,
+            suggestOnTriggerCharacters: false,
+            wordBasedSuggestions: 'off',
+          }}
+        />
 
-          {popupVisible && suggestions.length > 0 && (
-            <div
-              style={{
-                position: 'fixed',
-                top: `${popupPosition.top}px`,
-                left: `${popupPosition.left}px`,
-                zIndex: 1000
-              }}
-            >
-              <SuggestionPopup
-                suggestions={suggestions}
-                selectedIndex={selectedIndex}
-                onSelect={handleSelectSuggestion}
-              />
-            </div>
-          )}
-        </div>
-
-        {/* AI Panel (Right Side) */}
-        {showAIPanel && (
-          <div style={{
-            width: 320,
-            background: t.surface,
-            borderLeft: `1px solid ${t.border}`,
-            display: 'flex',
-            flexDirection: 'column',
-            overflow: 'hidden',
-          }}>
-            <div style={{
-              padding: '12px 16px',
-              borderBottom: `1px solid ${t.border}`,
-              fontSize: 13,
-              fontWeight: 600,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-            }}>
-              <span>🤖 AI Assistant</span>
-              <button
-                onClick={() => setShowAIPanel(false)}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  color: t.textMuted,
-                  cursor: 'pointer',
-                  fontSize: 12,
-                  padding: 0,
-                }}
-              >
-                ✕
-              </button>
-            </div>
-            <div style={{ flex: 1, overflowY: 'auto', padding: '12px' }}>
-              {aiResponse && (
-                <div style={{
-                  background: t.card,
-                  border: `1px solid ${t.border}`,
-                  borderRadius: 6,
-                  padding: '10px 12px',
-                  fontSize: 12,
-                  color: t.text,
-                  lineHeight: 1.6,
-                  whiteSpace: 'pre-wrap',
-                  fontFamily: 'monospace',
-                  marginBottom: 12,
-                }}>
-                  {aiResponse}
-                </div>
-              )}
-              {!aiResponse && !aiLoading && (
-                <div style={{ color: t.textDim, textAlign: 'center', marginTop: 20, fontSize: 12 }}>
-                  <div style={{ fontSize: 30, marginBottom: 8 }}>🤖</div>
-                  <div>Ask me anything about C++!</div>
-                </div>
-              )}
-              {aiLoading && (
-                <div style={{ color: t.accent, textAlign: 'center', marginTop: 20 }}>
-                  <div style={{ fontSize: 18, marginBottom: 8 }}>⚡</div>
-                  Generating...
-                </div>
-              )}
-            </div>
-            <div style={{
-              padding: '8px',
-              borderTop: `1px solid ${t.border}`,
-              display: 'flex',
-              gap: 6,
-              background: t.surface,
-              flexShrink: 0,
-            }}>
-              <input
-                value={aiQuery}
-                onChange={(e) => setAiQuery(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && askAI()}
-                placeholder="Ask about C++..."
-                style={{
-                  flex: 1,
-                  background: t.card,
-                  border: `1px solid ${t.border}`,
-                  borderRadius: 6,
-                  padding: '6px 8px',
-                  color: t.text,
-                  fontFamily: 'monospace',
-                  fontSize: 11,
-                  outline: 'none',
-                }}
-              />
-              <button
-                onClick={askAI}
-                disabled={aiLoading}
-                style={{
-                  background: t.accent,
-                  border: 'none',
-                  borderRadius: 6,
-                  padding: '6px 10px',
-                  color: '#fff',
-                  cursor: aiLoading ? 'not-allowed' : 'pointer',
-                  fontSize: 11,
-                  fontWeight: 600,
-                  opacity: aiLoading ? 0.6 : 1,
-                }}
-              >
-                {aiLoading ? '…' : '→'}
-              </button>
-            </div>
+        {/* Suggestion popup */}
+        {popupVisible && suggestions.length > 0 && (
+          <div style={{ position: 'absolute', top: popupPos.top, left: popupPos.left, zIndex: 10 }}>
+            <SuggestionPopup
+              suggestions={suggestions}
+              selectedIndex={selectedIndex}
+              onSelect={acceptSuggestion}
+              theme={t}
+            />
           </div>
         )}
       </div>
 
-      {/* Output Panel */}
-      {outputPanelVisible && (
-        <OutputPanel
-          output={outputResult}
-          isLoading={outputLoading}
-          error={outputError}
-          onClear={handleClearOutput}
-          isVisible={outputPanelVisible}
-          minHeight={100}
-          maxHeight={500}
-          height={outputPanelHeight}
-        />
+      {/* ─── Output Panel ─── */}
+      {outputVisible && (
+        <div style={{ flexShrink: 0 }}>
+          {/* Drag handle */}
+          <div
+            onMouseDown={onDragStart}
+            style={{ height: 6, background: t.border, cursor: 'row-resize', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            title="Drag to resize"
+          >
+            <div style={{ width: 40, height: 2, borderRadius: 2, background: t.textDim }} />
+          </div>
+
+          <div style={{ height: outputMinimized ? 30 : outputHeight, background: '#0d0d0d', borderTop: `1px solid ${t.border}`, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+            {/* Terminal header */}
+            <div style={{ height: 30, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 12px', borderBottom: `1px solid #222`, flexShrink: 0 }}>
+              <span style={{ fontSize: 11, color: '#888', fontFamily: 'monospace' }}>OUTPUT TERMINAL</span>
+              <div style={{ display: 'flex', gap: 4 }}>
+                <SmallBtn title="Minimize" onClick={handleMinimize} color="#888">▼</SmallBtn>
+                <SmallBtn title={outputMaximized ? 'Restore' : 'Maximize'} onClick={handleMaximize} color="#888">{outputMaximized ? '◆' : '▲'}</SmallBtn>
+                <SmallBtn title="Clear" onClick={() => { setOutputResult(''); setOutputError(''); }} color="#888">✕</SmallBtn>
+                <SmallBtn title="Close" onClick={() => setOutputVisible(false)} color="#f85149">×</SmallBtn>
+              </div>
+            </div>
+
+            {/* Terminal content */}
+            {!outputMinimized && (
+              <div style={{ flex: 1, overflowY: 'auto', padding: '10px 14px', fontFamily: '"JetBrains Mono", monospace', fontSize: 12, lineHeight: 1.6 }}>
+                {isRunning && <div style={{ color: '#58a6ff' }}>▶ Compiling and running…</div>}
+                {!isRunning && !outputResult && !outputError && (
+                  <div style={{ color: '#484f58' }}>▶ IntelliCPP v2.0 ready. Press F5 or click Run to execute code.</div>
+                )}
+                {outputResult && (
+                  <div style={{ color: '#3fb950', whiteSpace: 'pre-wrap' }}>{outputResult}</div>
+                )}
+                {outputError && (
+                  <div style={{ color: '#f85149', whiteSpace: 'pre-wrap', marginTop: outputResult ? 8 : 0 }}>
+                    {outputError}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
       )}
 
-      {/* Status Bar */}
-      <StatusBar
-        symbolCount={symbolCount}
-        latency={latency}
-        includedLibs={includedLibs}
-        cursorPosition={cursorPosition}
-      />
+      {/* ─── Status bar ─── */}
+      <div style={{ height: 22, background: uiTheme === 'dark' ? '#1f6feb' : '#0969da', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 12px', flexShrink: 0 }}>
+        <div style={{ display: 'flex', gap: 16, fontSize: 10, color: '#fff', alignItems: 'center' }}>
+          <span>⚡ IntelliCPP</span>
+          <span>C++ 20</span>
+          <span>UTF-8</span>
+          {latency > 0 && <span>{latency}ms</span>}
+        </div>
+        <div style={{ display: 'flex', gap: 16, fontSize: 10, color: '#fff', alignItems: 'center' }}>
+          <span
+            style={{ cursor: 'pointer' }}
+            onClick={() => setSettings(s => ({ ...s, minimap: !s.minimap }))}
+          >{settings.minimap ? 'Minimap On' : 'Minimap Off'}</span>
+          <span
+            style={{ cursor: 'pointer' }}
+            onClick={() => setSettings(s => ({ ...s, wordWrap: !s.wordWrap }))}
+          >{settings.wordWrap ? 'Wrap On' : 'Wrap Off'}</span>
+          <span>Ln {cursorPos.line}, Col {cursorPos.column}</span>
+        </div>
+      </div>
     </div>
+  );
+}
+
+// ─── Small reusable components ───
+function ToolBtn({ icon, label, onClick, t }) {
+  return (
+    <button
+      onClick={onClick}
+      title={label}
+      style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'none', border: `1px solid ${t.border}`, borderRadius: 5, padding: '5px 9px', color: t.textMuted, cursor: 'pointer', fontSize: 12 }}
+    >
+      {icon}
+    </button>
+  );
+}
+
+function MetricItem({ label, value, accent, dim }) {
+  return (
+    <div style={{ display: 'flex', gap: 5 }}>
+      <span style={{ color: dim }}>{label}:</span>
+      <span style={{ color: accent, fontFamily: 'monospace', fontWeight: 600, maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{value}</span>
+    </div>
+  );
+}
+
+function SmallBtn({ children, onClick, title, color }) {
+  return (
+    <button
+      onClick={onClick}
+      title={title}
+      style={{ background: 'none', border: 'none', color: color || '#888', cursor: 'pointer', padding: '2px 5px', fontSize: 11, borderRadius: 3 }}
+    >{children}</button>
   );
 }

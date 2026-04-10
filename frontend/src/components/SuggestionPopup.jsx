@@ -1,36 +1,80 @@
 import React, { useEffect, useRef } from 'react';
-import '../styles/glassmorphism.css';
+
+const TYPE_COLORS = {
+  method:   { bg: '#1f6feb', text: '#79c0ff' },
+  keyword:  { bg: '#3d2b00', text: '#d29922' },
+  class:    { bg: '#2d1b69', text: '#d2a8ff' },
+  function: { bg: '#0d2d0d', text: '#3fb950' },
+};
 
 export default function SuggestionPopup({ suggestions, selectedIndex, onSelect }) {
-  const selectedItemRef = useRef(null);
+  const selectedRef = useRef(null);
 
   useEffect(() => {
-    if (selectedItemRef.current) {
-      selectedItemRef.current.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-    }
+    selectedRef.current?.scrollIntoView({ block: 'nearest' });
   }, [selectedIndex]);
 
+  if (!suggestions || suggestions.length === 0) return null;
+
   return (
-    <div className="suggestion-popup">
-      <ul className="suggestion-list">
-        {suggestions.map((suggestion, index) => (
-          <li
-            key={`${suggestion.label || suggestion.text || index}`}
-            ref={index === selectedIndex ? selectedItemRef : null}
-            className={`suggestion-item ${index === selectedIndex ? 'selected' : ''}`}
-            onClick={() => onSelect(suggestion)}
-            onMouseEnter={() => {}}
-            role="option"
-            aria-selected={index === selectedIndex}
-          >
-            <span className="suggestion-text">{suggestion.label || suggestion.text}</span>
-            <span className="suggestion-type">{suggestion.kind || suggestion.type || 'N/A'}</span>
-            <span className="suggestion-score">
-              {suggestion.score ? (suggestion.score * 100).toFixed(0) + '%' : 'N/A'}
-            </span>
-          </li>
-        ))}
-      </ul>
+    <div style={{
+      background: '#161b22',
+      border: '1px solid #30363d',
+      borderRadius: 8,
+      boxShadow: '0 8px 32px rgba(0,0,0,0.6)',
+      width: 240,
+      maxHeight: 260,
+      display: 'flex',
+      overflow: 'hidden',
+      fontFamily: '"JetBrains Mono", monospace',
+    }}>
+      <div style={{ flex: 1, overflowY: 'auto', maxHeight: 260 }}>
+        {suggestions.map((s, i) => {
+          const colors = TYPE_COLORS[s.type] || TYPE_COLORS.method;
+          const isSelected = i === selectedIndex;
+          return (
+            <div
+              key={`${s.text}-${i}`}
+              ref={isSelected ? selectedRef : null}
+              onClick={() => onSelect(s)}
+              style={{
+                padding: '5px 10px',
+                cursor: 'pointer',
+                background: isSelected ? '#1f6feb22' : 'transparent',
+                borderLeft: isSelected ? '2px solid #58a6ff' : '2px solid transparent',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                transition: 'background 0.1s',
+              }}
+            >
+              <span style={{
+                fontSize: 9,
+                background: colors.bg,
+                color: colors.text,
+                padding: '1px 5px',
+                borderRadius: 3,
+                minWidth: 40,
+                textAlign: 'center',
+                fontWeight: 600,
+                textTransform: 'uppercase',
+              }}>
+                {s.type || 'fn'}
+              </span>
+
+              <span style={{ fontSize: 12, color: isSelected ? '#e6edf3' : '#8b949e', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {s.text || s.label}
+              </span>
+
+              {s.complexity && s.complexity !== '-' && (
+                <span style={{ fontSize: 9, color: '#484f58', whiteSpace: 'nowrap' }}>
+                  {s.complexity}
+                </span>
+              )}
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
