@@ -451,7 +451,186 @@ const STL_DB = {
       { name: 'max_size', sig: 'constexpr size_type max_size()',  doc: 'Same as size().',     complexity: 'O(1)' },
     ],
   },
+
+  forward_list: {
+    header: 'forward_list',
+    description: 'Singly-linked list',
+    methods: [
+      { name: 'push_front',   sig: 'void push_front(const T& val)',           doc: 'Insert element at front.',                     complexity: 'O(1)' },
+      { name: 'pop_front',    sig: 'void pop_front()',                         doc: 'Remove first element.',                         complexity: 'O(1)' },
+      { name: 'front',        sig: 'T& front()',                               doc: 'Access first element.',                         complexity: 'O(1)' },
+      { name: 'empty',        sig: 'bool empty() const',                      doc: 'Return true if empty.',                         complexity: 'O(1)' },
+      { name: 'clear',        sig: 'void clear()',                             doc: 'Remove all elements.',                           complexity: 'O(n)' },
+      { name: 'insert_after', sig: 'iterator insert_after(iterator pos, const T& val)', doc: 'Insert after pos.',               complexity: 'O(1)' },
+      { name: 'erase_after',  sig: 'iterator erase_after(iterator pos)',      doc: 'Erase element after pos.',                      complexity: 'O(1)' },
+      { name: 'before_begin', sig: 'iterator before_begin()',                  doc: 'Iterator before first element.',                complexity: 'O(1)' },
+      { name: 'remove',       sig: 'void remove(const T& val)',               doc: 'Remove all elements equal to val.',             complexity: 'O(n)' },
+      { name: 'reverse',      sig: 'void reverse()',                           doc: 'Reverse list order.',                            complexity: 'O(n)' },
+      { name: 'sort',         sig: 'void sort()',                              doc: 'Sort elements in-place.',                        complexity: 'O(n log n)' },
+      { name: 'merge',        sig: 'void merge(forward_list& other)',         doc: 'Merge sorted list into this.',                  complexity: 'O(n)' },
+      { name: 'swap',         sig: 'void swap(forward_list& other)',          doc: 'Swap with another forward_list.',               complexity: 'O(1)' },
+    ],
+  },
+
+  fstream: {
+    header: 'fstream',
+    description: 'File stream I/O',
+    methods: [
+      { name: 'open',      sig: 'void open(const string& filename)',    doc: 'Open file.',                    complexity: 'O(1)' },
+      { name: 'close',     sig: 'void close()',                         doc: 'Close file.',                   complexity: 'O(1)' },
+      { name: 'is_open',   sig: 'bool is_open() const',                doc: 'Check whether file is open.',   complexity: 'O(1)' },
+      { name: 'good',      sig: 'bool good() const',                   doc: 'Check stream state.',           complexity: 'O(1)' },
+      { name: 'read',      sig: 'fstream& read(char* s, streamsize n)', doc: 'Read characters from file.',    complexity: 'O(n)' },
+      { name: 'write',     sig: 'fstream& write(const char* s, streamsize n)', doc: 'Write characters to file.', complexity: 'O(n)' },
+      { name: 'seekg',     sig: 'fstream& seekg(streampos pos)',        doc: 'Set input position.',           complexity: 'O(1)' },
+      { name: 'seekp',     sig: 'fstream& seekp(streampos pos)',        doc: 'Set output position.',          complexity: 'O(1)' },
+      { name: 'tellg',     sig: 'streampos tellg()',                   doc: 'Get input position.',           complexity: 'O(1)' },
+      { name: 'tellp',     sig: 'streampos tellp()',                   doc: 'Get output position.',          complexity: 'O(1)' },
+    ],
+  },
+
+  sstream: {
+    header: 'sstream',
+    description: 'String stream I/O',
+    methods: [
+      { name: 'str',      sig: 'string str() const',                  doc: 'Return underlying string.',     complexity: 'O(n)' },
+      { name: 'str',      sig: 'void str(const string& s)',           doc: 'Set underlying string.',        complexity: 'O(n)' },
+      { name: 'clear',    sig: 'void clear()',                         doc: 'Clear stream state flags.',      complexity: 'O(1)' },
+      { name: 'seekg',    sig: 'stringstream& seekg(pos_type pos)',    doc: 'Set input position.',           complexity: 'O(1)' },
+      { name: 'seekp',    sig: 'stringstream& seekp(pos_type pos)',    doc: 'Set output position.',          complexity: 'O(1)' },
+      { name: 'tellg',    sig: 'pos_type tellg()',                    doc: 'Get input position.',           complexity: 'O(1)' },
+      { name: 'tellp',    sig: 'pos_type tellp()',                    doc: 'Get output position.',          complexity: 'O(1)' },
+    ],
+  },
+
+  iomanip: {
+    header: 'iomanip',
+    description: 'I/O manipulators',
+    methods: [
+      { name: 'setprecision', sig: 'std::setprecision(int n)', doc: 'Set decimal precision.', complexity: 'O(1)' },
+      { name: 'setw',         sig: 'std::setw(int n)',      doc: 'Set field width.',          complexity: 'O(1)' },
+      { name: 'setfill',      sig: 'std::setfill(char c)',  doc: 'Set fill character.',       complexity: 'O(1)' },
+      { name: 'fixed',        sig: 'std::fixed',            doc: 'Use fixed-point notation.',  complexity: 'O(1)' },
+      { name: 'scientific',   sig: 'std::scientific',       doc: 'Use scientific notation.',   complexity: 'O(1)' },
+      { name: 'boolalpha',    sig: 'std::boolalpha',        doc: 'Format bool as true/false.', complexity: 'O(1)' },
+    ],
+  },
+
+  thread: {
+    header: 'thread',
+    description: 'Thread support library',
+    methods: [
+      { name: 'join',               sig: 'void join()',              doc: 'Wait for thread to finish.', complexity: 'O(1)' },
+      { name: 'detach',             sig: 'void detach()',            doc: 'Release thread resources.',   complexity: 'O(1)' },
+      { name: 'joinable',           sig: 'bool joinable() const',    doc: 'Check if thread can be joined.', complexity: 'O(1)' },
+      { name: 'hardware_concurrency', sig: 'static unsigned int hardware_concurrency()', doc: 'Number of concurrent threads supported.', complexity: 'O(1)' },
+    ],
+  },
+
+  mutex: {
+    header: 'mutex',
+    description: 'Mutual exclusion primitives',
+    methods: [
+      { name: 'lock',      sig: 'void lock()',      doc: 'Acquire the mutex.',           complexity: 'O(1)' },
+      { name: 'unlock',    sig: 'void unlock()',    doc: 'Release the mutex.',           complexity: 'O(1)' },
+      { name: 'try_lock',  sig: 'bool try_lock()',  doc: 'Try to acquire without blocking.', complexity: 'O(1)' },
+      { name: 'native_handle', sig: 'native_handle_type native_handle()', doc: 'Get native handle.', complexity: 'O(1)' },
+    ],
+  },
+
+  functional: {
+    header: 'functional',
+    description: 'Function objects and wrappers',
+    methods: [
+      { name: 'bind',      sig: 'std::bind(F&& f, Args&&... args)',      doc: 'Bind arguments to function.',   complexity: 'O(1)' },
+      { name: 'function',  sig: 'std::function<R(Args...)>',             doc: 'Type-erased callable wrapper.', complexity: 'O(1)' },
+      { name: 'mem_fn',    sig: 'std::mem_fn(F f)',                     doc: 'Wrap pointer to member.',       complexity: 'O(1)' },
+      { name: 'ref',       sig: 'std::ref(T& t)',                       doc: 'Create reference wrapper.',     complexity: 'O(1)' },
+      { name: 'cref',      sig: 'std::cref(const T& t)',               doc: 'Create const reference wrapper.', complexity: 'O(1)' },
+    ],
+  },
+
+  iterator: {
+    header: 'iterator',
+    description: 'Iterator utilities',
+    methods: [
+      { name: 'begin',      sig: 'std::begin(Container& c)',     doc: 'Iterator to first element.',    complexity: 'O(1)' },
+      { name: 'end',        sig: 'std::end(Container& c)',       doc: 'Iterator past last element.',    complexity: 'O(1)' },
+      { name: 'advance',    sig: 'void advance(It& it, int n)', doc: 'Advance iterator by n.',        complexity: 'O(n)' },
+      { name: 'distance',   sig: 'typename std::iterator_traits<It>::difference_type distance(It first, It last)', doc: 'Distance between iterators.', complexity: 'O(n)' },
+      { name: 'next',       sig: 'It next(It it, difference_type n = 1)', doc: 'Return advanced iterator.', complexity: 'O(n)' },
+      { name: 'prev',       sig: 'It prev(It it, difference_type n = 1)', doc: 'Return previous iterator.', complexity: 'O(n)' },
+    ],
+  },
+
+  random: {
+    header: 'random',
+    description: 'Random number generation utilities',
+    methods: [
+      { name: 'random_device', sig: 'std::random_device',                  doc: 'Non-deterministic random number source.', complexity: 'O(1)' },
+      { name: 'mt19937',       sig: 'std::mt19937',                        doc: 'Mersenne Twister engine.',                 complexity: 'O(1)' },
+      { name: 'uniform_int_distribution', sig: 'std::uniform_int_distribution<IntType>', doc: 'Integer distribution.', complexity: 'O(1)' },
+      { name: 'uniform_real_distribution', sig: 'std::uniform_real_distribution<RealType>', doc: 'Real distribution.', complexity: 'O(1)' },
+    ],
+  },
 };
+
+const ALL_HEADERS = [
+  'algorithm', 'array', 'bitset', 'chrono', 'complex',
+  'deque', 'exception', 'filesystem', 'forward_list',
+  'fstream', 'functional', 'future', 'initializer_list',
+  'iomanip', 'ios', 'iosfwd', 'iostream', 'istream',
+  'iterator', 'limits', 'list', 'locale', 'map', 'memory',
+  'mutex', 'new', 'numeric', 'optional', 'ostream',
+  'queue', 'random', 'ratio', 'regex', 'set', 'shared_mutex',
+  'sstream', 'stack', 'stdexcept', 'streambuf', 'string',
+  'string_view', 'thread', 'tuple', 'type_traits',
+  'typeinfo', 'unordered_map', 'unordered_set', 'utility',
+  'variant', 'vector'
+];
+
+const ALL_STL_TYPES = [
+  { text: 'vector',         sig: 'std::vector<T>',          doc: 'Dynamic array. Include <vector>.',            type: 'class' },
+  { text: 'string',         sig: 'std::string',             doc: 'String class. Include <string>.',             type: 'class' },
+  { text: 'map',            sig: 'std::map<K,V>',           doc: 'Sorted map. Include <map>.',                  type: 'class' },
+  { text: 'unordered_map',  sig: 'std::unordered_map<K,V>',  doc: 'Hash map. Include <unordered_map>.',          type: 'class' },
+  { text: 'set',            sig: 'std::set<T>',             doc: 'Sorted unique set. Include <set>.',           type: 'class' },
+  { text: 'unordered_set',  sig: 'std::unordered_set<T>',    doc: 'Hash set. Include <unordered_set>.',          type: 'class' },
+  { text: 'stack',          sig: 'std::stack<T>',           doc: 'LIFO stack. Include <stack>.',                type: 'class' },
+  { text: 'queue',          sig: 'std::queue<T>',           doc: 'FIFO queue. Include <queue>.',                type: 'class' },
+  { text: 'priority_queue', sig: 'std::priority_queue<T>',  doc: 'Max-heap. Include <queue>.',                  type: 'class' },
+  { text: 'deque',          sig: 'std::deque<T>',           doc: 'Double-ended queue. Include <deque>.',        type: 'class' },
+  { text: 'list',           sig: 'std::list<T>',            doc: 'Doubly-linked list. Include <list>.',         type: 'class' },
+  { text: 'forward_list',   sig: 'std::forward_list<T>',    doc: 'Singly-linked list. Include <forward_list>.', type: 'class' },
+  { text: 'array',          sig: 'std::array<T,N>',         doc: 'Fixed-size array. Include <array>.',          type: 'class' },
+  { text: 'bitset',         sig: 'std::bitset<N>',          doc: 'Fixed-size bitset. Include <bitset>.',        type: 'class' },
+  { text: 'pair',           sig: 'std::pair<T1,T2>',        doc: 'Two-value pair. Include <utility>.',          type: 'class' },
+  { text: 'tuple',          sig: 'std::tuple<T...>',        doc: 'N-value tuple. Include <tuple>.',             type: 'class' },
+  { text: 'unique_ptr',     sig: 'std::unique_ptr<T>',      doc: 'Unique ownership pointer. Include <memory>.', type: 'class' },
+  { text: 'shared_ptr',     sig: 'std::shared_ptr<T>',      doc: 'Shared ownership pointer. Include <memory>.', type: 'class' },
+  { text: 'weak_ptr',       sig: 'std::weak_ptr<T>',        doc: 'Non-owning pointer. Include <memory>.',       type: 'class' },
+  { text: 'optional',       sig: 'std::optional<T>',        doc: 'Optional value. Include <optional>.',         type: 'class' },
+  { text: 'variant',        sig: 'std::variant<T...>',      doc: 'Type-safe union. Include <variant>.',         type: 'class' },
+  { text: 'function',       sig: 'std::function<R(Args)>',  doc: 'Function wrapper. Include <functional>.',     type: 'class' },
+];
+
+const TEMPLATE_ARGS = [
+  { text: 'int',      sig: 'int',      doc: '32-bit signed integer',         type: 'type' },
+  { text: 'double',   sig: 'double',   doc: '64-bit floating point',          type: 'type' },
+  { text: 'float',    sig: 'float',    doc: '32-bit floating point',          type: 'type' },
+  { text: 'char',     sig: 'char',     doc: '8-bit character',                type: 'type' },
+  { text: 'bool',     sig: 'bool',     doc: 'Boolean true/false',             type: 'type' },
+  { text: 'long',     sig: 'long',     doc: '64-bit signed integer',          type: 'type' },
+  { text: 'string',   sig: 'std::string', doc: 'String type (include <string>)', type: 'class' },
+  { text: 'size_t',   sig: 'size_t',   doc: 'Unsigned size type',             type: 'type' },
+  { text: 'auto',     sig: 'auto',     doc: 'Automatic type deduction',       type: 'keyword' },
+  { text: 'unsigned', sig: 'unsigned', doc: 'Unsigned integer',               type: 'type' },
+  { text: 'short',    sig: 'short',    doc: '16-bit integer',                 type: 'type' },
+  { text: 'int64_t',  sig: 'int64_t',  doc: '64-bit signed (stdint.h)',       type: 'type' },
+  { text: 'uint64_t', sig: 'uint64_t', doc: '64-bit unsigned (stdint.h)',     type: 'type' },
+  { text: 'int32_t',  sig: 'int32_t',  doc: '32-bit signed (stdint.h)',       type: 'type' },
+  { text: 'pair',     sig: 'std::pair<K,V>', doc: 'Key-value pair',           type: 'class' },
+];
 
 // ─────────────────────────────────────────────
 // TRIE — O(L) prefix search per container
@@ -510,30 +689,41 @@ const HEADER_TO_CONTAINERS = {
   'queue':         ['queue', 'priority_queue'],
   'deque':         ['deque'],
   'list':          ['list'],
+  'forward_list':  ['forward_list'],
   'algorithm':     ['algorithm'],
   'iostream':      ['iostream'],
+  'fstream':       ['fstream'],
+  'sstream':       ['sstream'],
+  'iomanip':       ['iomanip'],
   'memory':        ['memory'],
   'utility':       ['utility'],
   'numeric':       ['numeric'],
   'chrono':        ['chrono'],
   'bitset':        ['bitset'],
   'array':         ['array'],
+  'thread':        ['thread'],
+  'mutex':         ['mutex'],
+  'functional':    ['functional'],
+  'iterator':      ['iterator'],
+  'random':        ['random'],
 };
 
 // C++ type name → STL_DB key (for variable type inference)
 const TYPE_TO_KEY = {
-  'vector':          'vector',
-  'string':          'string',
-  'map':             'map',
-  'unordered_map':   'unordered_map',
-  'set':             'set',
-  'unordered_set':   'unordered_set',
-  'stack':           'stack',
-  'queue':           'queue',
-  'priority_queue':  'priority_queue',
-  'deque':           'deque',
-  'list':            'list',
-  'forward_list':    'list',
+  'vector':         'vector',
+  'string':         'string',
+  'map':            'map',
+  'unordered_map':  'unordered_map',
+  'set':            'set',
+  'unordered_set':  'unordered_set',
+  'stack':          'stack',
+  'queue':          'queue',
+  'priority_queue': 'priority_queue',
+  'deque':          'deque',
+  'list':           'list',
+  'forward_list':   'forward_list',
+  'bitset':         'bitset',
+  'array':          'array',
 };
 
 // ─────────────────────────────────────────────
@@ -578,18 +768,27 @@ function getAllowedContainers(includes) {
 function inferVariableType(varName, code) {
   if (!varName || !code) return null;
   const lines = code.split('\n');
+
   for (const line of lines) {
-    const t = line.trim();
-    if (!t || t.startsWith('//') || t.startsWith('*')) continue;
-    // Pattern: Type<...> varName = or ;
-    // Also: std::Type<...> varName
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('//') || trimmed.startsWith('*')) continue;
+
     const patterns = [
-      new RegExp(`(?:std::)?([a-zA-Z_][a-zA-Z0-9_]*)(?:<[^>]*>)?\\s+${varName}\\s*[;=({]`),
+      new RegExp(`(?:std::)?([a-zA-Z_][a-zA-Z0-9_]*)\s*<[^>]*>\s+${varName}\s*[;=({]`),
+      new RegExp(`^\\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*<[^>]*>\s+${varName}\\b`),
+      new RegExp(`^\\s*(?:std::)?([a-zA-Z_][a-zA-Z0-9_]*)\s+${varName}\s*[;=({]`),
+      new RegExp(`auto\s+${varName}\s*=\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*[<({]`),
     ];
+
     for (const re of patterns) {
-      const match = re.exec(t);
+      const match = re.exec(trimmed);
       if (match) {
         const baseType = match[1].trim();
+        const skipWords = new Set(['if','else','for','while','do','return','const',
+          'static','auto','int','double','float','char','bool','void','long','short',
+          'unsigned','signed','new','delete','class','struct','namespace','using',
+          'template','typename','public','private','protected']);
+        if (skipWords.has(baseType)) continue;
         if (TYPE_TO_KEY[baseType]) return TYPE_TO_KEY[baseType];
       }
     }
@@ -633,13 +832,32 @@ app.post('/api/getSuggestions', (req, res) => {
 
     let resolvedType = contextType; // the STL_DB key we'll use
 
+    // ── CASE 0: User is typing inside #include <...>
+    if (contextType === 'include_header') {
+      const matches = ALL_HEADERS.filter(h => !prefix || h.startsWith(prefix.toLowerCase()));
+      const results = matches.map(h => ({
+        text: h,
+        type: 'header',
+        sig: `#include <${h}>`,
+        doc: `Include the <${h}> standard library header`,
+        complexity: '',
+        score: 1.0,
+      }));
+      return res.json(results);
+    }
+
+    // ── CASE 0.5: User is typing inside template args
+    if (contextType === 'template_arg') {
+      const matches = TEMPLATE_ARGS.filter(t => !prefix || t.text.startsWith(prefix.toLowerCase()));
+      return res.json(matches.map(t => ({ ...t, score: 1.0 })));
+    }
+
     // Step 1: resolve variable name → type
     if (contextType !== 'global' && !STL_DB[contextType] && !TYPE_TO_KEY[contextType]) {
       const inferred = inferVariableType(contextType, code);
       if (inferred) {
         resolvedType = inferred;
       } else {
-        // can't determine type — return empty (no wild guesses)
         return res.json([]);
       }
     } else if (TYPE_TO_KEY[contextType]) {
@@ -649,10 +867,20 @@ app.post('/api/getSuggestions', (req, res) => {
     // Step 2: global context — return container class names + global functions
     if (resolvedType === 'global') {
       const results = [];
+      const seen = new Set();
+
+      // Add STL type names always available
+      const typeMatches = ALL_STL_TYPES.filter(t => !prefix || t.text.startsWith(prefix.toLowerCase()));
+      for (const t of typeMatches) {
+        if (seen.has(t.text)) continue;
+        seen.add(t.text);
+        results.push({ ...t, score: 0.95 });
+      }
 
       // Add names of available containers from included headers
       for (const key of allowedContainers) {
-        if (!prefix || key.startsWith(prefix)) {
+        if ((!prefix || key.startsWith(prefix.toLowerCase())) && !seen.has(key)) {
+          seen.add(key);
           results.push({
             text: key,
             type: 'class',

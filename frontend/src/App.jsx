@@ -196,28 +196,59 @@ export default function App() {
 
     const lineContent = model.getLineContent(position.lineNumber);
     const beforeCursor = lineContent.substring(0, position.column - 1);
+    const trimmedLine = lineContent.trim();
 
-    // Parse what's before the cursor
-    // Case 1: after a dot  →  obj.prefix
-    const dotMatch = beforeCursor.match(/(\w+)\.(\w*)$/);
-    if (dotMatch) {
-      const objectName = dotMatch[1];
-      const prefix = dotMatch[2];
+    // ── TRIGGER 1: Inside #include <...>
+    // Detects: #include <st  OR  #include "st
+    const includeMatch = beforeCursor.match(/#include\s*[<"]\s*([a-zA-Z0-9_/]*)$/);
+    if (includeMatch) {
+      const prefix = includeMatch[1];
+      await fetchSuggestions(prefix, 'include_header', currentCode, position);
+      return;
+    }
+
+    // ── TRIGGER 2: After a dot — member method suggestions
+    // Detects: myObj.prefix  OR  myObj.
+    const dotWithPrefix = beforeCursor.match(/(\w+)\.(\w*)$/);
+    if (dotWithPrefix) {
+      const objectName = dotWithPrefix[1];
+      const prefix = dotWithPrefix[2];
       await fetchSuggestions(prefix, objectName, currentCode, position);
       return;
     }
 
-    // Case 2: just typed a dot →  obj.
+    // ── TRIGGER 3: Inside template angle brackets
+    // Detects: vector<i  OR  map<int,  OR  stack
+    const templateMatch = beforeCursor.match(/\b([a-zA-Z_]\w*)\s*<([a-zA-Z0-9_,\s]*)$/);
+    if (templateMatch && !beforeCursor.includes('>')) {
+      const inner = templateMatch[2];
+      const parts = inner.split(',');
+      const prefix = parts[parts.length - 1].trim();
+      await fetchSuggestions(prefix, 'template_arg', currentCode, position);
+      return;
+    }
+
+    // ── TRIGGER 4: Typing an identifier in code (global context)
+    // Detects: typing "st" → suggests stack, string, set, STL types, keywords
+    // Only trigger after 2+ chars to avoid noise
+    const identMatch = beforeCursor.match(/\b([a-zA-Z_]\w*)$/);
+    if (identMatch && identMatch[1].length >= 2) {
+      const prefix = identMatch[1];
+      if (!beforeCursor.includes('.')) {
+        await fetchSuggestions(prefix, 'global', currentCode, position);
+        return;
+      }
+    }
+
+    // ── TRIGGER 5: Right after typing a dot with nothing after
     const justDot = beforeCursor.match(/(\w+)\.$/);
     if (justDot) {
       await fetchSuggestions('', justDot[1], currentCode, position);
       return;
     }
 
-    // No dot trigger → hide popup
     setPopupVisible(false);
 
-    // Still update stats
     callAPI('getStats', { code: currentCode }).then(stats => {
       if (stats) setIncludedLibs(stats.includedLibraries || []);
     });
@@ -572,6 +603,7 @@ export default function App() {
             quickSuggestions: false,
             suggestOnTriggerCharacters: false,
             wordBasedSuggestions: 'off',
+            parameterHints: { enabled: false },
           }}
         />
 
