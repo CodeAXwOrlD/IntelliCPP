@@ -196,7 +196,6 @@ export default function App() {
 
     const lineContent = model.getLineContent(position.lineNumber);
     const beforeCursor = lineContent.substring(0, position.column - 1);
-    const trimmedLine = lineContent.trim();
 
     // ── TRIGGER 1: Inside #include <...>
     // Detects: #include <st  OR  #include "st
@@ -428,35 +427,6 @@ export default function App() {
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [popupVisible, suggestions, isRunning, handleSave, handleNewFile, handleRun]);
-
-  const onEditorKeyDown = (editorEvent) => {
-    if (!popupVisible || suggestions.length === 0) return;
-    const key = editorEvent.event.browserEvent.key;
-    if (key === 'ArrowDown') {
-      editorEvent.event.preventDefault();
-      editorEvent.event.stopPropagation();
-      setSelectedIndex(i => Math.min(i + 1, suggestions.length - 1));
-      return;
-    }
-    if (key === 'ArrowUp') {
-      editorEvent.event.preventDefault();
-      editorEvent.event.stopPropagation();
-      setSelectedIndex(i => Math.max(i - 1, 0));
-      return;
-    }
-    if (key === 'Tab' || key === 'Enter') {
-      editorEvent.event.preventDefault();
-      editorEvent.event.stopPropagation();
-      acceptSuggestion(suggestions[selectedIndex]);
-      return;
-    }
-    if (key === 'Escape') {
-      editorEvent.event.preventDefault();
-      editorEvent.event.stopPropagation();
-      setPopupVisible(false);
-      return;
-    }
-  };
 
   // ─── Output resize (drag) ───
   const onDragStart = (e) => {
