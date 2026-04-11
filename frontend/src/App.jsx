@@ -41,10 +41,10 @@ int main() {
 
 // ─────────────────────────────────────────────
 // API HELPER
-// Always points to local backend on port 3001.
-// No Electron, no Vercel serverless.
+// Use the deployed Vercel API routes in production.
+// Local development can use REACT_APP_API_BASE if needed.
 // ─────────────────────────────────────────────
-const API_BASE = 'http://localhost:3001/api';
+const API_BASE = process.env.REACT_APP_API_BASE || '/api';
 
 // Small cache so rapid identical calls don't spam backend
 const cache = new Map();
@@ -128,7 +128,7 @@ export default function App() {
   // ─── Backend health check ───
   useEffect(() => {
     const check = () =>
-      fetch('http://localhost:3001/health')
+      fetch(`${API_BASE}/health`, { method: 'GET' })
         .then(r => setBackendOk(r.ok))
         .catch(() => setBackendOk(false));
     check();
