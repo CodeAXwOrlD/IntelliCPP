@@ -351,13 +351,24 @@ const STL_DB = {
     header: 'iostream',
     description: 'Standard I/O streams',
     methods: [
-      { name: 'cout',  sig: 'std::ostream cout',  doc: 'Standard output stream.',  complexity: '-' },
-      { name: 'cin',   sig: 'std::istream cin',   doc: 'Standard input stream.',   complexity: '-' },
-      { name: 'cerr',  sig: 'std::ostream cerr',  doc: 'Standard error stream.',   complexity: '-' },
-      { name: 'clog',  sig: 'std::ostream clog',  doc: 'Standard log stream.',     complexity: '-' },
-      { name: 'endl',  sig: 'ostream& endl(ostream&)', doc: 'Output newline + flush.', complexity: 'O(1)' },
-      { name: 'flush', sig: 'ostream& flush(ostream&)', doc: 'Flush output buffer.',   complexity: 'O(1)' },
-      { name: 'ws',    sig: 'istream& ws(istream&)',    doc: 'Skip whitespace.',         complexity: 'O(n)' },
+      { name: 'cout',   sig: 'std::ostream cout',       doc: 'Standard output stream.',     complexity: '-' },
+      { name: 'cin',    sig: 'std::istream cin',        doc: 'Standard input stream.',      complexity: '-' },
+      { name: 'cerr',   sig: 'std::ostream cerr',       doc: 'Standard error stream.',      complexity: '-' },
+      { name: 'clog',   sig: 'std::ostream clog',       doc: 'Standard log stream.',        complexity: '-' },
+      { name: 'endl',   sig: 'ostream& endl(ostream&)', doc: 'Output newline + flush.',    complexity: 'O(1)' },
+      { name: 'flush',  sig: 'ostream& flush(ostream&)', doc: 'Flush output buffer.',      complexity: 'O(1)' },
+      { name: 'ws',     sig: 'istream& ws(istream&)',   doc: 'Skip whitespace.',            complexity: 'O(n)' },
+      { name: 'get',    sig: 'int get()',               doc: 'Read one character.',         complexity: 'O(1)' },
+      { name: 'getline', sig: 'istream& getline(char*,int)', doc: 'Read line of input.',   complexity: 'O(n)' },
+      { name: 'put',    sig: 'ostream& put(char)',      doc: 'Write one character.',        complexity: 'O(1)' },
+      { name: 'peek',   sig: 'int peek()',              doc: 'Look at next character.',     complexity: 'O(1)' },
+      { name: 'read',   sig: 'istream& read(char*,int)', doc: 'Read bytes.',               complexity: 'O(n)' },
+      { name: 'write',  sig: 'ostream& write(const char*,int)', doc: 'Write bytes.',       complexity: 'O(n)' },
+      { name: 'ignore', sig: 'istream& ignore(int,int)', doc: 'Skip characters.',          complexity: 'O(n)' },
+      { name: 'good',   sig: 'bool good() const',       doc: 'Check stream is good.',      complexity: 'O(1)' },
+      { name: 'eof',    sig: 'bool eof() const',        doc: 'Check end-of-file flag.',    complexity: 'O(1)' },
+      { name: 'fail',   sig: 'bool fail() const',       doc: 'Check fail bit.',            complexity: 'O(1)' },
+      { name: 'bad',    sig: 'bool bad() const',        doc: 'Check badbit.',              complexity: 'O(1)' },
     ],
   },
 
@@ -612,6 +623,11 @@ const ALL_STL_TYPES = [
   { text: 'optional',       sig: 'std::optional<T>',        doc: 'Optional value. Include <optional>.',         type: 'class' },
   { text: 'variant',        sig: 'std::variant<T...>',      doc: 'Type-safe union. Include <variant>.',         type: 'class' },
   { text: 'function',       sig: 'std::function<R(Args)>',  doc: 'Function wrapper. Include <functional>.',     type: 'class' },
+  { text: 'cout',           sig: 'std::cout',               doc: 'Standard output stream. Include <iostream>.', type: 'object' },
+  { text: 'cin',            sig: 'std::cin',                doc: 'Standard input stream. Include <iostream>.',  type: 'object' },
+  { text: 'cerr',           sig: 'std::cerr',               doc: 'Standard error stream. Include <iostream>.', type: 'object' },
+  { text: 'clog',           sig: 'std::clog',               doc: 'Standard log stream. Include <iostream>.',  type: 'object' },
+  { text: 'endl',           sig: 'std::endl',               doc: 'Stream manipulator for newline. Include <iostream>.', type: 'function' },
 ];
 
 const TEMPLATE_ARGS = [
@@ -724,6 +740,10 @@ const TYPE_TO_KEY = {
   'forward_list':   'forward_list',
   'bitset':         'bitset',
   'array':          'array',
+  'cout':           'iostream',
+  'cin':            'iostream',
+  'cerr':           'iostream',
+  'clog':           'iostream',
 };
 
 // ─────────────────────────────────────────────
@@ -733,13 +753,16 @@ const TYPE_TO_KEY = {
 /** Parse all #include <...> from code, return array of header names */
 function parseIncludes(code) {
   const includes = [];
-  const regex = /#include\s*[<"]\s*([a-zA-Z0-9_/\.]+)\s*[>"]/g;
+  // This regex handles:
+  //   #include <vector>
+  //   #include<vector>
+  //   #include <vector >
+  //   #include "myfile.h"
+  const regex = /#\s*include\s*[<"]\s*([a-zA-Z0-9_/\.]+)\s*[>"]/g;
   let m;
   while ((m = regex.exec(code)) !== null) {
-    // strip path and extension: "bits/stdc++.h" → "stdc++", but for normal ones:
-    const raw = m[1].replace(/\.h$/, '');
-    // handle bits/stdc++ → include everything
-    if (raw.includes('stdc++') || raw.includes('bits/stdc')) {
+    const raw = m[1].replace(/\.h(pp)?$/, '').trim();
+    if (raw.includes('stdc++') || raw.includes('bits')) {
       includes.push('__all__');
     } else {
       includes.push(raw);
@@ -761,6 +784,39 @@ function getAllowedContainers(includes) {
   return [...allowed];
 }
 
+function parseAllVariables(code) {
+  const symbolTable = {};
+  if (!code) return symbolTable;
+
+  const lines = code.split('\n');
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('//') || trimmed.startsWith('#')) continue;
+
+    const normalized = trimmed.replace(/std::/g, '');
+    const declPattern = /\b([a-zA-Z_][a-zA-Z0-9_]*)\s*(?:<[^>]*>)?\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*[;=({]/g;
+
+    let match;
+    while ((match = declPattern.exec(normalized)) !== null) {
+      const typeName = match[1].trim();
+      const varName = match[2].trim();
+      const skipWords = new Set([
+        'if','else','for','while','do','switch','case','return','break',
+        'continue','const','static','auto','int','double','float','char',
+        'bool','void','long','short','unsigned','signed','new','delete',
+        'class','struct','namespace','using','template','typename',
+        'public','private','protected','inline','extern','cout','cin',
+        'cerr','endl','main','std','nullptr','true','false'
+      ]);
+      if (!skipWords.has(typeName) && !skipWords.has(varName) && TYPE_TO_KEY[typeName]) {
+        symbolTable[varName] = TYPE_TO_KEY[typeName];
+      }
+    }
+  }
+
+  return symbolTable;
+}
+
 /**
  * Infer variable type from code.
  * e.g. "vector<int> v;" with varName="v" → "vector"
@@ -773,27 +829,80 @@ function inferVariableType(varName, code) {
     const trimmed = line.trim();
     if (!trimmed || trimmed.startsWith('//') || trimmed.startsWith('*')) continue;
 
+    // Remove std:: prefix for easier matching
+    const normalized = trimmed.replace(/std::/g, '');
+
+    // Patterns ordered from most specific to least:
     const patterns = [
-      new RegExp(`(?:std::)?([a-zA-Z_][a-zA-Z0-9_]*)\s*<[^>]*>\s+${varName}\s*[;=({]`),
-      new RegExp(`^\\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*<[^>]*>\s+${varName}\\b`),
-      new RegExp(`^\\s*(?:std::)?([a-zA-Z_][a-zA-Z0-9_]*)\s+${varName}\s*[;=({]`),
-      new RegExp(`auto\s+${varName}\s*=\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*[<({]`),
+      // WITH space:    vector<int> v;   map<int,int> m = ...
+      new RegExp(`^([a-zA-Z_][a-zA-Z0-9_]*)\\s*<[^>]*>\\s+${varName}\\s*[;=({]`),
+
+      // WITHOUT space: queue<int>qwer;  stack<int>st;
+      new RegExp(`^([a-zA-Z_][a-zA-Z0-9_]*)\\s*<[^>]*>${varName}\\s*[;=({]`),
+
+      // No template:   string s;   (no angle brackets)
+      new RegExp(`^([a-zA-Z_][a-zA-Z0-9_]*)\\s+${varName}\\s*[;=({]`),
+
+      // After comma in for loop or multiple decls
+      new RegExp(`([a-zA-Z_][a-zA-Z0-9_]*)\\s*<[^>]*>[\\s>]*${varName}\\s*[;,=({]`),
     ];
 
+    const skipWords = new Set([
+      'if','else','for','while','do','switch','case','return','break','continue',
+      'const','static','auto','int','double','float','char','bool','void',
+      'long','short','unsigned','signed','new','delete','class','struct',
+      'namespace','using','template','typename','public','private','protected',
+      'inline','extern','register','mutable','virtual','override','final',
+      'nullptr','true','false','this','sizeof','decltype','noexcept','constexpr'
+    ]);
+
     for (const re of patterns) {
-      const match = re.exec(trimmed);
+      const match = re.exec(normalized);
       if (match) {
         const baseType = match[1].trim();
-        const skipWords = new Set(['if','else','for','while','do','return','const',
-          'static','auto','int','double','float','char','bool','void','long','short',
-          'unsigned','signed','new','delete','class','struct','namespace','using',
-          'template','typename','public','private','protected']);
-        if (skipWords.has(baseType)) continue;
-        if (TYPE_TO_KEY[baseType]) return TYPE_TO_KEY[baseType];
+        if (!skipWords.has(baseType) && TYPE_TO_KEY[baseType]) {
+          return TYPE_TO_KEY[baseType];
+        }
       }
     }
   }
   return null;
+}
+
+/**
+ * Extract simple declared variable names from code
+ * Intentionally lightweight - only first 100 lines
+ */
+function extractVariableNames(code) {
+  const names = new Set();
+  const lines = code.split('\n').slice(0, 200); // check more lines for declared identifiers
+
+  for (let line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('//') || trimmed.startsWith('/*') || trimmed.startsWith('*')) continue;
+
+    // Strip inline comments for cleaner parsing
+    const commentIndex = line.indexOf('//');
+    if (commentIndex !== -1) {
+      line = line.slice(0, commentIndex);
+    }
+
+    const declRegex = /^\s*(?:const\s+|static\s+|unsigned\s+|signed\s+|long\s+|short\s+|volatile\s+|mutable\s+|register\s+|constexpr\s+|inline\s+|extern\s+)*(?:std::)?[a-zA-Z_][a-zA-Z0-9_]*(?:\s*<[^>]+>)?(?:\s*::\s*[a-zA-Z_][a-zA-Z0-9_]*)*\s*([a-zA-Z_][a-zA-Z0-9_]*)\b/;
+    const autoRegex = /^\s*(?:const\s+)?auto\s+([a-zA-Z_][a-zA-Z0-9_]*)\b/;
+
+    const declMatch = line.match(declRegex);
+    if (declMatch) {
+      names.add(declMatch[1]);
+      continue;
+    }
+
+    const autoMatch = line.match(autoRegex);
+    if (autoMatch) {
+      names.add(autoMatch[1]);
+    }
+  }
+
+  return Array.from(names).slice(0, 10);
 }
 
 // ─────────────────────────────────────────────
@@ -830,7 +939,26 @@ app.post('/api/getSuggestions', (req, res) => {
     const includes = parseIncludes(code);
     const allowedContainers = getAllowedContainers(includes);
 
+    // Build full variable→type map from the entire code
+    const variableMap = parseAllVariables(code);
+
     let resolvedType = contextType; // the STL_DB key we'll use
+
+    // Step 1: Resolve variable name → container type
+    if (contextType !== 'global' && contextType !== 'include_header' && contextType !== 'template_arg') {
+      if (variableMap[contextType]) {
+        resolvedType = variableMap[contextType];
+      } else if (TYPE_TO_KEY[contextType]) {
+        resolvedType = TYPE_TO_KEY[contextType];
+      } else {
+        const inferred = inferVariableType(contextType, code);
+        if (inferred) {
+          resolvedType = inferred;
+        } else {
+          return res.json([]);
+        }
+      }
+    }
 
     // ── CASE 0: User is typing inside #include <...>
     if (contextType === 'include_header') {
@@ -865,13 +993,70 @@ app.post('/api/getSuggestions', (req, res) => {
     }
 
     // Step 2: global context — return container class names + global functions
+    // Step 2: global context — return declared variables first, then header-level functions and type names
     if (resolvedType === 'global') {
       const results = [];
       const seen = new Set();
 
+      // Add declared variable names first for top priority
+      const variableNames = Object.keys(variableMap);
+      for (const varName of variableNames) {
+        if (results.length >= 20) break;
+        if (!prefix || varName.startsWith(prefix.toLowerCase())) {
+          seen.add(varName);
+          results.push({
+            text: varName,
+            type: 'variable',
+            sig: varName,
+            doc: 'Declared variable',
+            complexity: '',
+            score: 1.0,
+          });
+        }
+      }
+
+      // Add std namespace suggestion when typing std
+      if ((!prefix || 'std'.startsWith(prefix.toLowerCase())) && !seen.has('std')) {
+        seen.add('std');
+        results.push({
+          text: 'std',
+          type: 'keyword',
+          sig: 'std',
+          doc: 'Standard namespace',
+          complexity: '',
+          score: 0.96,
+        });
+      }
+
+      // Add free-function suggestions for included headers like <algorithm>
+      const functionHeaders = new Set([
+        'algorithm', 'iostream', 'fstream', 'sstream', 'iomanip',
+        'numeric', 'random', 'chrono', 'thread', 'mutex', 'functional',
+        'iterator', 'utility', 'tuple'
+      ]);
+      for (const key of allowedContainers) {
+        if (results.length >= 20) break;
+        if (!functionHeaders.has(key) || !STL_DB[key]) continue;
+        for (const method of STL_DB[key].methods) {
+          if (results.length >= 20) break;
+          if (seen.has(method.name)) continue;
+          if (prefix && !method.name.startsWith(prefix.toLowerCase())) continue;
+          seen.add(method.name);
+          results.push({
+            text: method.name,
+            type: 'function',
+            sig: method.sig,
+            doc: method.doc,
+            complexity: method.complexity,
+            score: 0.9,
+          });
+        }
+      }
+
       // Add STL type names always available
       const typeMatches = ALL_STL_TYPES.filter(t => !prefix || t.text.startsWith(prefix.toLowerCase()));
       for (const t of typeMatches) {
+        if (results.length >= 20) break;
         if (seen.has(t.text)) continue;
         seen.add(t.text);
         results.push({ ...t, score: 0.95 });
@@ -879,12 +1064,13 @@ app.post('/api/getSuggestions', (req, res) => {
 
       // Add names of available containers from included headers
       for (const key of allowedContainers) {
+        if (results.length >= 20) break;
         if ((!prefix || key.startsWith(prefix.toLowerCase())) && !seen.has(key)) {
           seen.add(key);
           results.push({
             text: key,
             type: 'class',
-            sig: `std::${key}`,
+            sig: `std.${key}`,
             doc: STL_DB[key]?.description || '',
             complexity: '',
             score: 0.9,
@@ -894,19 +1080,26 @@ app.post('/api/getSuggestions', (req, res) => {
 
       // Load keywords from file
       const kwPath = path.join(WORKSPACE_ROOT, 'data', 'cpp_keywords.txt');
-      if (fs.existsSync(kwPath)) {
-        const keywords = fs.readFileSync(kwPath, 'utf8')
-          .split('\n')
-          .map(k => k.trim())
-          .filter(k => k && !k.startsWith('#'));
-        for (const kw of keywords) {
-          if (!prefix || kw.startsWith(prefix)) {
-            results.push({ text: kw, type: 'keyword', sig: kw, doc: 'C++ keyword', complexity: '', score: 0.7 });
+      if (fs.existsSync(kwPath) && results.length < 18) {
+        try {
+          const keywords = fs.readFileSync(kwPath, 'utf8')
+            .split('\n')
+            .map(k => k.trim())
+            .filter(k => k && !k.startsWith('#'));
+          for (const kw of keywords) {
+            if (results.length >= 20) break;
+            if (!prefix || kw.startsWith(prefix.toLowerCase())) {
+              if (seen.has(kw)) continue;
+              seen.add(kw);
+              results.push({ text: kw, type: 'keyword', sig: kw, doc: 'C++ keyword', complexity: '', score: 0.7 });
+            }
           }
+        } catch (e) {
+          // ignore file read errors
         }
       }
 
-      return res.json(results.slice(0, 15));
+      return res.json(results.slice(0, 20));
     }
 
     // Step 3: specific container context
