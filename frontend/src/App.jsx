@@ -10,13 +10,13 @@ import './styles/glassmorphism.css';
 const THEMES = {
   dark: {
     bg: '#0d1117', surface: '#161b22', card: '#1c2230',
-    border: '#30363d', accent: '#58a6ff', accentGlow: '#1f6feb33',
+    border: '#30363d', accent: '#64748b', accentGlow: '#64748b33',
     text: '#e6edf3', textMuted: '#8b949e', textDim: '#484f58',
     green: '#3fb950', red: '#f85149', orange: '#d29922',
   },
   light: {
     bg: '#f6f8fa', surface: '#ffffff', card: '#f1f5f9',
-    border: '#d0d7de', accent: '#0969da', accentGlow: '#0969da22',
+    border: '#d0d7de', accent: '#475569', accentGlow: '#47556922',
     text: '#1f2328', textMuted: '#656d76', textDim: '#9198a1',
     green: '#1a7f37', red: '#cf222e', orange: '#9a6700',
   },
@@ -278,17 +278,31 @@ export default function App() {
     if (!editor) return { top: 0, left: 0 };
     try {
       const domNode = editor.getDomNode();
+      const container = domNode.closest('.editor-area');
+      const containerRect = container?.getBoundingClientRect();
       const coords = editor.getScrolledVisiblePosition(position);
-      if (!coords) return { top: 0, left: 0 };
+      if (!coords || !containerRect) return { top: 0, left: 0 };
+
       const popupWidth = 240;
+      const popupHeight = 260;
       const editorRect = domNode.getBoundingClientRect();
-      const maxTop = Math.max(0, editorRect.height - 28);
-      const maxLeft = Math.max(0, editorRect.width - popupWidth - 16);
+      const offsetTop = editorRect.top - containerRect.top;
+      const offsetLeft = editorRect.left - containerRect.left;
+      const maxTop = Math.max(0, containerRect.height - popupHeight - 16);
+      const maxLeft = Math.max(0, containerRect.width - popupWidth - 16);
+
+      let top = coords.top + 18 + offsetTop;
+      if (top + popupHeight > containerRect.height - 12) {
+        top = Math.max(coords.top - popupHeight - 6 + offsetTop, 0);
+      }
+
       return {
-        top: Math.min(coords.top + 18, maxTop),
-        left: Math.min(coords.left, maxLeft),
+        top: Math.min(Math.max(top, 0), maxTop),
+        left: Math.min(Math.max(coords.left + offsetLeft, 8), maxLeft),
       };
-    } catch { return { top: 0, left: 0 }; }
+    } catch {
+      return { top: 0, left: 0 };
+    }
   };
 
   // ─── Accept suggestion ───
@@ -476,7 +490,7 @@ export default function App() {
       {/* ─── Header ─── */}
       <div className="app-header" style={{ background: t.surface, borderBottom: `1px solid ${t.border}`, position: 'sticky', top: 0, zIndex: 200 }}>
         <div className="app-header-left">
-          <div className="app-logo" style={{ background: 'linear-gradient(135deg,#58a6ff,#3fb950)' }}>⚡</div>
+          <div className="app-logo" style={{ background: t.card }}>⚡</div>
           <div className="app-branding-text">
             <div className="app-title">IntelliCPP</div>
             <div className="app-tagline">Interview-ready C++ workspace</div>
@@ -581,7 +595,7 @@ export default function App() {
 
         {/* Suggestion popup */}
         {popupVisible && suggestions.length > 0 && (
-          <div style={{ position: 'absolute', top: popupPos.top, left: popupPos.left, zIndex: 10 }}>
+          <div style={{ position: 'absolute', top: popupPos.top, left: popupPos.left, zIndex: 300, pointerEvents: 'auto' }}>
             <SuggestionPopup
               suggestions={suggestions}
               selectedIndex={selectedIndex}
@@ -604,30 +618,30 @@ export default function App() {
             <div className="output-drag-bar" />
           </div>
 
-          <div className="output-window" style={{ height: outputMinimized ? 30 : outputHeight, background: '#0d0d0d', borderTop: `1px solid ${t.border}` }}>
+          <div className="output-window" style={{ height: outputMinimized ? 30 : outputHeight, background: t.card, borderTop: `1px solid ${t.border}` }}>
             {/* Terminal header */}
-            <div style={{ height: 30, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 12px', borderBottom: `1px solid #222`, flexShrink: 0 }}>
-              <span style={{ fontSize: 11, color: '#888', fontFamily: 'monospace' }}>OUTPUT TERMINAL</span>
+            <div style={{ height: 30, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 12px', borderBottom: `1px solid ${t.border}`, flexShrink: 0 }}>
+              <span style={{ fontSize: 11, color: t.textDim, fontFamily: 'monospace' }}>OUTPUT TERMINAL</span>
               <div style={{ display: 'flex', gap: 4 }}>
-                <SmallBtn title="Minimize" onClick={handleMinimize} color="#888">▼</SmallBtn>
-                <SmallBtn title={outputMaximized ? 'Restore' : 'Maximize'} onClick={handleMaximize} color="#888">{outputMaximized ? '◆' : '▲'}</SmallBtn>
-                <SmallBtn title="Clear" onClick={() => { setOutputResult(''); setOutputError(''); }} color="#888">✕</SmallBtn>
-                <SmallBtn title="Close" onClick={() => setOutputVisible(false)} color="#f85149">×</SmallBtn>
+                <SmallBtn title="Minimize" onClick={handleMinimize} color={t.textDim}>▼</SmallBtn>
+                <SmallBtn title={outputMaximized ? 'Restore' : 'Maximize'} onClick={handleMaximize} color={t.textDim}>{outputMaximized ? '◆' : '▲'}</SmallBtn>
+                <SmallBtn title="Clear" onClick={() => { setOutputResult(''); setOutputError(''); }} color={t.textDim}>✕</SmallBtn>
+                <SmallBtn title="Close" onClick={() => setOutputVisible(false)} color={t.red}>×</SmallBtn>
               </div>
             </div>
 
             {/* Terminal content */}
             {!outputMinimized && (
               <div style={{ flex: 1, overflowY: 'auto', padding: '10px 14px', fontFamily: '"JetBrains Mono", monospace', fontSize: 12, lineHeight: 1.6 }}>
-                {isRunning && <div style={{ color: '#58a6ff' }}>▶ Compiling and running…</div>}
+                {isRunning && <div style={{ color: t.accent }}>▶ Compiling and running…</div>}
                 {!isRunning && !outputResult && !outputError && (
-                  <div style={{ color: '#484f58' }}>▶ IntelliCPP v2.0 ready. Press F5 or click Run to execute code.</div>
+                  <div style={{ color: t.textDim }}>▶ IntelliCPP v2.0 ready. Press F5 or click Run to execute code.</div>
                 )}
                 {outputResult && (
-                  <div style={{ color: '#3fb950', whiteSpace: 'pre-wrap' }}>{outputResult}</div>
+                  <div style={{ color: t.green, whiteSpace: 'pre-wrap' }}>{outputResult}</div>
                 )}
                 {outputError && (
-                  <div style={{ color: '#f85149', whiteSpace: 'pre-wrap', marginTop: outputResult ? 8 : 0 }}>
+                  <div style={{ color: t.red, whiteSpace: 'pre-wrap', marginTop: outputResult ? 8 : 0 }}>
                     {outputError}
                   </div>
                 )}
