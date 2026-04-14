@@ -198,6 +198,56 @@ function inferVariableType(variableName, code) {
   return null;
 }
 
+function extractDeclaredVariables(code) {
+  const variables = new Set();
+  if (!code) return [];
+
+  const lines = code.split('\n');
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('//') || trimmed.startsWith('/*') || trimmed.startsWith('#')) continue;
+
+    let match;
+    const autoPattern = /\bauto\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*(?:[=;,]|$)/g;
+    while ((match = autoPattern.exec(trimmed)) !== null) {
+      variables.add(match[1]);
+    }
+
+    const declPattern = /\b([a-zA-Z_][a-zA-Z0-9_:<>]*)\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*(?=[=;,\)\[\s]|$)/g;
+    while ((match = declPattern.exec(trimmed)) !== null) {
+      variables.add(match[2]);
+    }
+  }
+
+  return Array.from(variables);
+}
+
+function getVariableSuggestions(prefix, code) {
+  return extractDeclaredVariables(code)
+    .filter(name => name.startsWith(prefix))
+    .map(name => ({ text: name, type: 'variable', score: 1.0 }));
+}
+
+function getHeaderTypeSuggestions(prefix, includedLibraries) {
+  const suggestions = [];
+  const knownHeaders = [...new Set(includedLibraries.filter(lib => stlFunctions[lib]))];
+
+  for (const header of knownHeaders) {
+    if (header.startsWith(prefix)) {
+      suggestions.push({ text: header, type: 'class', score: 0.95 });
+    }
+  }
+
+  if (suggestions.length === 0 && prefix.length >= 2) {
+    suggestions.push(...Object.keys(stlFunctions)
+      .filter(header => header.startsWith(prefix))
+      .slice(0, 10)
+      .map(header => ({ text: header, type: 'class', score: 0.85 })));
+  }
+
+  return suggestions;
+}
+
 console.log(`[Suggestions API] Loaded ${keywords.length} C++ keywords`);
 console.log(`[Suggestions API] Loaded ${Object.keys(stlFunctions).length} STL function categories`);
 
@@ -287,11 +337,18 @@ export default async function handler(req, res) {
     }
 
     if (actualContextType === 'global') {
-      // Return keywords that match prefix
-      suggestions = keywords
+      const variableSuggestions = getVariableSuggestions(prefix, code);
+      const headerTypeSuggestions = getHeaderTypeSuggestions(prefix, includedLibraries);
+      const keywordSuggestions = keywords
         .filter(keyword => keyword.startsWith(prefix))
         .slice(0, 10)
         .map(keyword => ({ text: keyword, type: 'keyword', score: 0.9 }));
+
+      if (variableSuggestions.length > 0 && variableSuggestions.some(v => v.text === prefix)) {
+        suggestions = variableSuggestions;
+      } else {
+        suggestions = [...variableSuggestions, ...headerTypeSuggestions, ...keywordSuggestions].slice(0, 10);
+      }
     } else if (stlFunctions[actualContextType]) {
       // Return methods for the inferred or specified type
       const methods = stlFunctions[actualContextType];

@@ -228,10 +228,9 @@ export default function App() {
     }
 
     // ── TRIGGER 4: Typing an identifier in code (global context)
-    // Detects: typing "st" → suggests stack, string, set, STL types, keywords
-    // Only trigger after 2+ chars to avoid noise
+    // Detects: typing "v" or "ve" → suggests variables, STL types, keywords
     const identMatch = beforeCursor.match(/\b([a-zA-Z_]\w*)$/);
-    if (identMatch && identMatch[1].length >= 2) {
+    if (identMatch) {
       const prefix = identMatch[1];
       if (!beforeCursor.includes('.')) {
         await fetchSuggestions(prefix, 'global', currentCode, position);
