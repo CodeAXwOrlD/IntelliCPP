@@ -221,6 +221,18 @@ export default async function handler(req, res) {
     console.log('[Suggestions API] 🚀 REQUEST RECEIVED!');
     console.log('[Suggestions API] Request data:', { prefix, contextType, codeLength: code ? code.length : 0 });
 
+    // Special handling for include header completion
+    if (contextType === 'include_header') {
+      console.log('[Suggestions API] 🎯 Include header completion detected');
+      const headers = Object.keys(stlFunctions)
+        .filter(header => header.startsWith(prefix))
+        .sort()
+        .slice(0, 10)
+        .map(header => ({ text: header, type: 'header', score: 0.9 }));
+      console.log('[Suggestions API] Header file suggestions:', headers.length, headers);
+      return res.status(200).json(headers);
+    }
+
     // Special handling for header context - when user types #include <header>
     if (contextType && ['vector', 'stack', 'queue', 'deque', 'map', 'set', 'string', 'list', 'algorithm', 'iostream'].includes(contextType)) {
       console.log('[Suggestions API] 🎯 Header context detected for:', contextType);
