@@ -22,12 +22,14 @@ export default async function handler(req, res) {
     params.append('cmd', cmd);
     params.append('src', code);
 
-    const coliruUrl = 'http://coliru.stacked-crooked.com/compile';
+    const coliruUrl = 'https://coliru.stacked-crooked.com/compile';
 
     const resp = await fetch(coliruUrl, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/x-www-form-urlencoded'
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Accept': 'text/plain, */*',
+        'User-Agent': 'IntelliCPP/1.0 (+https://github.com/your-repo)'
       },
       body: params.toString()
     });
