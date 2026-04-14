@@ -163,43 +163,51 @@ const keywords = [
 ];
 
 // Simple type inference function
+function normalizeType(typeDeclaration) {
+  if (!typeDeclaration) return null;
+  const cleaned = typeDeclaration.trim()
+    .replace(/^(?:const|volatile|static|constexpr|unsigned|signed|long|short|mutable|inline|register|thread_local|typename)\s+/g, '')
+    .replace(/^std::/, '');
+  return cleaned.split(/[<\s]/)[0];
+}
+
 function inferVariableType(variableName, code) {
   if (!code || !variableName) return null;
 
-  const qualifierPattern = '(?:const\\s+|volatile\\s+|static\\s+|constexpr\\s+|unsigned\\s+|signed\\s+|long\\s+|short\\s+|mutable\\s+|inline\\s+|register\\s+|thread_local\\s+|typename\\s+)*';
-  const typePattern = `${qualifierPattern}(?:std::\\s*::\\s*)?([a-zA-Z_][a-zA-Z0-9_:<>]*)`;
-
-  // Split code into lines and look for variable declarations
   const lines = code.split('\n');
   for (const line of lines) {
     const trimmed = line.trim();
     if (!trimmed || trimmed.startsWith('//') || trimmed.startsWith('/*') || trimmed.startsWith('#')) continue;
 
-    const patterns = [
-      new RegExp(`\\b${typePattern}\\s+${variableName}\\s*(?:[;=,()\\[\\s]|$)`),
-      new RegExp(`\bauto\s+${variableName}\s*=\s*(?:std\.\s*::\s*)?([a-zA-Z_][a-zA-Z0-9_:<>]*)`),
-      new RegExp(`\bfor\s*\(\s*(?:const\s+)?auto(?:\s*&\s*|\s+)${variableName}\s*:\s*([^)]+)\)`),
-    ];
+    const forPattern = new RegExp(`\\\\bfor\s*\(\s*(?:const\s+)?auto(?:\s*&\s*|\s+)${variableName}\s*:\s*([^)]+)\)`);
+    const autoPattern = new RegExp(`\\\\bauto\s*(?:&\s*)?${variableName}\s*=\s*(?:std::\s*::\s*)?([a-zA-Z_][a-zA-Z0-9_:<>]*)`);
+    const declarationPattern = new RegExp(`\\\\b([a-zA-Z_][a-zA-Z0-9_:<>,\s]*)\s+${variableName}\s*(?:[;=,()\[\s]|$)`);
 
-    for (const pattern of patterns) {
-      const match = pattern.exec(trimmed);
-      if (match) {
-        const typeDeclaration = match[1];
-        if (typeDeclaration) {
-          const cleaned = typeDeclaration.trim();
-          if (pattern === patterns[2]) {
-            // Range-for container inference: map -> pair
-            const containerName = cleaned.split(/\s*:\s*/)[0].trim();
-            const containerType = inferVariableType(containerName, code);
-            if (containerType === 'map' || containerType === 'unordered_map') {
-              console.log(`[Suggestions API] Inferred range-for variable ${variableName} as pair from container ${containerName}`);
-              return 'pair';
-            }
-          }
-          const baseType = cleaned.split(/[<:\s]/)[0];
-          console.log(`[Suggestions API] Inferred type for ${variableName}: ${baseType} from "${cleaned}"`);
-          return baseType;
-        }
+    let match = forPattern.exec(trimmed);
+    if (match && match[1]) {
+      const containerName = match[1].trim();
+      const containerType = inferVariableType(containerName, code);
+      if (containerType === 'map' || containerType === 'unordered_map') {
+        console.log(`[Suggestions API] Inferred range-for variable ${variableName} as pair from container ${containerName}`);
+        return 'pair';
+      }
+    }
+
+    match = autoPattern.exec(trimmed);
+    if (match && match[1]) {
+      const baseType = normalizeType(match[1]);
+      if (baseType) {
+        console.log(`[Suggestions API] Inferred type for ${variableName}: ${baseType} from auto initialization`);
+        return baseType;
+      }
+    }
+
+    match = declarationPattern.exec(trimmed);
+    if (match && match[1]) {
+      const baseType = normalizeType(match[1]);
+      if (baseType) {
+        console.log(`[Suggestions API] Inferred type for ${variableName}: ${baseType} from declaration`);
+        return baseType;
       }
     }
   }
@@ -207,7 +215,6 @@ function inferVariableType(variableName, code) {
   console.log(`[Suggestions API] Could not infer type for ${variableName}`);
   return null;
 }
-
 function extractDeclaredVariables(code) {
   const variables = new Set();
   if (!code) return [];
@@ -218,7 +225,7 @@ function extractDeclaredVariables(code) {
     if (!trimmed || trimmed.startsWith('//') || trimmed.startsWith('/*') || trimmed.startsWith('#')) continue;
 
     let match;
-    const autoPattern = /\bauto\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*(?:[=;,]|$)/g;
+    const autoPattern = /\bauto\s*(?:&\s*)?([a-zA-Z_][a-zA-Z0-9_]*)\s*(?:[=;,]|$)/g;
     while ((match = autoPattern.exec(trimmed)) !== null) {
       variables.add(match[1]);
     }

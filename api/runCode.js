@@ -9,6 +9,19 @@ const { execSync, exec } = require('child_process');
 
 const TMP_DIR = '/tmp/intellicpp_run';
 
+function findCompiler() {
+  const compilers = ['g++', 'clang++'];
+  for (const cmd of compilers) {
+    try {
+      execSync(`command -v ${cmd}`, { stdio: 'ignore' });
+      return cmd;
+    } catch {
+      continue;
+    }
+  }
+  return null;
+}
+
 export default async function handler(req, res) {
   // Enable CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -38,10 +51,15 @@ export default async function handler(req, res) {
 
     fs.writeFileSync(srcFile, code, 'utf8');
 
+    const compiler = findCompiler();
+    if (!compiler) {
+      return res.status(200).json({ success: false, output: '', error: 'No C++ compiler found on the server. Install g++ or clang++.' });
+    }
+
     try {
-      execSync(`g++ -std=c++20 -o "${binFile}" "${srcFile}" 2>&1`, { timeout: 15000 });
+      execSync(`${compiler} -std=c++20 -o "${binFile}" "${srcFile}" 2>&1`, { timeout: 15000 });
     } catch (compileErr) {
-      const message = compileErr.stdout ? compileErr.stdout.toString() : compileErr.message;
+      const message = (compileErr.stdout || compileErr.stderr) ? (compileErr.stdout || compileErr.stderr).toString() : compileErr.message;
       return res.status(200).json({ success: false, output: '', error: message });
     }
 
