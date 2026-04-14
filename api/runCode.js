@@ -44,10 +44,10 @@ export default async function handler(req, res) {
     const stderr = result.program_error || '';
     const compilerError = result.compiler_error || '';
     const compilerOutput = result.compiler_output || '';
-    const status = result.status;
+    const status = Number(result.status);
 
     if (status !== 0) {
-      const errorText = compilerError || compilerOutput || stderr || `Wandbox execution failed (status ${status})`;
+      const errorText = compilerError || compilerOutput || stderr || `Wandbox execution failed (status ${result.status})`;
       return res.status(200).json({ success: false, output: stdout, error: errorText });
     }
 
