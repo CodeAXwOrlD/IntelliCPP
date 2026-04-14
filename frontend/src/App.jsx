@@ -638,7 +638,7 @@ export default function App() {
       )}
 
       {/* ─── Status bar ─── */}
-      <div className="app-status" style={{ background: uiTheme === 'dark' ? '#1f6feb' : '#0969da' }}>
+      <div className="app-status" style={{ background: t.surface, borderTop: `1px solid ${t.border}` }}>
         <div className="status-left">
           <span>⚡ IntelliCPP</span>
           <span>C++ 20</span>
