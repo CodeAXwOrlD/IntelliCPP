@@ -36,6 +36,9 @@ const stlFunctions = {
     "insert", "erase", "find", "count", "empty", "size", "clear",
     "begin", "end", "cbegin", "cend", "at", "operator[]", "swap"
   ],
+  "pair": [
+    "first", "second", "swap"
+  ],
   "set": [
     "insert", "erase", "find", "count", "empty", "size", "clear",
     "begin", "end", "rbegin", "rend", "cbegin", "cend", "crbegin", "crend", "swap"
@@ -174,7 +177,8 @@ function inferVariableType(variableName, code) {
 
     const patterns = [
       new RegExp(`\\b${typePattern}\\s+${variableName}\\s*(?:[;=,()\\[\\s]|$)`),
-      new RegExp(`\\bauto\\s+${variableName}\\s*=\\s*(?:std::\\s*::\\s*)?([a-zA-Z_][a-zA-Z0-9_:<>]*)`),
+      new RegExp(`\bauto\s+${variableName}\s*=\s*(?:std\.\s*::\s*)?([a-zA-Z_][a-zA-Z0-9_:<>]*)`),
+      new RegExp(`\bfor\s*\(\s*(?:const\s+)?auto(?:\s*&\s*|\s+)${variableName}\s*:\s*([^)]+)\)`),
     ];
 
     for (const pattern of patterns) {
@@ -182,9 +186,18 @@ function inferVariableType(variableName, code) {
       if (match) {
         const typeDeclaration = match[1];
         if (typeDeclaration) {
-          // Clean up the type declaration
-          const baseType = typeDeclaration.trim().split(/[<:\s]/)[0];
-          console.log(`[Suggestions API] Inferred type for ${variableName}: ${baseType} from "${typeDeclaration}"`);
+          const cleaned = typeDeclaration.trim();
+          if (pattern === patterns[2]) {
+            // Range-for container inference: map -> pair
+            const containerName = cleaned.split(/\s*:\s*/)[0].trim();
+            const containerType = inferVariableType(containerName, code);
+            if (containerType === 'map' || containerType === 'unordered_map') {
+              console.log(`[Suggestions API] Inferred range-for variable ${variableName} as pair from container ${containerName}`);
+              return 'pair';
+            }
+          }
+          const baseType = cleaned.split(/[<:\s]/)[0];
+          console.log(`[Suggestions API] Inferred type for ${variableName}: ${baseType} from "${cleaned}"`);
           return baseType;
         }
       }
