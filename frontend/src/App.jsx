@@ -468,58 +468,61 @@ export default function App() {
   const formatCode = () => editorRef.current?.getAction('editor.action.formatDocument')?.run();
 
   return (
-    <div style={{ height: '100vh', minHeight: '100vh', background: t.bg, color: t.text, fontFamily: "'Segoe UI', system-ui, sans-serif", display: 'flex', flexDirection: 'column' }}>
+    <div className="app-shell" style={{ background: t.bg, color: t.text, fontFamily: "'Segoe UI', system-ui, sans-serif" }}>
 
       {/* Hidden file input */}
       <input ref={hiddenInput} type="file" accept=".cpp,.h,.hpp,.cc,.cxx,.c,.txt" multiple style={{ display: 'none' }} onChange={handleOpenFile} />
 
       {/* ─── Header ─── */}
-      <div style={{ height: 56, background: t.surface, borderBottom: `1px solid ${t.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 16px', flexShrink: 0, position: 'sticky', top: 0, zIndex: 200 }}>
-        {/* Left: Logo + file buttons */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <div style={{ width: 28, height: 28, borderRadius: 6, background: 'linear-gradient(135deg,#58a6ff,#3fb950)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14 }}>⚡</div>
-            <span style={{ fontWeight: 700, fontSize: 14, letterSpacing: '-0.3px' }}>IntelliCPP</span>
+      <div className="app-header" style={{ background: t.surface, borderBottom: `1px solid ${t.border}`, position: 'sticky', top: 0, zIndex: 200 }}>
+        <div className="app-header-left">
+          <div className="app-logo" style={{ background: 'linear-gradient(135deg,#58a6ff,#3fb950)' }}>⚡</div>
+          <div className="app-branding-text">
+            <div className="app-title">IntelliCPP</div>
+            <div className="app-tagline">Interview-ready C++ workspace</div>
           </div>
-          <div style={{ width: 1, height: 20, background: t.border }} />
+        </div>
+
+        <div className="app-actions">
           <ToolBtn icon={<Plus size={14} />} label="New (Ctrl+N)" onClick={handleNewFile} t={t} />
           <ToolBtn icon={<Upload size={14} />} label="Open (Ctrl+O)" onClick={() => hiddenInput.current?.click()} t={t} />
           <ToolBtn icon={<Save size={14} />} label="Save (Ctrl+S)" onClick={handleSave} t={t} />
           <ToolBtn icon={<Code size={14} />} label="Format" onClick={formatCode} t={t} />
         </div>
 
-        {/* Right: Run, theme, backend status */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div className="app-right-actions">
           <button
             onClick={handleRun}
             disabled={isRunning}
             title="Run (F5)"
-            style={{ display: 'flex', alignItems: 'center', gap: 6, background: isRunning ? t.card : t.accent, color: isRunning ? t.textMuted : '#fff', border: 'none', borderRadius: 6, padding: '7px 14px', cursor: isRunning ? 'not-allowed' : 'pointer', fontSize: 13, fontWeight: 600 }}
+            className="run-button"
+            style={{ background: isRunning ? t.card : t.accent, color: isRunning ? t.textMuted : '#fff' }}
           >
             <Play size={13} /> {isRunning ? 'Running…' : 'Run'}
           </button>
           <button
             onClick={() => setUiTheme(uiTheme === 'dark' ? 'light' : 'dark')}
-            style={{ background: t.card, border: `1px solid ${t.border}`, borderRadius: 6, padding: '6px 10px', color: t.text, cursor: 'pointer', fontSize: 12 }}
+            className="theme-toggle-btn"
+            style={{ background: t.card, borderColor: t.border, color: t.text }}
           >{uiTheme === 'dark' ? '☀' : '🌙'}</button>
-          <div style={{ fontSize: 11, color: backendOk ? t.green : t.red, display: 'flex', alignItems: 'center', gap: 4 }}>
-            <span style={{ width: 7, height: 7, borderRadius: '50%', background: backendOk ? t.green : t.red, display: 'inline-block' }} />
+          <div className="backend-status" style={{ color: backendOk ? t.green : t.red }}>
+            <span className="status-pill" style={{ background: backendOk ? t.green : t.red }} />
             {backendOk ? 'Backend online' : 'Backend offline'}
           </div>
         </div>
       </div>
 
       {/* ─── Metrics bar ─── */}
-      <div style={{ height: 36, background: t.surface, borderBottom: `1px solid ${t.border}`, display: 'flex', alignItems: 'center', padding: '0 16px', gap: 20, fontSize: 11, color: t.textMuted, flexShrink: 0 }}>
+      <div className="app-metrics" style={{ background: t.surface, borderBottom: `1px solid ${t.border}`, color: t.textMuted }}>
         <MetricItem label="Headers" value={includedLibs.length ? includedLibs.join(', ') : 'none'} accent={t.accent} dim={t.textDim} />
         <MetricItem label="Latency" value={latency ? `${latency}ms` : '—'} accent={t.accent} dim={t.textDim} />
         <MetricItem label="Cursor" value={`${cursorPos.line}:${cursorPos.column}`} accent={t.accent} dim={t.textDim} />
         <MetricItem label="Engine" value="Trie O(L)" accent={t.green} dim={t.textDim} />
-        <span style={{ fontSize: 10, color: t.textDim }}>Ctrl+` toggles terminal · F5 runs</span>
+        <span className="metric-note" style={{ color: t.textDim }}>Ctrl+` toggles terminal · F5 runs</span>
       </div>
 
       {/* ─── File tabs ─── */}
-      <div style={{ height: 40, background: t.surface, borderBottom: `1px solid ${t.border}`, display: 'flex', alignItems: 'center', padding: '0 8px', gap: 2, overflowX: 'auto', flexShrink: 0 }}>
+      <div className="file-tabs" style={{ background: t.surface, borderBottom: `1px solid ${t.border}` }}>
         {files.map(file => (
           <div
             key={file.id}
@@ -544,7 +547,7 @@ export default function App() {
       </div>
 
       {/* ─── Editor ─── */}
-      <div style={{ flex: 1, minHeight: 320, minWidth: 0, position: 'relative', overflow: 'hidden', zIndex: 1 }}>
+      <div className="editor-area" style={{ flex: 1, minHeight: 320, minWidth: 0, position: 'relative', overflow: 'hidden', zIndex: 1 }}>
         <Editor
           height="100%"
           language="cpp"
@@ -591,17 +594,17 @@ export default function App() {
 
       {/* ─── Output Panel ─── */}
       {outputVisible && (
-        <div style={{ flexShrink: 0 }}>
+        <div className="output-panel" style={{ flexShrink: 0 }}>
           {/* Drag handle */}
           <div
             onMouseDown={onDragStart}
-            style={{ height: 6, background: t.border, cursor: 'row-resize', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            className="output-drag-handle"
             title="Drag to resize"
           >
-            <div style={{ width: 40, height: 2, borderRadius: 2, background: t.textDim }} />
+            <div className="output-drag-bar" />
           </div>
 
-          <div style={{ height: outputMinimized ? 30 : outputHeight, background: '#0d0d0d', borderTop: `1px solid ${t.border}`, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+          <div className="output-window" style={{ height: outputMinimized ? 30 : outputHeight, background: '#0d0d0d', borderTop: `1px solid ${t.border}` }}>
             {/* Terminal header */}
             <div style={{ height: 30, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 12px', borderBottom: `1px solid #222`, flexShrink: 0 }}>
               <span style={{ fontSize: 11, color: '#888', fontFamily: 'monospace' }}>OUTPUT TERMINAL</span>
@@ -635,22 +638,16 @@ export default function App() {
       )}
 
       {/* ─── Status bar ─── */}
-      <div style={{ height: 22, background: uiTheme === 'dark' ? '#1f6feb' : '#0969da', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 12px', flexShrink: 0 }}>
-        <div style={{ display: 'flex', gap: 16, fontSize: 10, color: '#fff', alignItems: 'center' }}>
+      <div className="app-status" style={{ background: uiTheme === 'dark' ? '#1f6feb' : '#0969da' }}>
+        <div className="status-left">
           <span>⚡ IntelliCPP</span>
           <span>C++ 20</span>
           <span>UTF-8</span>
           {latency > 0 && <span>{latency}ms</span>}
         </div>
-        <div style={{ display: 'flex', gap: 16, fontSize: 10, color: '#fff', alignItems: 'center' }}>
-          <span
-            style={{ cursor: 'pointer' }}
-            onClick={() => setSettings(s => ({ ...s, minimap: !s.minimap }))}
-          >{settings.minimap ? 'Minimap On' : 'Minimap Off'}</span>
-          <span
-            style={{ cursor: 'pointer' }}
-            onClick={() => setSettings(s => ({ ...s, wordWrap: !s.wordWrap }))}
-          >{settings.wordWrap ? 'Wrap On' : 'Wrap Off'}</span>
+        <div className="status-right">
+          <span className="status-toggle" onClick={() => setSettings(s => ({ ...s, minimap: !s.minimap }))}>{settings.minimap ? 'Minimap On' : 'Minimap Off'}</span>
+          <span className="status-toggle" onClick={() => setSettings(s => ({ ...s, wordWrap: !s.wordWrap }))}>{settings.wordWrap ? 'Wrap On' : 'Wrap Off'}</span>
           <span>Ln {cursorPos.line}, Col {cursorPos.column}</span>
         </div>
       </div>
