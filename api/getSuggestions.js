@@ -173,15 +173,14 @@ function normalizeType(typeDeclaration) {
 
 function inferVariableType(variableName, code) {
   if (!code || !variableName) return null;
-
   const lines = code.split('\n');
   for (const line of lines) {
     const trimmed = line.trim();
     if (!trimmed || trimmed.startsWith('//') || trimmed.startsWith('/*') || trimmed.startsWith('#')) continue;
 
-    const forPattern = new RegExp(`\\\\bfor\s*\(\s*(?:const\s+)?auto(?:\s*&\s*|\s+)${variableName}\s*:\s*([^)]+)\)`);
-    const autoPattern = new RegExp(`\\\\bauto\s*(?:&\s*)?${variableName}\s*=\s*(?:std::\s*::\s*)?([a-zA-Z_][a-zA-Z0-9_:<>]*)`);
-    const declarationPattern = new RegExp(`\\\\b([a-zA-Z_][a-zA-Z0-9_:<>,\s]*)\s+${variableName}\s*(?:[;=,()\[\s]|$)`);
+    const forPattern = new RegExp('\\bfor\\s*\\(\\s*(?:const\\s+)?auto(?:\\s*&\\s*|\\s+)' + variableName + '\\s*:\\s*([^)]+)\\)');
+    const autoPattern = new RegExp('\\bauto\\s*(?:&\\s*)?' + variableName + '\\s*=\\s*(?:std::\\s*::\\s*)?([a-zA-Z_][a-zA-Z0-9_:<>]*)');
+    const declarationPattern = new RegExp('\\b([a-zA-Z_][a-zA-Z0-9_:<>,\\s]*)\\s+' + variableName + '\\s*(?:[;=,()\\\\[\\s]|$)');
 
     let match = forPattern.exec(trimmed);
     if (match && match[1]) {
@@ -215,6 +214,7 @@ function inferVariableType(variableName, code) {
   console.log(`[Suggestions API] Could not infer type for ${variableName}`);
   return null;
 }
+
 function extractDeclaredVariables(code) {
   const variables = new Set();
   if (!code) return [];
