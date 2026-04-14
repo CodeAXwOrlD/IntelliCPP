@@ -163,30 +163,27 @@ const keywords = [
 function inferVariableType(variableName, code) {
   if (!code || !variableName) return null;
 
+  const qualifierPattern = '(?:const\\s+|volatile\\s+|static\\s+|constexpr\\s+|unsigned\\s+|signed\\s+|long\\s+|short\\s+|mutable\\s+|inline\\s+|register\\s+|thread_local\\s+|typename\\s+)*';
+  const typePattern = `${qualifierPattern}(?:std::\\s*::\\s*)?([a-zA-Z_][a-zA-Z0-9_:<>]*)`;
+
   // Split code into lines and look for variable declarations
   const lines = code.split('\n');
   for (const line of lines) {
     const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith('//') || trimmed.startsWith('/*')) continue;
+    if (!trimmed || trimmed.startsWith('//') || trimmed.startsWith('/*') || trimmed.startsWith('#')) continue;
 
-    // Look for patterns like: vector<int> v; or std::vector<int> v;
-    // More flexible pattern to capture type before variable name
     const patterns = [
-      // Standard declaration: Type var;
-      new RegExp(`\\b([a-zA-Z_][a-zA-Z0-9_<>\s]*?)\\s+${variableName}\\s*[;=]`),
-      // With std:: prefix: std::Type var;
-      new RegExp(`\\bstd::([a-zA-Z_][a-zA-Z0-9_<>\s]*?)\\s+${variableName}\\s*[;=]`),
+      new RegExp(`\\b${typePattern}\\s+${variableName}\\s*(?:[;=,()\\[\\s]|$)`),
+      new RegExp(`\\bauto\\s+${variableName}\\s*=\\s*(?:std::\\s*::\\s*)?([a-zA-Z_][a-zA-Z0-9_:<>]*)`),
     ];
 
     for (const pattern of patterns) {
       const match = pattern.exec(trimmed);
       if (match) {
-        let typeDeclaration = match[1] || match[2];
+        const typeDeclaration = match[1];
         if (typeDeclaration) {
           // Clean up the type declaration
-          typeDeclaration = typeDeclaration.trim();
-          // Extract base type (remove template parameters and qualifiers)
-          const baseType = typeDeclaration.split(/[<\s]/)[0];
+          const baseType = typeDeclaration.trim().split(/[<:\s]/)[0];
           console.log(`[Suggestions API] Inferred type for ${variableName}: ${baseType} from "${typeDeclaration}"`);
           return baseType;
         }
@@ -246,6 +243,26 @@ function getHeaderTypeSuggestions(prefix, includedLibraries) {
   }
 
   return suggestions;
+}
+
+function getHeaderFunctionSuggestions(prefix, includedLibraries) {
+  const freeFunctionHeaders = new Set([
+    'algorithm', 'utility', 'functional', 'numeric', 'random', 'chrono',
+    'iterator', 'memory', 'sstream', 'iomanip', 'fstream', 'iostream'
+  ]);
+  const suggestions = [];
+  const knownHeaders = [...new Set(includedLibraries.filter(lib => stlFunctions[lib]))];
+
+  for (const header of knownHeaders) {
+    if (!freeFunctionHeaders.has(header)) continue;
+    const functions = stlFunctions[header] || [];
+    functions
+      .filter(fn => fn.startsWith(prefix))
+      .slice(0, 10)
+      .forEach(fn => suggestions.push({ text: fn, type: 'function', score: 0.9 }));
+  }
+
+  return suggestions.slice(0, 10);
 }
 
 console.log(`[Suggestions API] Loaded ${keywords.length} C++ keywords`);
@@ -339,6 +356,7 @@ export default async function handler(req, res) {
     if (actualContextType === 'global') {
       const variableSuggestions = getVariableSuggestions(prefix, code);
       const headerTypeSuggestions = getHeaderTypeSuggestions(prefix, includedLibraries);
+      const headerFunctionSuggestions = getHeaderFunctionSuggestions(prefix, includedLibraries);
       const keywordSuggestions = keywords
         .filter(keyword => keyword.startsWith(prefix))
         .slice(0, 10)
@@ -346,8 +364,10 @@ export default async function handler(req, res) {
 
       if (variableSuggestions.length > 0 && variableSuggestions.some(v => v.text === prefix)) {
         suggestions = variableSuggestions;
+      } else if (headerFunctionSuggestions.length > 0 && headerFunctionSuggestions.some(f => f.text === prefix)) {
+        suggestions = headerFunctionSuggestions;
       } else {
-        suggestions = [...variableSuggestions, ...headerTypeSuggestions, ...keywordSuggestions].slice(0, 10);
+        suggestions = [...variableSuggestions, ...headerFunctionSuggestions, ...headerTypeSuggestions, ...keywordSuggestions].slice(0, 10);
       }
     } else if (stlFunctions[actualContextType]) {
       // Return methods for the inferred or specified type
