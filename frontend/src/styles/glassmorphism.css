@@ -1708,6 +1708,24 @@ body {
   flex: 1;
 }
 
+.monaco-editor .view-overlays .current-line,
+.monaco-editor .current-line {
+  background-color: rgba(148, 163, 184, 0.08) !important;
+}
+
+.monaco-editor .squiggly-error,
+.monaco-editor .squiggly-warning,
+.monaco-editor .squiggly-info,
+.monaco-editor .squiggly-error-long,
+.monaco-editor .squiggly-warning-long,
+.monaco-editor .squiggly-info-long {
+  background-color: transparent !important;
+}
+
+.monaco-editor .selected-text {
+  background-color: rgba(148, 163, 184, 0.18) !important;
+}
+
 .monaco-editor .monaco-scrollbars-vertical {
   width: 10px;
 }
