@@ -1,10 +1,10 @@
 import React, { useEffect, useRef } from 'react';
 
 const TYPE_COLORS = {
-  method:   { bg: '#1f6feb', text: '#79c0ff' },
+  method:   { bg: '#2f3440', text: '#94a3b8' },
   keyword:  { bg: '#3d2b00', text: '#d29922' },
-  class:    { bg: '#2d1b69', text: '#d2a8ff' },
-  function: { bg: '#0d2d0d', text: '#3fb950' },
+  class:    { bg: '#334155', text: '#cbd5e1' },
+  function: { bg: '#1f2d1d', text: '#3fb950' },
 };
 
 export default function SuggestionPopup({ suggestions, selectedIndex, onSelect }) {
@@ -40,8 +40,8 @@ export default function SuggestionPopup({ suggestions, selectedIndex, onSelect }
               style={{
                 padding: '5px 10px',
                 cursor: 'pointer',
-                background: isSelected ? '#1f6feb22' : 'transparent',
-                borderLeft: isSelected ? '2px solid #58a6ff' : '2px solid transparent',
+                background: isSelected ? 'rgba(100, 116, 139, 0.2)' : 'transparent',
+                borderLeft: isSelected ? '2px solid #64748b' : '2px solid transparent',
                 display: 'flex',
                 alignItems: 'center',
                 gap: 8,

@@ -919,6 +919,16 @@ app.get('/health', (req, res) => {
   });
 });
 
+app.get('/api/health', (req, res) => {
+  res.json({
+    status: 'ok',
+    version: '2.0.0',
+    uptime: Math.round(process.uptime()),
+    containers: Object.keys(STL_DB).length,
+    totalMethods: Object.values(STL_DB).reduce((s, c) => s + c.methods.length, 0),
+  });
+});
+
 /**
  * POST /api/getSuggestions
  * Body: { prefix, contextType, code, cursorPosition }

@@ -43,13 +43,13 @@
 
 .terminal-tab:hover {
   color: #c9d1d9;
-  background-color: rgba(99, 102, 241, 0.1);
+  background-color: rgba(148, 163, 184, 0.12);
 }
 
 .terminal-tab.active {
   color: #E6EDF3;
   background-color: #010409;
-  border-bottom: 2px solid #6366F1;
+  border-bottom: 2px solid rgba(148, 163, 184, 0.45);
 }
 
 .terminal-tab.active::after {
@@ -59,7 +59,7 @@
   left: 0;
   right: 0;
   height: 2px;
-  background-color: #6366F1;
+  background-color: rgba(148, 163, 184, 0.45);
 }
 
 .terminal-controls {
@@ -84,7 +84,7 @@
 
 .terminal-btn-clear:hover,
 .terminal-btn-resize:hover {
-  background-color: rgba(99, 102, 241, 0.1);
+  background-color: rgba(148, 163, 184, 0.12);
   color: #c9d1d9;
 }
 
@@ -130,7 +130,7 @@
   width: 12px;
   height: 12px;
   border: 2px solid rgba(139, 148, 158, 0.3);
-  border-top: 2px solid #6366F1;
+  border-top: 2px solid rgba(148, 163, 184, 0.6);
   border-radius: 50%;
   animation: terminal-spin 1s linear infinite;
   margin-left: 8px;
@@ -278,12 +278,12 @@
 }
 
 .terminal-content::-webkit-scrollbar-thumb {
-  background: rgba(99, 102, 241, 0.3);
+  background: rgba(148, 163, 184, 0.3);
   border-radius: 4px;
 }
 
 .terminal-content::-webkit-scrollbar-thumb:hover {
-  background: rgba(99, 102, 241, 0.5);
+  background: rgba(148, 163, 184, 0.45);
 }
 
 /* Interactive output elements */

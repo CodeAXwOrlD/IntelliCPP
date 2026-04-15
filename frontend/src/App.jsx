@@ -12,13 +12,13 @@ const THEMES = {
     bg: '#0d1117', surface: '#161b22', card: '#1c2230',
     border: '#30363d', accent: '#64748b', accentGlow: '#64748b33',
     text: '#e6edf3', textMuted: '#8b949e', textDim: '#484f58',
-    green: '#3fb950', red: '#f85149', orange: '#d29922',
+    green: '#3fb950', red: '#905050', orange: '#d29922',
   },
   light: {
     bg: '#f6f8fa', surface: '#ffffff', card: '#f1f5f9',
     border: '#d0d7de', accent: '#475569', accentGlow: '#47556922',
     text: '#1f2328', textMuted: '#656d76', textDim: '#9198a1',
-    green: '#1a7f37', red: '#cf222e', orange: '#9a6700',
+    green: '#1a7f37', red: '#666666', orange: '#9a6700',
   },
 };
 
@@ -174,6 +174,78 @@ export default function App() {
         setPopupVisible(false);
         return;
       }
+    });
+  };
+
+  const beforeEditorMount = (monaco) => {
+    monaco.editor.defineTheme('intelli-cpp-dark', {
+      base: 'vs-dark',
+      inherit: true,
+      rules: [],
+      colors: {
+        'editor.background': '#0d1117',
+        'editor.foreground': '#c9d1d9',
+        'editorGutter.background': '#0d1117',
+        'editorLineNumber.foreground': '#8b949e',
+        'editorLineNumber.activeForeground': '#c9d1d9',
+        'editor.selectionBackground': 'rgba(148, 163, 184, 0.18)',
+        'editor.inactiveSelectionBackground': 'rgba(148, 163, 184, 0.1)',
+        'editor.lineHighlightBackground': 'rgba(148, 163, 184, 0.08)',
+        'editorCursor.foreground': '#c9d1d9',
+        'editorWhitespace.foreground': 'rgba(148, 163, 184, 0.25)',
+        'editorIndentGuide.background': 'rgba(148, 163, 184, 0.12)',
+        'editorIndentGuide.activeBackground': 'rgba(148, 163, 184, 0.2)',
+        'editorWidget.background': '#161b22',
+        'editorWidget.border': '#30363d',
+        'editorSuggestWidget.background': '#161b22',
+        'editorSuggestWidget.border': '#30363d',
+        'editorSuggestWidget.selectedBackground': 'rgba(148, 163, 184, 0.18)',
+        'editorWidget.foreground': '#c9d1d9',
+        'editorWidget.resizeBorder': '#30363d',
+        'editorError.foreground': '#f87575',
+        'editorError.background': 'transparent',
+        'editorError.border': 'transparent',
+        'editorWarning.foreground': '#f9c74f',
+        'editorWarning.background': 'transparent',
+        'editorWarning.border': 'transparent',
+        'editorInfo.foreground': '#7dd3fc',
+        'editorInfo.background': 'transparent',
+        'editorInfo.border': 'transparent',
+      },
+    });
+
+    monaco.editor.defineTheme('intelli-cpp-light', {
+      base: 'vs',
+      inherit: true,
+      rules: [],
+      colors: {
+        'editor.background': '#f6f8fa',
+        'editor.foreground': '#1f2328',
+        'editorLineNumber.foreground': '#6b7280',
+        'editorLineNumber.activeForeground': '#1f2328',
+        'editor.selectionBackground': 'rgba(71, 85, 105, 0.18)',
+        'editor.inactiveSelectionBackground': 'rgba(71, 85, 105, 0.1)',
+        'editor.lineHighlightBackground': 'rgba(71, 85, 105, 0.08)',
+        'editorCursor.foreground': '#1f2328',
+        'editorWhitespace.foreground': 'rgba(107, 114, 128, 0.45)',
+        'editorIndentGuide.background': 'rgba(148, 163, 184, 0.12)',
+        'editorIndentGuide.activeBackground': 'rgba(148, 163, 184, 0.2)',
+        'editorWidget.background': '#ffffff',
+        'editorWidget.border': '#d1d5db',
+        'editorSuggestWidget.background': '#f8fafc',
+        'editorSuggestWidget.border': '#d1d5db',
+        'editorSuggestWidget.selectedBackground': 'rgba(71, 85, 105, 0.12)',
+        'editorWidget.foreground': '#1f2328',
+        'editorError.foreground': '#7f7979',
+        'editorError.background': 'transparent',
+        'editorError.border': 'transparent',
+        'editorWarning.foreground': '#a16207',
+        'editorWarning.background': 'transparent',
+        'editorWarning.border': 'transparent',
+        'editorInfo.foreground': '#0ea5e9',
+        'editorInfo.background': 'transparent',
+        'editorInfo.border': 'transparent',
+      },
     });
   };
 
@@ -482,7 +554,18 @@ export default function App() {
   const formatCode = () => editorRef.current?.getAction('editor.action.formatDocument')?.run();
 
   return (
-    <div className="app-shell" style={{ background: t.bg, color: t.text, fontFamily: "'Segoe UI', system-ui, sans-serif" }}>
+    <div
+      className="app-shell"
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100vh',
+        overflow: 'hidden',
+        background: t.bg,
+        color: t.text,
+        fontFamily: "'Segoe UI', system-ui, sans-serif",
+      }}
+    >
 
       {/* Hidden file input */}
       <input ref={hiddenInput} type="file" accept=".cpp,.h,.hpp,.cc,.cxx,.c,.txt" multiple style={{ display: 'none' }} onChange={handleOpenFile} />
@@ -561,14 +644,15 @@ export default function App() {
       </div>
 
       {/* ─── Editor ─── */}
-      <div className="editor-area" style={{ flex: 1, minHeight: 320, minWidth: 0, position: 'relative', overflow: 'hidden', zIndex: 1 }}>
+      <div className="editor-area" style={{ flex: 1, position: 'relative', overflow: 'hidden', minHeight: 0, minWidth: 0 }}>
         <Editor
           height="100%"
           language="cpp"
           value={code}
           onChange={onCodeChange}
+          beforeMount={beforeEditorMount}
           onMount={onEditorMount}
-          theme={uiTheme === 'dark' ? 'vs-dark' : 'vs-light'}
+          theme={uiTheme === 'dark' ? 'intelli-cpp-dark' : 'intelli-cpp-light'}
           options={{
             fontSize: settings.fontSize,
             fontFamily: '"JetBrains Mono", "Fira Code", Consolas, monospace',
@@ -608,7 +692,7 @@ export default function App() {
 
       {/* ─── Output Panel ─── */}
       {outputVisible && (
-        <div className="output-panel" style={{ flexShrink: 0 }}>
+        <div className="output-panel" style={{ flexShrink: 0, width: '100%' }}>
           {/* Drag handle */}
           <div
             onMouseDown={onDragStart}
