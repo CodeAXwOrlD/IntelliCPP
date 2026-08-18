@@ -116,7 +116,7 @@ export default function MonacoContainer() {
             const textBefore = lineText.slice(0, position.column - 1);
             const hasHash = textBefore.trimStart().startsWith('#');
 
-            // eslint-disable-next-line no-template-curly-in-string
+            /* eslint-disable no-template-curly-in-string */
             const directives = [
               { label: 'include <...>', insertText: hasHash ? 'include <${1:iostream}>' : '#include <${1:iostream}>', detail: 'Standard header' },
               { label: 'include "..."', insertText: hasHash ? 'include "${1:header.h}"' : '#include "${1:header.h}"', detail: 'Local header' },
@@ -125,6 +125,7 @@ export default function MonacoContainer() {
               { label: 'ifdef', insertText: hasHash ? 'ifdef ${1:MACRO}\n$0\n#endif' : '#ifdef ${1:MACRO}\n$0\n#endif', detail: 'Conditional ifdef' },
               { label: 'ifndef', insertText: hasHash ? 'ifndef ${1:MACRO}\n#define ${1:MACRO}\n$0\n#endif' : '#ifndef ${1:MACRO}\n#define ${1:MACRO}\n$0\n#endif', detail: 'Conditional ifndef' }
             ];
+            /* eslint-enable no-template-curly-in-string */
 
             return {
               suggestions: directives.map(d => ({

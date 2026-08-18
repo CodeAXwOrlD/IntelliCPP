@@ -24,7 +24,7 @@ export default function ComplexityBadge() {
     }
 
     // Check code AST patterns for nested loops or recursion
-    const hasNestedLoops = /for\s*\([^\)]*\)\s*\{[^}]*for\s*\([^\)]*\)/s.test(content);
+    const hasNestedLoops = /for\s*\([^)]*\)\s*\{[^}]*for\s*\([^)]*\)/s.test(content);
     if (hasNestedLoops) {
       return {
         timeComp: 'O(N²)',
@@ -34,7 +34,7 @@ export default function ComplexityBadge() {
       };
     }
 
-    const hasSingleLoop = /for\s*\([^\)]*\)|while\s*\([^\)]*\)/.test(content);
+    const hasSingleLoop = /for\s*\([^)]*\)|while\s*\([^)]*\)/.test(content);
     if (hasSingleLoop) {
       return {
         timeComp: 'O(N)',
