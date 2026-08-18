@@ -1,0 +1,97 @@
+/* ═══════════════════════════════════════════════════════════════════════
+   INTELLICPP - MICRO-ANIMATIONS & AMBIENT EFFECTS
+   ═══════════════════════════════════════════════════════════════════════ */
+
+@keyframes pulseGlow {
+  0%, 100% {
+    box-shadow: 0 0 10px rgba(0, 242, 254, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 22px rgba(0, 242, 254, 0.45);
+  }
+}
+
+@keyframes radarPulse {
+  0% {
+    transform: scale(0.95);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.15);
+    opacity: 0.7;
+  }
+  100% {
+    transform: scale(0.95);
+    opacity: 1;
+  }
+}
+
+@keyframes auroraMesh {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+@keyframes shimmerText {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+@keyframes slideDownFade {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-pulse-glow {
+  animation: pulseGlow 2.5s infinite var(--ease-smooth);
+}
+
+.animate-radar {
+  animation: radarPulse 2s infinite ease-in-out;
+}
+
+.animate-slide-down {
+  animation: slideDownFade 0.2s var(--ease-spring) forwards;
+}
+
+.text-shimmer {
+  background: linear-gradient(
+    90deg,
+    #ffffff 0%,
+    var(--accent-cyan) 25%,
+    var(--accent-violet) 50%,
+    var(--accent-cyan) 75%,
+    #ffffff 100%
+  );
+  background-size: 200% auto;
+  color: transparent;
+  -webkit-background-clip: text;
+  background-clip: text;
+  animation: shimmerText 6s linear infinite;
+}
+
+/* Ambient Dot Matrix Canvas Background */
+.bg-ambient-grid {
+  background-color: var(--bg-void);
+  background-image: 
+    radial-gradient(circle at 15% 15%, rgba(0, 242, 254, 0.04) 0%, transparent 40%),
+    radial-gradient(circle at 85% 85%, rgba(139, 92, 246, 0.04) 0%, transparent 45%),
+    radial-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+  background-size: 100% 100%, 100% 100%, 24px 24px;
+}

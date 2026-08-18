@@ -1,0 +1,135 @@
+/* ═══════════════════════════════════════════════════════════════════════
+   INTELLICPP - OBSIDIAN CYBER-GLASS DESIGN TOKENS (STITCH SPECIFICATION)
+   ═══════════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* Canvas & Surfaces */
+  --bg-void: #07080B;
+  --bg-surface: #0E1117;
+  --bg-surface-elevated: #161B22;
+  --bg-glass-base: rgba(14, 17, 23, 0.72);
+  --bg-glass-panel: rgba(18, 22, 34, 0.65);
+  --bg-glass-active: rgba(26, 32, 48, 0.85);
+  --bg-glass-popover: rgba(15, 18, 28, 0.95);
+  --bg-input: rgba(10, 13, 20, 0.8);
+
+  /* Accents & Brand */
+  --accent-cyan: #00F2FE;
+  --accent-cyan-glow: rgba(0, 242, 254, 0.25);
+  --accent-cyan-subtle: rgba(0, 242, 254, 0.08);
+  --accent-cyan-dim: #0099A8;
+
+  --accent-violet: #8B5CF6;
+  --accent-violet-glow: rgba(139, 92, 246, 0.25);
+  --accent-violet-subtle: rgba(139, 92, 246, 0.1);
+  --accent-violet-dim: #6D28D9;
+
+  --accent-emerald: #10B981;
+  --accent-emerald-glow: rgba(16, 185, 129, 0.3);
+  --accent-emerald-subtle: rgba(16, 185, 129, 0.1);
+
+  --accent-coral: #FFB4AB;
+  --accent-red: #F43F5E;
+  --accent-red-glow: rgba(244, 63, 94, 0.3);
+  --accent-amber: #F59E0B;
+
+  /* Typography Colors */
+  --text-primary: #F8FAFC;
+  --text-secondary: #CBD5E1;
+  --text-muted: #849495;
+  --text-dim: #4B5563;
+  --text-cyan: #6FF6FF;
+  --text-violet: #D0BCFF;
+  --text-emerald: #67F4B7;
+
+  /* Borders & Specular Lines */
+  --border-subtle: rgba(255, 255, 255, 0.07);
+  --border-glass: rgba(255, 255, 255, 0.12);
+  --border-hover: rgba(0, 242, 254, 0.35);
+  --border-focus: rgba(0, 242, 254, 0.7);
+  --border-active-tab: #00F2FE;
+
+  /* Shadows & Elevations */
+  --shadow-glass: 0 8px 32px 0 rgba(0, 0, 0, 0.45);
+  --shadow-glow-cyan: 0 0 20px rgba(0, 242, 254, 0.2);
+  --shadow-glow-violet: 0 0 20px rgba(139, 92, 246, 0.2);
+  --shadow-glow-emerald: 0 0 15px rgba(16, 185, 129, 0.35);
+
+  /* Geometry */
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
+  --radius-pill: 9999px;
+
+  /* Fonts */
+  --font-ui: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-code: 'JetBrains Mono', monospace;
+
+  /* Transitions */
+  --ease-spring: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+  --duration-fast: 150ms;
+  --duration-normal: 250ms;
+}
+
+/* Glassmorphism Utilities */
+.glass-panel {
+  background: var(--bg-glass-panel);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-glass);
+}
+
+.glass-card {
+  background: rgba(22, 27, 38, 0.6);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  transition: all var(--duration-normal) var(--ease-spring);
+}
+
+.glass-card:hover {
+  border-color: var(--border-hover);
+  box-shadow: var(--shadow-glow-cyan);
+  transform: translateY(-1px);
+}
+
+/* Specular Top-Edge Highlight for Luxury Depth */
+.glass-specular {
+  position: relative;
+}
+
+.glass-specular::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  pointer-events: none;
+}
+
+/* Custom High-Tech Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-pill);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 242, 254, 0.4);
+}
