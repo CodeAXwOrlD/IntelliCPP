@@ -5,7 +5,7 @@ const EngineContext = createContext(null);
 const API_BASE = process.env.REACT_APP_API_BASE || '/api';
 
 export function EngineProvider({ children }) {
-  const { activeFile, activeLanguage } = useEditor();
+  const { activeFile, activeLanguage, cursorPos } = useEditor();
 
   // Engine telemetry & state
   const [latency, setLatency] = useState(18);
@@ -65,6 +65,16 @@ export function EngineProvider({ children }) {
     }
     setAstTokens(tokens);
   }, [activeFile?.content]);
+
+  // Live Token at Cursor Position
+  const activeWord = (() => {
+    if (!activeFile?.content || !cursorPos) return '';
+    const lines = activeFile.content.split('\n');
+    const line = lines[cursorPos.line - 1] || '';
+    const textBefore = line.slice(0, cursorPos.column - 1);
+    const match = textBefore.match(/([a-zA-Z0-9_]+)$/);
+    return match ? match[1] : '';
+  })();
 
   // Query Autocomplete Suggestions from API or fallback to built-in Trie
   const querySuggestions = useCallback(async (prefix, line, column) => {
@@ -143,8 +153,8 @@ export function EngineProvider({ children }) {
     const startExec = performance.now();
     setOutputLogs(prev => [
       ...prev,
-      `\n═════════════════ [COMPILE & RUN: ${activeFile.name}] ═════════════════`,
-      `⚙️ Compiling ${activeFile.name} with ${activeLanguage.badge}...`
+      `\n--- [Running ${activeFile.name}] ---`,
+      `Compiling ${activeFile.name} (${activeLanguage.badge})...`
     ]);
 
     try {
@@ -250,6 +260,7 @@ main:
         suggestions,
         isSuggesting,
         astTokens,
+        activeWord,
         querySuggestions,
         runCurrentCode,
         clearLogs

@@ -1,7 +1,3 @@
-/* ═══════════════════════════════════════════════════════════════════════
-   INTELLICPP - BENTO GRID & APP LAYOUT
-   ═══════════════════════════════════════════════════════════════════════ */
-
 .app-container {
   display: flex;
   flex-direction: column;
@@ -480,9 +476,6 @@
   color: var(--text-primary);
 }
 
-/* ═══════════════════════════════════════════════════════════════════════
-   ULTRA-MODERN MONACO EDITOR OVERRIDES
-   ═══════════════════════════════════════════════════════════════════════ */
 .monaco-editor .current-line {
   background: rgba(0, 242, 254, 0.04) !important;
   border: 1px solid rgba(0, 242, 254, 0.12) !important;
@@ -512,9 +505,6 @@
   font-feature-settings: "liga" 1, "calt" 1;
 }
 
-/* ═══════════════════════════════════════════════════════════════════════
-   OBSIDIAN CYBER-GLASS SUGGEST & HOVER WIDGETS
-   ═══════════════════════════════════════════════════════════════════════ */
 .monaco-editor .suggest-widget {
   background: #0D1117 !important;
   border: 1px solid rgba(0, 242, 254, 0.35) !important;

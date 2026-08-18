@@ -97,7 +97,7 @@ export default function NeonTerminal() {
             {outputLogs.map((log, idx) => {
               const isError = log.includes('❌') || log.includes('error:') || log.includes('Error:');
               const isSuccess = log.includes('✓') || log.includes('Hello,') || log.includes('Sorted');
-              const isHeader = log.includes('════════');
+              const isHeader = log.startsWith('---') || log.includes('[Running');
 
               return (
                 <div
