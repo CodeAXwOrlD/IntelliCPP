@@ -1,7 +1,6 @@
 #include "../include/code_runner.h"
 #include "../include/suggestion_engine.h"
 #include <napi.h>
-#include <node.h>
 #include <string>
 #include <vector>
 

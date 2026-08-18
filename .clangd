@@ -1,16 +1,21 @@
+# yaml-language-server: $schema=none
 CompileFlags:
   Add:
+    - -xc++
     - -std=c++20
     - -I/home/indmadmax/IntelliCPP/backend/include
     - -I/home/indmadmax/IntelliCPP/backend/node_modules/node-addon-api
-    - -I/usr/include/c++/11
-    - -I/usr/include/x86_64-linux-gnu/c++/11
-    - -I/usr/include/c++/11/backward
-    - -I/usr/lib/gcc/x86_64-linux-gnu/11/include
-    - -I/usr/local/include
-    - -I/usr/include/x86_64-linux-gnu
-    - -I/usr/include
+    - -I/home/indmadmax/.cache/node-gyp/20.20.2/include/node
+    - -isystem/usr/include/c++/11
+    - -isystem/usr/include/x86_64-linux-gnu/c++/11
+    - -isystem/usr/include/c++/11/backward
+    - -isystem/usr/lib/gcc/x86_64-linux-gnu/11/include
+    - -isystem/usr/local/include
+    - -isystem/usr/include/x86_64-linux-gnu
+    - -isystem/usr/include
+    - -DNAPI_DISABLE_CPP_EXCEPTIONS
 Diagnostics:
   Suppress:
     - unused-includes
     - pp_file_not_found
+    - undeclared_var_use

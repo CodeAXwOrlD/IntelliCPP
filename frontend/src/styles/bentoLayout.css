@@ -479,3 +479,86 @@
 .status-item:hover {
   color: var(--text-primary);
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   ULTRA-MODERN MONACO EDITOR OVERRIDES
+   ═══════════════════════════════════════════════════════════════════════ */
+.monaco-editor .current-line {
+  background: rgba(0, 242, 254, 0.04) !important;
+  border: 1px solid rgba(0, 242, 254, 0.12) !important;
+  border-radius: 4px !important;
+}
+
+.monaco-editor .current-line-exact {
+  background: rgba(0, 242, 254, 0.04) !important;
+  border-left: 2px solid var(--accent-cyan) !important;
+}
+
+.monaco-editor .squiggly-error {
+  background: url("data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%206%203'%3E%3Cpath%20d%3D'M0%203%20L3%200%20L6%203'%20fill%3D'none'%20stroke%3D'%23F43F5E'%20stroke-width%3D'0.8'%2F%3E%3C%2Fsvg%3E") repeat-x bottom left !important;
+  background-size: 6px 3px !important;
+}
+
+.monaco-editor .squiggly-warning {
+  background: url("data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%206%203'%3E%3Cpath%20d%3D'M0%203%20L3%200%20L6%203'%20fill%3D'none'%20stroke%3D'%23F59E0B'%20stroke-width%3D'0.8'%2F%3E%3C%2Fsvg%3E") repeat-x bottom left !important;
+  background-size: 6px 3px !important;
+}
+
+.monaco-editor .margin {
+  background-color: var(--bg-void) !important;
+}
+
+.monaco-editor, .monaco-editor .inputarea.ime-input {
+  font-feature-settings: "liga" 1, "calt" 1;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   OBSIDIAN CYBER-GLASS SUGGEST & HOVER WIDGETS
+   ═══════════════════════════════════════════════════════════════════════ */
+.monaco-editor .suggest-widget {
+  background: #0D1117 !important;
+  border: 1px solid rgba(0, 242, 254, 0.35) !important;
+  border-radius: 8px !important;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.7), 0 0 20px rgba(0, 242, 254, 0.15) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  padding: 4px !important;
+}
+
+.monaco-editor .suggest-widget .monaco-list-row {
+  border-radius: 4px !important;
+  transition: background 100ms ease !important;
+}
+
+.monaco-editor .suggest-widget .monaco-list-row.focused,
+.monaco-editor .suggest-widget .monaco-list-row.selected {
+  background: rgba(0, 242, 254, 0.16) !important;
+  color: #FFFFFF !important;
+  border-left: 2px solid var(--accent-cyan) !important;
+}
+
+.monaco-editor .suggest-widget .monaco-list-row.focused .monaco-icon-label,
+.monaco-editor .suggest-widget .monaco-list-row.selected .monaco-icon-label {
+  color: #FFFFFF !important;
+}
+
+.monaco-editor .suggest-widget .monaco-highlighted-label .highlight {
+  color: var(--accent-cyan) !important;
+  font-weight: 700 !important;
+  text-shadow: 0 0 8px rgba(0, 242, 254, 0.5) !important;
+}
+
+.monaco-editor .monaco-hover {
+  background: #0D1117 !important;
+  border: 1px solid rgba(0, 242, 254, 0.35) !important;
+  border-radius: 8px !important;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.7), 0 0 20px rgba(0, 242, 254, 0.15) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+}
+
+.monaco-editor .monaco-hover .hover-row {
+  border-bottom-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+

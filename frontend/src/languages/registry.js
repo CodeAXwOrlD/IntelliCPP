@@ -1,7 +1,3 @@
-// ═══════════════════════════════════════════════════════════════════════
-// INTELLICPP - MULTI-LANGUAGE PROVIDER REGISTRY (EXTENSIBLE ARCHITECTURE)
-// ═══════════════════════════════════════════════════════════════════════
-
 export const SUPPORTED_LANGUAGES = {
   cpp: {
     id: 'cpp',

@@ -183,12 +183,11 @@ function inferVariableType(variableName, code) {
     const autoPattern = new RegExp(`\\bauto\\s*(?:&\\s*)?${escapedVariableName}\\s*=\\s*(?:std::\\s*::\\s*)?([a-zA-Z_][a-zA-Z0-9_:<>]*)`);
     const declarationPattern = new RegExp(`\\b([a-zA-Z_][a-zA-Z0-9_:<>,\\s]*)\\s+${escapedVariableName}\\s*(?:[;=,()\\[\\s]|$)`);
 
-    let match = forPattern.exec(trimmed);
+    match = forPattern.exec(trimmed);
     if (match && match[1]) {
       const containerName = match[1].trim();
       const containerType = inferVariableType(containerName, code);
       if (containerType === 'map' || containerType === 'unordered_map') {
-        console.log(`[Suggestions API] Inferred range-for variable ${variableName} as pair from container ${containerName}`);
         return 'pair';
       }
     }
@@ -197,7 +196,6 @@ function inferVariableType(variableName, code) {
     if (match && match[1]) {
       const baseType = normalizeType(match[1]);
       if (baseType) {
-        console.log(`[Suggestions API] Inferred type for ${variableName}: ${baseType} from auto initialization`);
         return baseType;
       }
     }
@@ -206,13 +204,11 @@ function inferVariableType(variableName, code) {
     if (match && match[1]) {
       const baseType = normalizeType(match[1]);
       if (baseType) {
-        console.log(`[Suggestions API] Inferred type for ${variableName}: ${baseType} from declaration`);
         return baseType;
       }
     }
   }
 
-  console.log(`[Suggestions API] Could not infer type for ${variableName}`);
   return null;
 }
 
@@ -286,11 +282,7 @@ function getHeaderFunctionSuggestions(prefix, includedLibraries) {
   return suggestions.slice(0, 10);
 }
 
-console.log(`[Suggestions API] Loaded ${keywords.length} C++ keywords`);
-console.log(`[Suggestions API] Loaded ${Object.keys(stlFunctions).length} STL function categories`);
-
 export default async function handler(req, res) {
-  // Enable CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
@@ -304,49 +296,34 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { prefix = '', contextType = 'global', code = '', cursorPosition = 0 } = req.body;
+    const { prefix = '', contextType = 'global', code = '' } = req.body;
 
-    console.log('[Suggestions API] 🚀 REQUEST RECEIVED!');
-    console.log('[Suggestions API] Request data:', { prefix, contextType, codeLength: code ? code.length : 0 });
-
-    // Special handling for include header completion
     if (contextType === 'include_header') {
-      console.log('[Suggestions API] 🎯 Include header completion detected');
       const headers = Object.keys(stlFunctions)
         .filter(header => header.startsWith(prefix))
         .sort()
         .slice(0, 10)
         .map(header => ({ text: header, type: 'header', score: 0.9 }));
-      console.log('[Suggestions API] Header file suggestions:', headers.length, headers);
       return res.status(200).json(headers);
     }
 
-    // Special handling for header context - when user types #include <header>
     if (contextType && ['vector', 'stack', 'queue', 'deque', 'map', 'set', 'string', 'list', 'algorithm', 'iostream'].includes(contextType)) {
-      console.log('[Suggestions API] 🎯 Header context detected for:', contextType);
-      
       const suggestions = [];
-      
-      // Add the class name itself
       suggestions.push({ text: contextType, type: 'class', score: 1.0 });
       
-      // Add methods if they exist in STL data
       if (stlFunctions[contextType]) {
         const methods = stlFunctions[contextType];
         const filteredMethods = prefix ? 
           methods.filter(method => method.startsWith(prefix)) : 
-          methods.slice(0, 9); // Limit to top 9 methods
+          methods.slice(0, 9);
           
         filteredMethods.forEach(method => {
           suggestions.push({ text: method, type: 'method', score: 0.8 });
         });
       }
-      
-      console.log('[Suggestions API] Header suggestions:', suggestions.length, suggestions);
       return res.status(200).json(suggestions);
     }
 
-    // Parse includes from code
     const includedLibraries = [];
     if (code) {
       const includeRegex = /#include\s*[<"]\s*([a-z_]+)\s*[>"]/g;
@@ -356,20 +333,14 @@ export default async function handler(req, res) {
       }
     }
 
-    console.log('[Suggestions API] Included libraries:', includedLibraries);
-
-    // Generate suggestions based on context
     let suggestions = [];
     let actualContextType = contextType;
 
-    // If contextType is not 'global' and not a recognized STL type, try to infer the variable type
     if (contextType !== 'global' && !['vector', 'stack', 'queue', 'deque', 'map', 'set', 'string', 'list', 'algorithm', 'iostream'].includes(contextType)) {
       const inferredType = inferVariableType(contextType, code);
       if (inferredType && stlFunctions[inferredType]) {
-        console.log(`[Suggestions API] Using inferred type: ${inferredType} for variable ${contextType}`);
         actualContextType = inferredType;
       } else {
-        console.log(`[Suggestions API] Could not infer type for ${contextType}, falling back to global`);
         actualContextType = 'global';
       }
     }
@@ -391,24 +362,19 @@ export default async function handler(req, res) {
         suggestions = [...variableSuggestions, ...headerFunctionSuggestions, ...headerTypeSuggestions, ...keywordSuggestions].slice(0, 10);
       }
     } else if (stlFunctions[actualContextType]) {
-      // Return methods for the inferred or specified type
       const methods = stlFunctions[actualContextType];
       suggestions = methods
         .filter(method => method.startsWith(prefix))
         .slice(0, 10)
         .map(method => ({ text: method, type: 'method', score: 0.8 }));
       
-      // Also include the class name if prefix is empty
       if (!prefix) {
         suggestions.unshift({ text: actualContextType, type: 'class', score: 1.0 });
       }
     }
 
-    console.log('[Suggestions API] Returning suggestions:', suggestions.length);
     res.status(200).json(suggestions);
-
   } catch (error) {
-    console.error('[Suggestions API] Error:', error);
     res.status(500).json({
       error: 'Internal server error',
       suggestions: []

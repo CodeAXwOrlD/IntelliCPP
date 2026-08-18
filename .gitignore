@@ -85,6 +85,7 @@ Thumbs.db
 .vscode/*
 !.vscode/settings.json
 !.vscode/extensions.json
+!.vscode/c_cpp_properties.json
 .idea/
 *.suo
 *.ntvs*
