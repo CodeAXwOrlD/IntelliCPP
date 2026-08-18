@@ -10,16 +10,29 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   try {
-    const { code = '' } = req.body;
+    const { code = '', language = 'cpp' } = req.body;
     if (!code || !code.trim()) {
       return res.status(200).json({ success: false, output: '', error: 'No code provided' });
     }
 
     const wandboxUrl = 'https://wandbox.org/api/compile.json';
+    
+    // Multi-language Wandbox compiler mapping
+    let compiler = 'gcc-head';
+    let options = '-std=c++20 -O2';
+
+    if (language === 'python') {
+      compiler = 'cpython-head';
+      options = '';
+    } else if (language === 'rust') {
+      compiler = 'rust-head';
+      options = '-O';
+    }
+
     const payload = {
       code,
-      compiler: 'gcc-head',
-      options: '-std=c++17 -O2',
+      compiler,
+      options,
       stdin: '',
       save: false
     };

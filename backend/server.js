@@ -1178,24 +1178,88 @@ app.post('/api/getStats', (req, res) => {
  * Body: { code }
  * Compiles and runs C++ code using g++, returns { success, output, error }
  */
+/**
+ * POST /api/runCode
+ * Body: { code, language }
+ * Compiles and runs C++, Python, or Rust code in an isolated sandbox with timeout
+ */
 app.post('/api/runCode', (req, res) => {
-  const { code = '' } = req.body;
+  const { code = '', language = 'cpp' } = req.body;
   if (!code.trim()) {
     return res.json({ success: false, output: '', error: 'No code provided' });
   }
 
-  const tmpDir = '/tmp/intellicpp_run';
-  const srcFile = `${tmpDir}/main.cpp`;
-  const binFile = `${tmpDir}/program`;
+  // Create isolated unique temp directory for this execution
+  const runId = `run_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+  const tmpDir = path.join('/tmp', 'intellicpp_' + runId);
+
+  const cleanup = () => {
+    try {
+      if (fs.existsSync(tmpDir)) {
+        fs.rmSync(tmpDir, { recursive: true, force: true });
+      }
+    } catch (_) {}
+  };
 
   try {
-    if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir, { recursive: true });
+    fs.mkdirSync(tmpDir, { recursive: true });
+
+    if (language === 'python') {
+      const srcFile = path.join(tmpDir, 'script.py');
+      fs.writeFileSync(srcFile, code, 'utf8');
+
+      exec(`python3 "${srcFile}"`, { timeout: 6000 }, (runErr, stdout, stderr) => {
+        cleanup();
+        if (runErr && runErr.killed) {
+          return res.json({ success: false, output: '', error: 'Execution timed out (5s limit)' });
+        }
+        if (runErr && runErr.code !== 0 && !stdout) {
+          return res.json({ success: false, output: '', error: stderr || runErr.message });
+        }
+        res.json({ success: true, output: stdout || '', error: stderr || '' });
+      });
+      return;
+    }
+
+    if (language === 'rust') {
+      const srcFile = path.join(tmpDir, 'main.rs');
+      const binFile = path.join(tmpDir, 'program');
+      fs.writeFileSync(srcFile, code, 'utf8');
+
+      try {
+        execSync(`rustc -O -o "${binFile}" "${srcFile}" 2>&1`, { timeout: 15000 });
+      } catch (compileErr) {
+        cleanup();
+        return res.json({
+          success: false,
+          output: '',
+          error: compileErr.stdout?.toString() || compileErr.message,
+        });
+      }
+
+      exec(`timeout 5 "${binFile}"`, { timeout: 6000 }, (runErr, stdout, stderr) => {
+        cleanup();
+        if (runErr && runErr.killed) {
+          return res.json({ success: false, output: '', error: 'Execution timed out (5s limit)' });
+        }
+        if (runErr && runErr.code !== 0 && !stdout) {
+          return res.json({ success: false, output: '', error: stderr || runErr.message });
+        }
+        res.json({ success: true, output: stdout || '', error: stderr || '' });
+      });
+      return;
+    }
+
+    // Default: C++20
+    const srcFile = path.join(tmpDir, 'main.cpp');
+    const binFile = path.join(tmpDir, 'program');
     fs.writeFileSync(srcFile, code, 'utf8');
 
-    // Compile
+    // Compile C++20
     try {
-      execSync(`g++ -std=c++20 -o "${binFile}" "${srcFile}" 2>&1`, { timeout: 15000 });
+      execSync(`g++ -std=c++20 -O2 -o "${binFile}" "${srcFile}" 2>&1`, { timeout: 15000 });
     } catch (compileErr) {
+      cleanup();
       return res.json({
         success: false,
         output: '',
@@ -1203,8 +1267,9 @@ app.post('/api/runCode', (req, res) => {
       });
     }
 
-    // Run with timeout
+    // Execute with 5s timeout
     exec(`timeout 5 "${binFile}"`, { timeout: 6000 }, (runErr, stdout, stderr) => {
+      cleanup();
       if (runErr && runErr.killed) {
         return res.json({ success: false, output: '', error: 'Execution timed out (5s limit)' });
       }
@@ -1214,6 +1279,7 @@ app.post('/api/runCode', (req, res) => {
       res.json({ success: true, output: stdout || '', error: stderr || '' });
     });
   } catch (err) {
+    cleanup();
     res.json({ success: false, output: '', error: err.message });
   }
 });

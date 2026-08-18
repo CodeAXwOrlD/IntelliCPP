@@ -1,12 +1,7 @@
 #include "../include/code_runner.h"
-#include <array>
-#include <chrono>
 #include <cstdlib>
 #include <fstream>
-#include <iostream>
 #include <locale>
-#include <memory>
-#include <sstream>
 
 CodeRunner::CodeRunner() {
   // Set locale to ensure proper UTF-8 handling

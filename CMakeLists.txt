@@ -3,11 +3,15 @@ project(IntelliCPP)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 find_package(Threads REQUIRED)
 
-# Include our headers
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/backend/include)
+# Include our headers and Node-API headers
+include_directories(
+    ${CMAKE_CURRENT_SOURCE_DIR}/backend/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/backend/node_modules/node-addon-api
+)
 
 # Backend source files
 set(BACKEND_SOURCES
