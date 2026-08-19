@@ -1,0 +1,78 @@
+{
+  "header": "bitset",
+  "description": "Fixed-size sequence of N bits",
+  "methods": [
+    {
+      "name": "set",
+      "sig": "bitset& set(size_t pos)",
+      "doc": "Set bit at pos to 1.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "reset",
+      "sig": "bitset& reset(size_t pos)",
+      "doc": "Set bit at pos to 0.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "flip",
+      "sig": "bitset& flip(size_t pos)",
+      "doc": "Flip bit at pos.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "test",
+      "sig": "bool test(size_t pos) const",
+      "doc": "Return bit value at pos.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "any",
+      "sig": "bool any() const",
+      "doc": "True if any bit is 1.",
+      "complexity": "O(N)"
+    },
+    {
+      "name": "all",
+      "sig": "bool all() const",
+      "doc": "True if all bits are 1.",
+      "complexity": "O(N)"
+    },
+    {
+      "name": "none",
+      "sig": "bool none() const",
+      "doc": "True if no bits are 1.",
+      "complexity": "O(N)"
+    },
+    {
+      "name": "count",
+      "sig": "size_t count() const",
+      "doc": "Number of set bits.",
+      "complexity": "O(N)"
+    },
+    {
+      "name": "size",
+      "sig": "size_t size() const",
+      "doc": "Total number of bits (N).",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "to_string",
+      "sig": "string to_string() const",
+      "doc": "Convert to \"0\"/\"1\" string.",
+      "complexity": "O(N)"
+    },
+    {
+      "name": "to_ulong",
+      "sig": "unsigned long to_ulong()",
+      "doc": "Convert to unsigned long.",
+      "complexity": "O(N)"
+    },
+    {
+      "name": "to_ullong",
+      "sig": "unsigned long long to_ullong()",
+      "doc": "Convert to unsigned long long.",
+      "complexity": "O(N)"
+    }
+  ]
+}

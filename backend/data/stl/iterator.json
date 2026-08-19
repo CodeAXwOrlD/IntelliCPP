@@ -1,0 +1,42 @@
+{
+  "header": "iterator",
+  "description": "Iterator utilities",
+  "methods": [
+    {
+      "name": "begin",
+      "sig": "std::begin(Container& c)",
+      "doc": "Iterator to first element.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "end",
+      "sig": "std::end(Container& c)",
+      "doc": "Iterator past last element.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "advance",
+      "sig": "void advance(It& it, int n)",
+      "doc": "Advance iterator by n.",
+      "complexity": "O(n)"
+    },
+    {
+      "name": "distance",
+      "sig": "typename std::iterator_traits<It>::difference_type distance(It first, It last)",
+      "doc": "Distance between iterators.",
+      "complexity": "O(n)"
+    },
+    {
+      "name": "next",
+      "sig": "It next(It it, difference_type n = 1)",
+      "doc": "Return advanced iterator.",
+      "complexity": "O(n)"
+    },
+    {
+      "name": "prev",
+      "sig": "It prev(It it, difference_type n = 1)",
+      "doc": "Return previous iterator.",
+      "complexity": "O(n)"
+    }
+  ]
+}

@@ -1,0 +1,114 @@
+{
+  "header": "deque",
+  "description": "Double-ended queue",
+  "methods": [
+    {
+      "name": "push_back",
+      "sig": "void push_back(const T& val)",
+      "doc": "Append to back.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "push_front",
+      "sig": "void push_front(const T& val)",
+      "doc": "Prepend to front.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "pop_back",
+      "sig": "void pop_back()",
+      "doc": "Remove last element.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "pop_front",
+      "sig": "void pop_front()",
+      "doc": "Remove first element.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "emplace_back",
+      "sig": "T& emplace_back(Args&&...)",
+      "doc": "Construct in-place at back.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "emplace_front",
+      "sig": "T& emplace_front(Args&&...)",
+      "doc": "Construct at front.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "at",
+      "sig": "T& at(size_type n)",
+      "doc": "Bounds-checked access.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "front",
+      "sig": "T& front()",
+      "doc": "Access first element.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "back",
+      "sig": "T& back()",
+      "doc": "Access last element.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "size",
+      "sig": "size_type size() const",
+      "doc": "Number of elements.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "empty",
+      "sig": "bool empty() const",
+      "doc": "True if no elements.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "clear",
+      "sig": "void clear()",
+      "doc": "Remove all elements.",
+      "complexity": "O(n)"
+    },
+    {
+      "name": "begin",
+      "sig": "iterator begin()",
+      "doc": "Iterator to first.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "end",
+      "sig": "iterator end()",
+      "doc": "Iterator past last.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "insert",
+      "sig": "iterator insert(iterator pos, const T& val)",
+      "doc": "Insert before pos.",
+      "complexity": "O(n)"
+    },
+    {
+      "name": "erase",
+      "sig": "iterator erase(iterator pos)",
+      "doc": "Erase at pos.",
+      "complexity": "O(n)"
+    },
+    {
+      "name": "resize",
+      "sig": "void resize(size_type n)",
+      "doc": "Resize to n elements.",
+      "complexity": "O(n)"
+    },
+    {
+      "name": "swap",
+      "sig": "void swap(deque& other)",
+      "doc": "Swap contents.",
+      "complexity": "O(1)"
+    }
+  ]
+}

@@ -1,0 +1,126 @@
+{
+  "header": "list",
+  "description": "Doubly-linked list",
+  "methods": [
+    {
+      "name": "push_back",
+      "sig": "void push_back(const T& val)",
+      "doc": "Append to back.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "push_front",
+      "sig": "void push_front(const T& val)",
+      "doc": "Prepend to front.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "pop_back",
+      "sig": "void pop_back()",
+      "doc": "Remove last element.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "pop_front",
+      "sig": "void pop_front()",
+      "doc": "Remove first element.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "front",
+      "sig": "T& front()",
+      "doc": "Access first element.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "back",
+      "sig": "T& back()",
+      "doc": "Access last element.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "size",
+      "sig": "size_type size() const",
+      "doc": "Number of elements.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "empty",
+      "sig": "bool empty() const",
+      "doc": "True if no elements.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "clear",
+      "sig": "void clear()",
+      "doc": "Remove all elements.",
+      "complexity": "O(n)"
+    },
+    {
+      "name": "begin",
+      "sig": "iterator begin()",
+      "doc": "Iterator to first.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "end",
+      "sig": "iterator end()",
+      "doc": "Iterator past last.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "insert",
+      "sig": "iterator insert(iterator pos, const T& val)",
+      "doc": "Insert before pos.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "erase",
+      "sig": "iterator erase(iterator pos)",
+      "doc": "Erase at pos.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "remove",
+      "sig": "void remove(const T& val)",
+      "doc": "Remove all elements == val.",
+      "complexity": "O(n)"
+    },
+    {
+      "name": "sort",
+      "sig": "void sort()",
+      "doc": "Sort elements in-place.",
+      "complexity": "O(n log n)"
+    },
+    {
+      "name": "reverse",
+      "sig": "void reverse()",
+      "doc": "Reverse element order.",
+      "complexity": "O(n)"
+    },
+    {
+      "name": "unique",
+      "sig": "void unique()",
+      "doc": "Remove consecutive duplicates.",
+      "complexity": "O(n)"
+    },
+    {
+      "name": "merge",
+      "sig": "void merge(list& other)",
+      "doc": "Merge sorted list into this.",
+      "complexity": "O(n)"
+    },
+    {
+      "name": "splice",
+      "sig": "void splice(iterator pos, list& other)",
+      "doc": "Transfer elements from other.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "swap",
+      "sig": "void swap(list& other)",
+      "doc": "Swap with another list.",
+      "complexity": "O(1)"
+    }
+  ]
+}

@@ -1,0 +1,144 @@
+{
+  "header": "vector",
+  "description": "Dynamic array container",
+  "methods": [
+    {
+      "name": "push_back",
+      "sig": "void push_back(const T& val)",
+      "doc": "Appends element to end.",
+      "complexity": "O(1) amortized"
+    },
+    {
+      "name": "pop_back",
+      "sig": "void pop_back()",
+      "doc": "Removes last element. UB if empty.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "emplace_back",
+      "sig": "T& emplace_back(Args&&... args)",
+      "doc": "Constructs element in-place at end.",
+      "complexity": "O(1) amortized"
+    },
+    {
+      "name": "size",
+      "sig": "size_type size() const",
+      "doc": "Returns number of elements.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "empty",
+      "sig": "bool empty() const",
+      "doc": "Returns true if no elements.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "clear",
+      "sig": "void clear()",
+      "doc": "Removes all elements. Capacity unchanged.",
+      "complexity": "O(n)"
+    },
+    {
+      "name": "at",
+      "sig": "T& at(size_type n)",
+      "doc": "Bounds-checked access. Throws out_of_range.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "front",
+      "sig": "T& front()",
+      "doc": "Access first element.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "back",
+      "sig": "T& back()",
+      "doc": "Access last element.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "begin",
+      "sig": "iterator begin()",
+      "doc": "Iterator to first element.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "end",
+      "sig": "iterator end()",
+      "doc": "Iterator past last element.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "rbegin",
+      "sig": "reverse_iterator rbegin()",
+      "doc": "Reverse iterator to last element.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "rend",
+      "sig": "reverse_iterator rend()",
+      "doc": "Reverse iterator before first.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "insert",
+      "sig": "iterator insert(iterator pos, const T& val)",
+      "doc": "Insert before pos. O(n) if not at end.",
+      "complexity": "O(n)"
+    },
+    {
+      "name": "erase",
+      "sig": "iterator erase(iterator pos)",
+      "doc": "Erase at pos. Returns next iterator.",
+      "complexity": "O(n)"
+    },
+    {
+      "name": "resize",
+      "sig": "void resize(size_type n)",
+      "doc": "Resize to n elements.",
+      "complexity": "O(n)"
+    },
+    {
+      "name": "reserve",
+      "sig": "void reserve(size_type n)",
+      "doc": "Reserve capacity for n elements.",
+      "complexity": "O(n)"
+    },
+    {
+      "name": "capacity",
+      "sig": "size_type capacity() const",
+      "doc": "Returns current allocated capacity.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "shrink_to_fit",
+      "sig": "void shrink_to_fit()",
+      "doc": "Request to reduce capacity to size.",
+      "complexity": "O(n)"
+    },
+    {
+      "name": "data",
+      "sig": "T* data()",
+      "doc": "Pointer to underlying array.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "swap",
+      "sig": "void swap(vector& other)",
+      "doc": "Swap contents with another vector.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "assign",
+      "sig": "void assign(size_type n, const T& val)",
+      "doc": "Replace contents with n copies of val.",
+      "complexity": "O(n)"
+    },
+    {
+      "name": "max_size",
+      "sig": "size_type max_size() const",
+      "doc": "Maximum number of elements possible.",
+      "complexity": "O(1)"
+    }
+  ]
+}

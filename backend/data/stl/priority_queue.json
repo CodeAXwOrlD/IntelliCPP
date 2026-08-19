@@ -1,0 +1,48 @@
+{
+  "header": "queue",
+  "description": "Max-heap priority queue adaptor",
+  "methods": [
+    {
+      "name": "push",
+      "sig": "void push(const T& val)",
+      "doc": "Insert and heapify.",
+      "complexity": "O(log n)"
+    },
+    {
+      "name": "pop",
+      "sig": "void pop()",
+      "doc": "Remove max element.",
+      "complexity": "O(log n)"
+    },
+    {
+      "name": "top",
+      "sig": "const T& top() const",
+      "doc": "Access max element. UB if empty.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "empty",
+      "sig": "bool empty() const",
+      "doc": "True if no elements.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "size",
+      "sig": "size_type size() const",
+      "doc": "Number of elements.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "emplace",
+      "sig": "void emplace(Args&&... args)",
+      "doc": "Construct in-place and heapify.",
+      "complexity": "O(log n)"
+    },
+    {
+      "name": "swap",
+      "sig": "void swap(priority_queue& other)",
+      "doc": "Swap with another pq.",
+      "complexity": "O(1)"
+    }
+  ]
+}

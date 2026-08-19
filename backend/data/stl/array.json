@@ -1,0 +1,72 @@
+{
+  "header": "array",
+  "description": "Fixed-size stack-allocated array",
+  "methods": [
+    {
+      "name": "at",
+      "sig": "T& at(size_type n)",
+      "doc": "Bounds-checked access.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "front",
+      "sig": "T& front()",
+      "doc": "Access first element.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "back",
+      "sig": "T& back()",
+      "doc": "Access last element.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "data",
+      "sig": "T* data()",
+      "doc": "Pointer to underlying array.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "begin",
+      "sig": "iterator begin()",
+      "doc": "Iterator to first.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "end",
+      "sig": "iterator end()",
+      "doc": "Iterator past last.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "size",
+      "sig": "constexpr size_type size() const",
+      "doc": "Fixed size N.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "empty",
+      "sig": "constexpr bool empty() const",
+      "doc": "True if N == 0.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "fill",
+      "sig": "void fill(const T& val)",
+      "doc": "Fill all elements with val.",
+      "complexity": "O(N)"
+    },
+    {
+      "name": "swap",
+      "sig": "void swap(array& other)",
+      "doc": "Swap with another array.",
+      "complexity": "O(N)"
+    },
+    {
+      "name": "max_size",
+      "sig": "constexpr size_type max_size()",
+      "doc": "Same as size().",
+      "complexity": "O(1)"
+    }
+  ]
+}

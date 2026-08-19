@@ -1,0 +1,96 @@
+{
+  "header": "unordered_set",
+  "description": "Hash-table unique-element container (avg O(1) operations)",
+  "methods": [
+    {
+      "name": "insert",
+      "sig": "pair<iterator,bool> insert(const T& val)",
+      "doc": "Insert if absent.",
+      "complexity": "O(1) avg"
+    },
+    {
+      "name": "find",
+      "sig": "iterator find(const T& val)",
+      "doc": "Find val.",
+      "complexity": "O(1) avg"
+    },
+    {
+      "name": "erase",
+      "sig": "size_type erase(const T& val)",
+      "doc": "Remove val.",
+      "complexity": "O(1) avg"
+    },
+    {
+      "name": "count",
+      "sig": "size_type count(const T& val)",
+      "doc": "1 if present, 0 otherwise.",
+      "complexity": "O(1) avg"
+    },
+    {
+      "name": "contains",
+      "sig": "bool contains(const T& val) const",
+      "doc": "C++20: true if present.",
+      "complexity": "O(1) avg"
+    },
+    {
+      "name": "size",
+      "sig": "size_type size() const",
+      "doc": "Number of elements.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "empty",
+      "sig": "bool empty() const",
+      "doc": "True if no elements.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "clear",
+      "sig": "void clear()",
+      "doc": "Remove all elements.",
+      "complexity": "O(n)"
+    },
+    {
+      "name": "begin",
+      "sig": "iterator begin()",
+      "doc": "Iterator to first element.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "end",
+      "sig": "iterator end()",
+      "doc": "Iterator past last element.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "bucket_count",
+      "sig": "size_type bucket_count() const",
+      "doc": "Number of hash buckets.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "load_factor",
+      "sig": "float load_factor() const",
+      "doc": "Average elements per bucket.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "rehash",
+      "sig": "void rehash(size_type n)",
+      "doc": "Set bucket count to at least n.",
+      "complexity": "O(n)"
+    },
+    {
+      "name": "reserve",
+      "sig": "void reserve(size_type n)",
+      "doc": "Reserve for n elements.",
+      "complexity": "O(n)"
+    },
+    {
+      "name": "swap",
+      "sig": "void swap(unordered_set& other)",
+      "doc": "Swap with another unordered_set.",
+      "complexity": "O(1)"
+    }
+  ]
+}

@@ -1,0 +1,414 @@
+{
+  "ALL_HEADERS": [
+    "algorithm",
+    "array",
+    "bitset",
+    "chrono",
+    "complex",
+    "deque",
+    "exception",
+    "filesystem",
+    "forward_list",
+    "fstream",
+    "functional",
+    "future",
+    "initializer_list",
+    "iomanip",
+    "ios",
+    "iosfwd",
+    "iostream",
+    "istream",
+    "iterator",
+    "limits",
+    "list",
+    "locale",
+    "map",
+    "memory",
+    "mutex",
+    "new",
+    "numeric",
+    "optional",
+    "ostream",
+    "queue",
+    "random",
+    "ratio",
+    "regex",
+    "set",
+    "shared_mutex",
+    "sstream",
+    "stack",
+    "stdexcept",
+    "streambuf",
+    "string",
+    "string_view",
+    "thread",
+    "tuple",
+    "type_traits",
+    "typeinfo",
+    "unordered_map",
+    "unordered_set",
+    "utility",
+    "variant",
+    "vector"
+  ],
+  "ALL_STL_TYPES": [
+    {
+      "text": "vector",
+      "sig": "std::vector<T>",
+      "doc": "Dynamic array. Include <vector>.",
+      "type": "class"
+    },
+    {
+      "text": "string",
+      "sig": "std::string",
+      "doc": "String class. Include <string>.",
+      "type": "class"
+    },
+    {
+      "text": "map",
+      "sig": "std::map<K,V>",
+      "doc": "Sorted map. Include <map>.",
+      "type": "class"
+    },
+    {
+      "text": "unordered_map",
+      "sig": "std::unordered_map<K,V>",
+      "doc": "Hash map. Include <unordered_map>.",
+      "type": "class"
+    },
+    {
+      "text": "set",
+      "sig": "std::set<T>",
+      "doc": "Sorted unique set. Include <set>.",
+      "type": "class"
+    },
+    {
+      "text": "unordered_set",
+      "sig": "std::unordered_set<T>",
+      "doc": "Hash set. Include <unordered_set>.",
+      "type": "class"
+    },
+    {
+      "text": "stack",
+      "sig": "std::stack<T>",
+      "doc": "LIFO stack. Include <stack>.",
+      "type": "class"
+    },
+    {
+      "text": "queue",
+      "sig": "std::queue<T>",
+      "doc": "FIFO queue. Include <queue>.",
+      "type": "class"
+    },
+    {
+      "text": "priority_queue",
+      "sig": "std::priority_queue<T>",
+      "doc": "Max-heap. Include <queue>.",
+      "type": "class"
+    },
+    {
+      "text": "deque",
+      "sig": "std::deque<T>",
+      "doc": "Double-ended queue. Include <deque>.",
+      "type": "class"
+    },
+    {
+      "text": "list",
+      "sig": "std::list<T>",
+      "doc": "Doubly-linked list. Include <list>.",
+      "type": "class"
+    },
+    {
+      "text": "forward_list",
+      "sig": "std::forward_list<T>",
+      "doc": "Singly-linked list. Include <forward_list>.",
+      "type": "class"
+    },
+    {
+      "text": "array",
+      "sig": "std::array<T,N>",
+      "doc": "Fixed-size array. Include <array>.",
+      "type": "class"
+    },
+    {
+      "text": "bitset",
+      "sig": "std::bitset<N>",
+      "doc": "Fixed-size bitset. Include <bitset>.",
+      "type": "class"
+    },
+    {
+      "text": "pair",
+      "sig": "std::pair<T1,T2>",
+      "doc": "Two-value pair. Include <utility>.",
+      "type": "class"
+    },
+    {
+      "text": "tuple",
+      "sig": "std::tuple<T...>",
+      "doc": "N-value tuple. Include <tuple>.",
+      "type": "class"
+    },
+    {
+      "text": "unique_ptr",
+      "sig": "std::unique_ptr<T>",
+      "doc": "Unique ownership pointer. Include <memory>.",
+      "type": "class"
+    },
+    {
+      "text": "shared_ptr",
+      "sig": "std::shared_ptr<T>",
+      "doc": "Shared ownership pointer. Include <memory>.",
+      "type": "class"
+    },
+    {
+      "text": "weak_ptr",
+      "sig": "std::weak_ptr<T>",
+      "doc": "Non-owning pointer. Include <memory>.",
+      "type": "class"
+    },
+    {
+      "text": "optional",
+      "sig": "std::optional<T>",
+      "doc": "Optional value. Include <optional>.",
+      "type": "class"
+    },
+    {
+      "text": "variant",
+      "sig": "std::variant<T...>",
+      "doc": "Type-safe union. Include <variant>.",
+      "type": "class"
+    },
+    {
+      "text": "function",
+      "sig": "std::function<R(Args)>",
+      "doc": "Function wrapper. Include <functional>.",
+      "type": "class"
+    },
+    {
+      "text": "cout",
+      "sig": "std::cout",
+      "doc": "Standard output stream. Include <iostream>.",
+      "type": "object"
+    },
+    {
+      "text": "cin",
+      "sig": "std::cin",
+      "doc": "Standard input stream. Include <iostream>.",
+      "type": "object"
+    },
+    {
+      "text": "cerr",
+      "sig": "std::cerr",
+      "doc": "Standard error stream. Include <iostream>.",
+      "type": "object"
+    },
+    {
+      "text": "clog",
+      "sig": "std::clog",
+      "doc": "Standard log stream. Include <iostream>.",
+      "type": "object"
+    },
+    {
+      "text": "endl",
+      "sig": "std::endl",
+      "doc": "Stream manipulator for newline. Include <iostream>.",
+      "type": "function"
+    }
+  ],
+  "TEMPLATE_ARGS": [
+    {
+      "text": "int",
+      "sig": "int",
+      "doc": "32-bit signed integer",
+      "type": "type"
+    },
+    {
+      "text": "double",
+      "sig": "double",
+      "doc": "64-bit floating point",
+      "type": "type"
+    },
+    {
+      "text": "float",
+      "sig": "float",
+      "doc": "32-bit floating point",
+      "type": "type"
+    },
+    {
+      "text": "char",
+      "sig": "char",
+      "doc": "8-bit character",
+      "type": "type"
+    },
+    {
+      "text": "bool",
+      "sig": "bool",
+      "doc": "Boolean true/false",
+      "type": "type"
+    },
+    {
+      "text": "long",
+      "sig": "long",
+      "doc": "64-bit signed integer",
+      "type": "type"
+    },
+    {
+      "text": "string",
+      "sig": "std::string",
+      "doc": "String type (include <string>)",
+      "type": "class"
+    },
+    {
+      "text": "size_t",
+      "sig": "size_t",
+      "doc": "Unsigned size type",
+      "type": "type"
+    },
+    {
+      "text": "auto",
+      "sig": "auto",
+      "doc": "Automatic type deduction",
+      "type": "keyword"
+    },
+    {
+      "text": "unsigned",
+      "sig": "unsigned",
+      "doc": "Unsigned integer",
+      "type": "type"
+    },
+    {
+      "text": "short",
+      "sig": "short",
+      "doc": "16-bit integer",
+      "type": "type"
+    },
+    {
+      "text": "int64_t",
+      "sig": "int64_t",
+      "doc": "64-bit signed (stdint.h)",
+      "type": "type"
+    },
+    {
+      "text": "uint64_t",
+      "sig": "uint64_t",
+      "doc": "64-bit unsigned (stdint.h)",
+      "type": "type"
+    },
+    {
+      "text": "int32_t",
+      "sig": "int32_t",
+      "doc": "32-bit signed (stdint.h)",
+      "type": "type"
+    },
+    {
+      "text": "pair",
+      "sig": "std::pair<K,V>",
+      "doc": "Key-value pair",
+      "type": "class"
+    }
+  ],
+  "HEADER_TO_CONTAINERS": {
+    "vector": [
+      "vector"
+    ],
+    "string": [
+      "string"
+    ],
+    "map": [
+      "map"
+    ],
+    "unordered_map": [
+      "unordered_map"
+    ],
+    "set": [
+      "set"
+    ],
+    "unordered_set": [
+      "unordered_set"
+    ],
+    "stack": [
+      "stack"
+    ],
+    "queue": [
+      "queue",
+      "priority_queue"
+    ],
+    "deque": [
+      "deque"
+    ],
+    "list": [
+      "list"
+    ],
+    "forward_list": [
+      "forward_list"
+    ],
+    "algorithm": [
+      "algorithm"
+    ],
+    "iostream": [
+      "iostream"
+    ],
+    "fstream": [
+      "fstream"
+    ],
+    "sstream": [
+      "sstream"
+    ],
+    "iomanip": [
+      "iomanip"
+    ],
+    "memory": [
+      "memory"
+    ],
+    "utility": [
+      "utility"
+    ],
+    "numeric": [
+      "numeric"
+    ],
+    "chrono": [
+      "chrono"
+    ],
+    "bitset": [
+      "bitset"
+    ],
+    "array": [
+      "array"
+    ],
+    "thread": [
+      "thread"
+    ],
+    "mutex": [
+      "mutex"
+    ],
+    "functional": [
+      "functional"
+    ],
+    "iterator": [
+      "iterator"
+    ],
+    "random": [
+      "random"
+    ]
+  },
+  "TYPE_TO_KEY": {
+    "vector": "vector",
+    "string": "string",
+    "map": "map",
+    "unordered_map": "unordered_map",
+    "set": "set",
+    "unordered_set": "unordered_set",
+    "stack": "stack",
+    "queue": "queue",
+    "priority_queue": "priority_queue",
+    "deque": "deque",
+    "list": "list",
+    "forward_list": "forward_list",
+    "bitset": "bitset",
+    "array": "array",
+    "cout": "iostream",
+    "cin": "iostream",
+    "cerr": "iostream",
+    "clog": "iostream"
+  }
+}

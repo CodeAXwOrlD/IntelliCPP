@@ -1,0 +1,114 @@
+{
+  "header": "unordered_map",
+  "description": "Hash-table key-value container (avg O(1) operations)",
+  "methods": [
+    {
+      "name": "insert",
+      "sig": "pair<iterator,bool> insert(value_type)",
+      "doc": "Insert if key absent.",
+      "complexity": "O(1) avg"
+    },
+    {
+      "name": "emplace",
+      "sig": "pair<iterator,bool> emplace(Args&&...)",
+      "doc": "Construct in-place.",
+      "complexity": "O(1) avg"
+    },
+    {
+      "name": "find",
+      "sig": "iterator find(const Key& k)",
+      "doc": "Find by key.",
+      "complexity": "O(1) avg"
+    },
+    {
+      "name": "erase",
+      "sig": "size_type erase(const Key& k)",
+      "doc": "Remove by key.",
+      "complexity": "O(1) avg"
+    },
+    {
+      "name": "count",
+      "sig": "size_type count(const Key& k)",
+      "doc": "1 if key exists, 0 otherwise.",
+      "complexity": "O(1) avg"
+    },
+    {
+      "name": "contains",
+      "sig": "bool contains(const Key& k) const",
+      "doc": "C++20: true if key exists.",
+      "complexity": "O(1) avg"
+    },
+    {
+      "name": "at",
+      "sig": "V& at(const Key& k)",
+      "doc": "Throws if key absent.",
+      "complexity": "O(1) avg"
+    },
+    {
+      "name": "size",
+      "sig": "size_type size() const",
+      "doc": "Number of elements.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "empty",
+      "sig": "bool empty() const",
+      "doc": "True if no elements.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "clear",
+      "sig": "void clear()",
+      "doc": "Remove all elements.",
+      "complexity": "O(n)"
+    },
+    {
+      "name": "begin",
+      "sig": "iterator begin()",
+      "doc": "Iterator to first element.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "end",
+      "sig": "iterator end()",
+      "doc": "Iterator past last element.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "bucket_count",
+      "sig": "size_type bucket_count() const",
+      "doc": "Number of hash buckets.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "load_factor",
+      "sig": "float load_factor() const",
+      "doc": "Average elements per bucket.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "max_load_factor",
+      "sig": "void max_load_factor(float ml)",
+      "doc": "Set maximum load factor before rehash.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "rehash",
+      "sig": "void rehash(size_type n)",
+      "doc": "Set bucket count to at least n.",
+      "complexity": "O(n)"
+    },
+    {
+      "name": "reserve",
+      "sig": "void reserve(size_type n)",
+      "doc": "Reserve for n elements without rehash.",
+      "complexity": "O(n)"
+    },
+    {
+      "name": "swap",
+      "sig": "void swap(unordered_map& other)",
+      "doc": "Swap with another unordered_map.",
+      "complexity": "O(1)"
+    }
+  ]
+}

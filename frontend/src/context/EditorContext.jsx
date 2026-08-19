@@ -28,10 +28,11 @@ export function EditorProvider({ children }) {
     fontLigatures: true
   });
 
-  // Layout View States
+  // Layout View States (Mobile-aware initial states)
+  const isDesktop = typeof window !== 'undefined' ? window.innerWidth > 1024 : true;
   const [activeDockItem, setActiveDockItem] = useState('explorer');
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [isProfilerOpen, setIsProfilerOpen] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(isDesktop);
+  const [isProfilerOpen, setIsProfilerOpen] = useState(isDesktop);
   const [isTerminalOpen, setIsTerminalOpen] = useState(true);
   const [terminalHeight, setTerminalHeight] = useState(240);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);

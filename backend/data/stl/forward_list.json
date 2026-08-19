@@ -1,0 +1,84 @@
+{
+  "header": "forward_list",
+  "description": "Singly-linked list",
+  "methods": [
+    {
+      "name": "push_front",
+      "sig": "void push_front(const T& val)",
+      "doc": "Insert element at front.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "pop_front",
+      "sig": "void pop_front()",
+      "doc": "Remove first element.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "front",
+      "sig": "T& front()",
+      "doc": "Access first element.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "empty",
+      "sig": "bool empty() const",
+      "doc": "Return true if empty.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "clear",
+      "sig": "void clear()",
+      "doc": "Remove all elements.",
+      "complexity": "O(n)"
+    },
+    {
+      "name": "insert_after",
+      "sig": "iterator insert_after(iterator pos, const T& val)",
+      "doc": "Insert after pos.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "erase_after",
+      "sig": "iterator erase_after(iterator pos)",
+      "doc": "Erase element after pos.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "before_begin",
+      "sig": "iterator before_begin()",
+      "doc": "Iterator before first element.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "remove",
+      "sig": "void remove(const T& val)",
+      "doc": "Remove all elements equal to val.",
+      "complexity": "O(n)"
+    },
+    {
+      "name": "reverse",
+      "sig": "void reverse()",
+      "doc": "Reverse list order.",
+      "complexity": "O(n)"
+    },
+    {
+      "name": "sort",
+      "sig": "void sort()",
+      "doc": "Sort elements in-place.",
+      "complexity": "O(n log n)"
+    },
+    {
+      "name": "merge",
+      "sig": "void merge(forward_list& other)",
+      "doc": "Merge sorted list into this.",
+      "complexity": "O(n)"
+    },
+    {
+      "name": "swap",
+      "sig": "void swap(forward_list& other)",
+      "doc": "Swap with another forward_list.",
+      "complexity": "O(1)"
+    }
+  ]
+}

@@ -1,0 +1,48 @@
+{
+  "header": "stack",
+  "description": "LIFO stack adaptor (backed by deque)",
+  "methods": [
+    {
+      "name": "push",
+      "sig": "void push(const T& val)",
+      "doc": "Push element onto top.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "pop",
+      "sig": "void pop()",
+      "doc": "Remove top element. UB if empty.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "top",
+      "sig": "T& top()",
+      "doc": "Access top element. UB if empty.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "empty",
+      "sig": "bool empty() const",
+      "doc": "True if no elements.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "size",
+      "sig": "size_type size() const",
+      "doc": "Number of elements.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "emplace",
+      "sig": "void emplace(Args&&... args)",
+      "doc": "Construct element in-place at top.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "swap",
+      "sig": "void swap(stack& other)",
+      "doc": "Swap with another stack.",
+      "complexity": "O(1)"
+    }
+  ]
+}

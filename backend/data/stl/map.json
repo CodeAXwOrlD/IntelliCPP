@@ -1,0 +1,120 @@
+{
+  "header": "map",
+  "description": "Sorted key-value associative container (Red-Black Tree)",
+  "methods": [
+    {
+      "name": "insert",
+      "sig": "pair<iterator,bool> insert(value_type)",
+      "doc": "Insert key-value pair if key absent.",
+      "complexity": "O(log n)"
+    },
+    {
+      "name": "emplace",
+      "sig": "pair<iterator,bool> emplace(Args&&...)",
+      "doc": "Construct key-value in-place.",
+      "complexity": "O(log n)"
+    },
+    {
+      "name": "find",
+      "sig": "iterator find(const Key& k)",
+      "doc": "Find element by key. Returns end() if missing.",
+      "complexity": "O(log n)"
+    },
+    {
+      "name": "erase",
+      "sig": "size_type erase(const Key& k)",
+      "doc": "Remove by key. Returns count removed.",
+      "complexity": "O(log n)"
+    },
+    {
+      "name": "count",
+      "sig": "size_type count(const Key& k)",
+      "doc": "1 if key exists, 0 otherwise.",
+      "complexity": "O(log n)"
+    },
+    {
+      "name": "contains",
+      "sig": "bool contains(const Key& k) const",
+      "doc": "C++20: true if key exists.",
+      "complexity": "O(log n)"
+    },
+    {
+      "name": "at",
+      "sig": "V& at(const Key& k)",
+      "doc": "Access value. Throws out_of_range if absent.",
+      "complexity": "O(log n)"
+    },
+    {
+      "name": "size",
+      "sig": "size_type size() const",
+      "doc": "Number of elements.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "empty",
+      "sig": "bool empty() const",
+      "doc": "True if no elements.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "clear",
+      "sig": "void clear()",
+      "doc": "Remove all elements.",
+      "complexity": "O(n)"
+    },
+    {
+      "name": "begin",
+      "sig": "iterator begin()",
+      "doc": "Iterator to smallest key.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "end",
+      "sig": "iterator end()",
+      "doc": "Iterator past largest key.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "rbegin",
+      "sig": "reverse_iterator rbegin()",
+      "doc": "Reverse iterator to largest key.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "rend",
+      "sig": "reverse_iterator rend()",
+      "doc": "Reverse iterator before smallest.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "lower_bound",
+      "sig": "iterator lower_bound(const Key& k)",
+      "doc": "First key >= k.",
+      "complexity": "O(log n)"
+    },
+    {
+      "name": "upper_bound",
+      "sig": "iterator upper_bound(const Key& k)",
+      "doc": "First key > k.",
+      "complexity": "O(log n)"
+    },
+    {
+      "name": "equal_range",
+      "sig": "pair<it,it> equal_range(const Key& k)",
+      "doc": "Range of elements matching key.",
+      "complexity": "O(log n)"
+    },
+    {
+      "name": "swap",
+      "sig": "void swap(map& other)",
+      "doc": "Swap with another map.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "max_size",
+      "sig": "size_type max_size() const",
+      "doc": "Maximum possible element count.",
+      "complexity": "O(1)"
+    }
+  ]
+}

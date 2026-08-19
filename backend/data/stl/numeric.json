@@ -1,0 +1,48 @@
+{
+  "header": "numeric",
+  "description": "Numeric algorithms",
+  "methods": [
+    {
+      "name": "accumulate",
+      "sig": "T accumulate(It first, It last, T init)",
+      "doc": "Sum range starting from init.",
+      "complexity": "O(n)"
+    },
+    {
+      "name": "inner_product",
+      "sig": "T inner_product(It1 f1, It1 l1, It2 f2, T init)",
+      "doc": "Inner product of two ranges.",
+      "complexity": "O(n)"
+    },
+    {
+      "name": "partial_sum",
+      "sig": "It2 partial_sum(It first, It last, It2 out)",
+      "doc": "Prefix sums.",
+      "complexity": "O(n)"
+    },
+    {
+      "name": "adjacent_difference",
+      "sig": "It2 adjacent_difference(It first, It last, It2 out)",
+      "doc": "Differences between adjacent elements.",
+      "complexity": "O(n)"
+    },
+    {
+      "name": "iota",
+      "sig": "void iota(It first, It last, T value)",
+      "doc": "Fill with incrementing values from value.",
+      "complexity": "O(n)"
+    },
+    {
+      "name": "gcd",
+      "sig": "T gcd(T m, T n)",
+      "doc": "Greatest common divisor (C++17).",
+      "complexity": "O(log n)"
+    },
+    {
+      "name": "lcm",
+      "sig": "T lcm(T m, T n)",
+      "doc": "Least common multiple (C++17).",
+      "complexity": "O(log n)"
+    }
+  ]
+}

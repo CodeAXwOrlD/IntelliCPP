@@ -1,0 +1,210 @@
+{
+  "header": "algorithm",
+  "description": "Standard algorithms library",
+  "methods": [
+    {
+      "name": "sort",
+      "sig": "void sort(It first, It last)",
+      "doc": "Sort range ascending (Introsort).",
+      "complexity": "O(n log n)"
+    },
+    {
+      "name": "stable_sort",
+      "sig": "void stable_sort(It first, It last)",
+      "doc": "Sort preserving equal element order.",
+      "complexity": "O(n log² n)"
+    },
+    {
+      "name": "reverse",
+      "sig": "void reverse(It first, It last)",
+      "doc": "Reverse range in-place.",
+      "complexity": "O(n)"
+    },
+    {
+      "name": "find",
+      "sig": "It find(It first, It last, const T& val)",
+      "doc": "First element == val.",
+      "complexity": "O(n)"
+    },
+    {
+      "name": "find_if",
+      "sig": "It find_if(It first, It last, Pred p)",
+      "doc": "First element satisfying predicate.",
+      "complexity": "O(n)"
+    },
+    {
+      "name": "count",
+      "sig": "ptrdiff_t count(It first, It last, const T& val)",
+      "doc": "Count occurrences of val.",
+      "complexity": "O(n)"
+    },
+    {
+      "name": "count_if",
+      "sig": "ptrdiff_t count_if(It first, It last, Pred p)",
+      "doc": "Count elements satisfying predicate.",
+      "complexity": "O(n)"
+    },
+    {
+      "name": "binary_search",
+      "sig": "bool binary_search(It first, It last, const T& val)",
+      "doc": "Binary search on sorted range.",
+      "complexity": "O(log n)"
+    },
+    {
+      "name": "lower_bound",
+      "sig": "It lower_bound(It first, It last, const T& val)",
+      "doc": "First element >= val in sorted range.",
+      "complexity": "O(log n)"
+    },
+    {
+      "name": "upper_bound",
+      "sig": "It upper_bound(It first, It last, const T& val)",
+      "doc": "First element > val in sorted range.",
+      "complexity": "O(log n)"
+    },
+    {
+      "name": "min",
+      "sig": "const T& min(const T& a, const T& b)",
+      "doc": "Return smaller of a, b.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "max",
+      "sig": "const T& max(const T& a, const T& b)",
+      "doc": "Return larger of a, b.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "min_element",
+      "sig": "It min_element(It first, It last)",
+      "doc": "Iterator to minimum element.",
+      "complexity": "O(n)"
+    },
+    {
+      "name": "max_element",
+      "sig": "It max_element(It first, It last)",
+      "doc": "Iterator to maximum element.",
+      "complexity": "O(n)"
+    },
+    {
+      "name": "for_each",
+      "sig": "F for_each(It first, It last, F fn)",
+      "doc": "Apply fn to each element.",
+      "complexity": "O(n)"
+    },
+    {
+      "name": "transform",
+      "sig": "It2 transform(It first, It last, It2 out, F fn)",
+      "doc": "Apply fn, write results to out.",
+      "complexity": "O(n)"
+    },
+    {
+      "name": "copy",
+      "sig": "It2 copy(It first, It last, It2 out)",
+      "doc": "Copy range to output iterator.",
+      "complexity": "O(n)"
+    },
+    {
+      "name": "fill",
+      "sig": "void fill(It first, It last, const T& val)",
+      "doc": "Fill range with val.",
+      "complexity": "O(n)"
+    },
+    {
+      "name": "unique",
+      "sig": "It unique(It first, It last)",
+      "doc": "Remove consecutive duplicates.",
+      "complexity": "O(n)"
+    },
+    {
+      "name": "remove",
+      "sig": "It remove(It first, It last, const T& val)",
+      "doc": "Remove elements == val (logical only).",
+      "complexity": "O(n)"
+    },
+    {
+      "name": "replace",
+      "sig": "void replace(It first, It last, const T& old_v, const T& new_v)",
+      "doc": "Replace old_v with new_v.",
+      "complexity": "O(n)"
+    },
+    {
+      "name": "accumulate",
+      "sig": "T accumulate(It first, It last, T init)",
+      "doc": "Sum range (needs <numeric>).",
+      "complexity": "O(n)"
+    },
+    {
+      "name": "any_of",
+      "sig": "bool any_of(It first, It last, Pred p)",
+      "doc": "True if any element satisfies p.",
+      "complexity": "O(n)"
+    },
+    {
+      "name": "all_of",
+      "sig": "bool all_of(It first, It last, Pred p)",
+      "doc": "True if all elements satisfy p.",
+      "complexity": "O(n)"
+    },
+    {
+      "name": "none_of",
+      "sig": "bool none_of(It first, It last, Pred p)",
+      "doc": "True if no element satisfies p.",
+      "complexity": "O(n)"
+    },
+    {
+      "name": "next_permutation",
+      "sig": "bool next_permutation(It first, It last)",
+      "doc": "Advance to next lexicographic permutation.",
+      "complexity": "O(n)"
+    },
+    {
+      "name": "prev_permutation",
+      "sig": "bool prev_permutation(It first, It last)",
+      "doc": "Go to previous permutation.",
+      "complexity": "O(n)"
+    },
+    {
+      "name": "nth_element",
+      "sig": "void nth_element(It first, It nth, It last)",
+      "doc": "Partial sort: nth is correct, rest unordered.",
+      "complexity": "O(n) avg"
+    },
+    {
+      "name": "partial_sort",
+      "sig": "void partial_sort(It first, It mid, It last)",
+      "doc": "Sort [first,mid), rest unordered.",
+      "complexity": "O(n log k)"
+    },
+    {
+      "name": "rotate",
+      "sig": "It rotate(It first, It n_first, It last)",
+      "doc": "Rotate so n_first becomes new begin.",
+      "complexity": "O(n)"
+    },
+    {
+      "name": "shuffle",
+      "sig": "void shuffle(It first, It last, URNG&& g)",
+      "doc": "Randomly permute range.",
+      "complexity": "O(n)"
+    },
+    {
+      "name": "merge",
+      "sig": "It3 merge(It1 f1, It1 l1, It2 f2, It2 l2, It3 out)",
+      "doc": "Merge two sorted ranges.",
+      "complexity": "O(n+m)"
+    },
+    {
+      "name": "swap",
+      "sig": "void swap(T& a, T& b)",
+      "doc": "Swap two values.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "iter_swap",
+      "sig": "void iter_swap(It1 a, It2 b)",
+      "doc": "Swap values pointed to by iterators.",
+      "complexity": "O(1)"
+    }
+  ]
+}

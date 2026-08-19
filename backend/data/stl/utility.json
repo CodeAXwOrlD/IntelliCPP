@@ -1,0 +1,42 @@
+{
+  "header": "utility",
+  "description": "Utility functions and types",
+  "methods": [
+    {
+      "name": "make_pair",
+      "sig": "pair<T1,T2> make_pair(T1 t, T2 u)",
+      "doc": "Create a pair.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "move",
+      "sig": "T&& move(T& t)",
+      "doc": "Cast to rvalue reference.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "forward",
+      "sig": "T&& forward(T& t)",
+      "doc": "Perfect forward.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "swap",
+      "sig": "void swap(T& a, T& b)",
+      "doc": "Swap two values.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "exchange",
+      "sig": "T exchange(T& obj, U&& new_val)",
+      "doc": "Replace and return old.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "pair",
+      "sig": "pair<T1,T2>",
+      "doc": "Two-element tuple.",
+      "complexity": "-"
+    }
+  ]
+}

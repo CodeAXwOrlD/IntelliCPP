@@ -1,14 +1,69 @@
-import React, { useRef } from 'react';
+import React, { useRef, useEffect, useCallback } from 'react';
 import Editor from '@monaco-editor/react';
 import { useEditor } from '../../context/EditorContext';
 import { useEngine } from '../../context/EngineContext';
 import { deduceContextType, getDocumentation } from '../../utils/intelliDocs';
 
 export default function MonacoContainer() {
-  const { activeFile, activeLanguage, updateFileContent, setCursorPos, editorSettings, monacoEditorRef } = useEditor();
+  const { 
+    activeFile, 
+    activeLanguage, 
+    updateFileContent, 
+    setCursorPos, 
+    editorSettings, 
+    monacoEditorRef,
+    isTerminalOpen,
+    isSidebarOpen,
+    isProfilerOpen,
+    terminalHeight
+  } = useEditor();
   const { astTokens } = useEngine();
+  const wrapperRef = useRef(null);
   const completionDisposableRef = useRef(null);
   const hoverDisposableRef = useRef(null);
+
+  const triggerLayout = useCallback(() => {
+    if (monacoEditorRef.current) {
+      requestAnimationFrame(() => {
+        if (monacoEditorRef.current) {
+          monacoEditorRef.current.layout();
+        }
+      });
+    }
+  }, [monacoEditorRef]);
+
+  // ResizeObserver and Orientation / Window Resize Listeners
+  useEffect(() => {
+    const handleResize = () => {
+      triggerLayout();
+    };
+
+    window.addEventListener('resize', handleResize);
+    window.addEventListener('orientationchange', handleResize);
+
+    let observer = null;
+    if (typeof ResizeObserver !== 'undefined' && wrapperRef.current) {
+      observer = new ResizeObserver(() => {
+        triggerLayout();
+      });
+      observer.observe(wrapperRef.current);
+    }
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('orientationchange', handleResize);
+      if (observer) {
+        observer.disconnect();
+      }
+    };
+  }, [triggerLayout]);
+
+  // Trigger editor layout when panels or terminal dock resize/toggle
+  useEffect(() => {
+    triggerLayout();
+    const timer = setTimeout(triggerLayout, 300);
+    return () => clearTimeout(timer);
+  }, [isTerminalOpen, isSidebarOpen, isProfilerOpen, terminalHeight, triggerLayout]);
 
   const handleEditorWillMount = (monaco) => {
     monaco.editor.defineTheme('obsidian-cyber-dark', {
@@ -82,6 +137,7 @@ export default function MonacoContainer() {
 
   const handleEditorDidMount = (editor, monaco) => {
     monacoEditorRef.current = editor;
+    triggerLayout();
 
     editor.onDidChangeCursorPosition((e) => {
       if (e.position) {
@@ -324,6 +380,11 @@ export default function MonacoContainer() {
     const hoverProvider = monaco.languages.registerHoverProvider(langId, {
       provideHover: (model, position) => {
         try {
+          // On mobile / touch screens (< 640px), skip hover popup
+          if (typeof window !== 'undefined' && window.innerWidth < 640) {
+            return null;
+          }
+
           const word = model.getWordAtPosition(position);
           if (!word) return null;
 
@@ -331,6 +392,16 @@ export default function MonacoContainer() {
           const doc = getDocumentation(symbolName);
 
           if (doc) {
+            let exampleSection = null;
+            if (doc.example) {
+              if (doc.example.length <= 120) {
+                exampleSection = { value: `**Example**:\n\`\`\`cpp\n${doc.example}\n\`\`\`` };
+              } else {
+                const truncated = doc.example.slice(0, 100).trim() + '\n// ... (see docs)';
+                exampleSection = { value: `**Example**:\n\`\`\`cpp\n${truncated}\n\`\`\`` };
+              }
+            }
+
             return {
               range: new monaco.Range(
                 position.lineNumber,
@@ -339,11 +410,11 @@ export default function MonacoContainer() {
                 word.endColumn
               ),
               contents: [
-                { value: `### 📦 \`${doc.name}\`  \n*${doc.type} • Defined in \`${doc.header}\`*` },
+                { value: `### 📦 \`${doc.name}\`  \n*${doc.type} • \`${doc.header}\`*` },
                 { value: `\`\`\`cpp\n${doc.signature}\n\`\`\`` },
                 { value: `**Description**: ${doc.summary}` },
                 { value: `⚡ **Performance**: \`${doc.complexity}\`` },
-                ...(doc.example ? [{ value: `**Example Usage**:\n\`\`\`cpp\n${doc.example}\n\`\`\`` }] : [])
+                ...(exampleSection ? [exampleSection] : [])
               ]
             };
           }
@@ -373,8 +444,10 @@ export default function MonacoContainer() {
     hoverDisposableRef.current = hoverProvider;
   };
 
+  const isTouchScreen = typeof window !== 'undefined' && window.innerWidth < 640;
+
   return (
-    <div className="monaco-wrapper">
+    <div className="monaco-wrapper" ref={wrapperRef}>
       <Editor
         height="100%"
         theme="obsidian-cyber-dark"
@@ -387,7 +460,7 @@ export default function MonacoContainer() {
           fontSize: editorSettings.fontSize,
           fontFamily: "'JetBrains Mono', monospace",
           fontLigatures: editorSettings.fontLigatures,
-          minimap: { enabled: editorSettings.minimap, scale: 0.8 },
+          minimap: { enabled: editorSettings.minimap && !isTouchScreen, scale: 0.8 },
           wordWrap: editorSettings.wordWrap ? 'on' : 'off',
           lineNumbers: editorSettings.lineNumbers ? 'on' : 'off',
           automaticLayout: true,
@@ -401,9 +474,13 @@ export default function MonacoContainer() {
           suggestOnTriggerCharacters: true,
           quickSuggestions: { other: true, comments: false, strings: true },
           hover: {
-            enabled: true,
+            enabled: !isTouchScreen,
             delay: 200,
             sticky: true
+          },
+          suggest: {
+            showWords: true,
+            preview: true
           },
           guides: {
             indentation: true,

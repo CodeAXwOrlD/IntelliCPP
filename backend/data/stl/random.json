@@ -1,0 +1,30 @@
+{
+  "header": "random",
+  "description": "Random number generation utilities",
+  "methods": [
+    {
+      "name": "random_device",
+      "sig": "std::random_device",
+      "doc": "Non-deterministic random number source.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "mt19937",
+      "sig": "std::mt19937",
+      "doc": "Mersenne Twister engine.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "uniform_int_distribution",
+      "sig": "std::uniform_int_distribution<IntType>",
+      "doc": "Integer distribution.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "uniform_real_distribution",
+      "sig": "std::uniform_real_distribution<RealType>",
+      "doc": "Real distribution.",
+      "complexity": "O(1)"
+    }
+  ]
+}

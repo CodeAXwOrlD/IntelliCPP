@@ -7,7 +7,8 @@ import {
   Layers, 
   Sparkles, 
   Code2,
-  ChevronDown
+  ChevronDown,
+  Menu
 } from 'lucide-react';
 import { useEditor } from '../../context/EditorContext';
 import { useEngine } from '../../context/EngineContext';
@@ -39,14 +40,24 @@ export default function NavbarHUD() {
     <header className="navbar-hud glass-specular">
       {/* BRAND & LOGO */}
       <div className="brand-section">
+        {/* HAMBURGER TOGGLE FOR MOBILE / TABLET */}
+        <button
+          className="btn-ghost-icon btn-nav-hamburger"
+          onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+          title="Toggle Navigation Menu"
+          aria-label="Toggle Navigation Menu"
+        >
+          <Menu size={18} />
+        </button>
+
         <div className="logo-badge">
           <Code2 className="logo-hex" />
-          <span className="text-shimmer" style={{ fontWeight: 800 }}>IntelliCPP</span>
-          <span style={{ fontSize: '10px', color: 'var(--text-cyan)', fontFamily: 'var(--font-code)' }}>v2.0</span>
+          <span className="text-shimmer logo-text" style={{ fontWeight: 800 }}>IntelliCPP</span>
+          <span className="logo-version" style={{ fontSize: '10px', color: 'var(--text-cyan)', fontFamily: 'var(--font-code)' }}>v2.0</span>
         </div>
 
         {/* CORE STATUS PILL */}
-        <div className={`hud-pill ${isBackendConnected ? 'active-emerald' : ''}`}>
+        <div className={`hud-pill hud-core-pill ${isBackendConnected ? 'active-emerald' : ''}`}>
           <span className="animate-radar" style={{ 
             width: 6, 
             height: 6, 
@@ -58,10 +69,11 @@ export default function NavbarHUD() {
         </div>
 
         {/* LANGUAGE SELECTOR */}
-        <div style={{ position: 'relative', display: 'inline-block' }}>
+        <div className="hud-lang-select-wrapper" style={{ position: 'relative', display: 'inline-block' }}>
           <select
             value={activeLanguage.id}
             onChange={(e) => switchActiveLanguage(e.target.value)}
+            className="hud-lang-select"
             style={{
               appearance: 'none',
               background: 'rgba(255, 255, 255, 0.05)',
@@ -76,7 +88,7 @@ export default function NavbarHUD() {
             }}
           >
             {Object.values(SUPPORTED_LANGUAGES).map(lang => (
-              <option key={lang.id} value={lang.id} style={{ background: '#0E1117', color: '#F8FAFC' }}>
+              <option key={lang.id} value={lang.id} style={{ background: 'var(--bg-dropdown-option)', color: 'var(--text-primary)' }}>
                 {lang.name}
               </option>
             ))}
@@ -91,10 +103,11 @@ export default function NavbarHUD() {
           className="command-search-btn"
           onClick={() => setIsCommandPaletteOpen(true)}
           title="Open Command Palette (⌘K / Ctrl+K)"
+          aria-label="Open Command Palette"
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <Search size={14} style={{ marginTop: 2 }} />
-            <span>Search symbols, STL headers, refactor actions...</span>
+          <div className="command-search-inner" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Search size={14} className="command-search-icon" style={{ marginTop: 2 }} />
+            <span className="command-search-label">Search symbols, STL headers, refactor actions...</span>
           </div>
           <span className="kbd-shortcut">⌘K</span>
         </button>
@@ -103,13 +116,13 @@ export default function NavbarHUD() {
       {/* RIGHT TELEMETRY & ACTIONS */}
       <div className="hud-actions">
         {/* TELEMETRY PILL */}
-        <div className="hud-pill" style={{ background: 'rgba(0, 242, 254, 0.05)', borderColor: 'rgba(0, 242, 254, 0.2)' }}>
+        <div className="hud-pill hud-telemetry-pill" style={{ background: 'rgba(0, 242, 254, 0.05)', borderColor: 'rgba(0, 242, 254, 0.2)' }}>
           <Sparkles size={12} color="var(--accent-cyan)" />
-          <span style={{ color: 'var(--text-cyan)' }}>{latency}µs</span>
-          <span style={{ opacity: 0.4 }}>|</span>
-          <span>{symbolCount.toLocaleString()} Syms</span>
-          <span style={{ opacity: 0.4 }}>|</span>
-          <span style={{ color: 'var(--text-emerald)' }}>{cacheHitRate}% Hit</span>
+          <span className="telemetry-item-latency" style={{ color: 'var(--text-cyan)' }}>{latency}µs</span>
+          <span className="telemetry-separator" style={{ opacity: 0.4 }}>|</span>
+          <span className="telemetry-item-syms">{symbolCount.toLocaleString()} Syms</span>
+          <span className="telemetry-separator" style={{ opacity: 0.4 }}>|</span>
+          <span className="telemetry-item-hit" style={{ color: 'var(--text-emerald)' }}>{cacheHitRate}% Hit</span>
         </div>
 
         {/* RUN & PROFILE BUTTON */}
@@ -118,17 +131,19 @@ export default function NavbarHUD() {
           onClick={runCurrentCode}
           disabled={isRunning}
           title="Compile, Execute & Profile (F5)"
+          aria-label="Run and profile code"
         >
-          <Play size={14} fill="#07080B" />
-          <span>{isRunning ? 'Compiling...' : 'Run & Profile'}</span>
+          <Play size={14} fill="var(--bg-void)" />
+          <span className="btn-run-label">{isRunning ? 'Compiling...' : 'Run & Profile'}</span>
         </button>
 
         {/* TOGGLE BUTTONS */}
-        <div style={{ display: 'flex', gap: 4 }}>
+        <div className="hud-toggle-group" style={{ display: 'flex', gap: 4 }}>
           <button 
             className={`btn-ghost-icon ${isSidebarOpen ? 'active' : ''}`}
             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
             title="Toggle File Sidebar"
+            aria-label="Toggle File Sidebar"
           >
             <Layers size={15} />
           </button>
@@ -136,6 +151,7 @@ export default function NavbarHUD() {
             className={`btn-ghost-icon ${isProfilerOpen ? 'active' : ''}`}
             onClick={() => setIsProfilerOpen(!isProfilerOpen)}
             title="Toggle Memory & Trie Profiler"
+            aria-label="Toggle Memory & Trie Profiler"
           >
             <Cpu size={15} />
           </button>
@@ -143,6 +159,7 @@ export default function NavbarHUD() {
             className={`btn-ghost-icon ${isTerminalOpen ? 'active' : ''}`}
             onClick={() => setIsTerminalOpen(!isTerminalOpen)}
             title="Toggle Neon Terminal"
+            aria-label="Toggle Neon Terminal"
           >
             <Terminal size={15} />
           </button>

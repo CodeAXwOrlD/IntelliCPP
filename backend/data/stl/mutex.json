@@ -1,0 +1,30 @@
+{
+  "header": "mutex",
+  "description": "Mutual exclusion primitives",
+  "methods": [
+    {
+      "name": "lock",
+      "sig": "void lock()",
+      "doc": "Acquire the mutex.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "unlock",
+      "sig": "void unlock()",
+      "doc": "Release the mutex.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "try_lock",
+      "sig": "bool try_lock()",
+      "doc": "Try to acquire without blocking.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "native_handle",
+      "sig": "native_handle_type native_handle()",
+      "doc": "Get native handle.",
+      "complexity": "O(1)"
+    }
+  ]
+}

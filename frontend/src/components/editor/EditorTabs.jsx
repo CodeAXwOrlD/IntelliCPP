@@ -7,7 +7,7 @@ export default function EditorTabs() {
   const { files, activeFileId, setActiveFileId, closeFile, createNewFile, activeLanguage } = useEditor();
 
   return (
-    <div className="tabs-bar">
+    <div className="tabs-bar" role="tablist" aria-label="Editor Tabs">
       {files.map(file => {
         const isActive = file.id === activeFileId;
         const lang = getLanguageByFilename(file.name);
@@ -15,17 +15,21 @@ export default function EditorTabs() {
         return (
           <div
             key={file.id}
+            role="tab"
+            aria-selected={isActive}
             className={`tab-item ${isActive ? 'active' : ''}`}
             onClick={() => setActiveFileId(file.id)}
           >
             <FileCode size={13} color={lang.iconColor || 'var(--accent-cyan)'} />
-            <span>{file.name}</span>
+            <span className="tab-title">{file.name}</span>
             {file.dirty && <span className="tab-dirty-dot" title="Unsaved changes" />}
             {files.length > 1 && (
               <span
                 className="tab-close-btn"
                 onClick={(e) => closeFile(file.id, e)}
                 title="Close tab"
+                aria-label={`Close tab ${file.name}`}
+                role="button"
               >
                 <X size={12} />
               </span>
@@ -36,6 +40,7 @@ export default function EditorTabs() {
 
       <button
         onClick={() => createNewFile(null, activeLanguage.id)}
+        className="tab-new-btn"
         style={{
           background: 'transparent',
           border: 'none',
@@ -44,9 +49,11 @@ export default function EditorTabs() {
           padding: '6px 8px',
           display: 'flex',
           alignItems: 'center',
+          justifyContent: 'center',
           borderRadius: 'var(--radius-xs)'
         }}
         title="New Tab"
+        aria-label="Create new tab"
       >
         <Plus size={14} />
       </button>

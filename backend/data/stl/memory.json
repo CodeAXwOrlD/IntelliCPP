@@ -1,0 +1,36 @@
+{
+  "header": "memory",
+  "description": "Smart pointers and memory management",
+  "methods": [
+    {
+      "name": "make_unique",
+      "sig": "unique_ptr<T> make_unique(Args&&... args)",
+      "doc": "Create unique_ptr (preferred over new).",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "make_shared",
+      "sig": "shared_ptr<T> make_shared(Args&&... args)",
+      "doc": "Create shared_ptr (single allocation).",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "unique_ptr",
+      "sig": "unique_ptr<T>",
+      "doc": "Exclusive ownership smart pointer.",
+      "complexity": "-"
+    },
+    {
+      "name": "shared_ptr",
+      "sig": "shared_ptr<T>",
+      "doc": "Shared ownership smart pointer.",
+      "complexity": "-"
+    },
+    {
+      "name": "weak_ptr",
+      "sig": "weak_ptr<T>",
+      "doc": "Non-owning observer to shared_ptr.",
+      "complexity": "-"
+    }
+  ]
+}

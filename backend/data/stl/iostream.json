@@ -1,0 +1,114 @@
+{
+  "header": "iostream",
+  "description": "Standard I/O streams",
+  "methods": [
+    {
+      "name": "cout",
+      "sig": "std::ostream cout",
+      "doc": "Standard output stream.",
+      "complexity": "-"
+    },
+    {
+      "name": "cin",
+      "sig": "std::istream cin",
+      "doc": "Standard input stream.",
+      "complexity": "-"
+    },
+    {
+      "name": "cerr",
+      "sig": "std::ostream cerr",
+      "doc": "Standard error stream.",
+      "complexity": "-"
+    },
+    {
+      "name": "clog",
+      "sig": "std::ostream clog",
+      "doc": "Standard log stream.",
+      "complexity": "-"
+    },
+    {
+      "name": "endl",
+      "sig": "ostream& endl(ostream&)",
+      "doc": "Output newline + flush.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "flush",
+      "sig": "ostream& flush(ostream&)",
+      "doc": "Flush output buffer.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "ws",
+      "sig": "istream& ws(istream&)",
+      "doc": "Skip whitespace.",
+      "complexity": "O(n)"
+    },
+    {
+      "name": "get",
+      "sig": "int get()",
+      "doc": "Read one character.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "getline",
+      "sig": "istream& getline(char*,int)",
+      "doc": "Read line of input.",
+      "complexity": "O(n)"
+    },
+    {
+      "name": "put",
+      "sig": "ostream& put(char)",
+      "doc": "Write one character.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "peek",
+      "sig": "int peek()",
+      "doc": "Look at next character.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "read",
+      "sig": "istream& read(char*,int)",
+      "doc": "Read bytes.",
+      "complexity": "O(n)"
+    },
+    {
+      "name": "write",
+      "sig": "ostream& write(const char*,int)",
+      "doc": "Write bytes.",
+      "complexity": "O(n)"
+    },
+    {
+      "name": "ignore",
+      "sig": "istream& ignore(int,int)",
+      "doc": "Skip characters.",
+      "complexity": "O(n)"
+    },
+    {
+      "name": "good",
+      "sig": "bool good() const",
+      "doc": "Check stream is good.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "eof",
+      "sig": "bool eof() const",
+      "doc": "Check end-of-file flag.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "fail",
+      "sig": "bool fail() const",
+      "doc": "Check fail bit.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "bad",
+      "sig": "bool bad() const",
+      "doc": "Check badbit.",
+      "complexity": "O(1)"
+    }
+  ]
+}

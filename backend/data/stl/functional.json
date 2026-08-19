@@ -1,0 +1,36 @@
+{
+  "header": "functional",
+  "description": "Function objects and wrappers",
+  "methods": [
+    {
+      "name": "bind",
+      "sig": "std::bind(F&& f, Args&&... args)",
+      "doc": "Bind arguments to function.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "function",
+      "sig": "std::function<R(Args...)>",
+      "doc": "Type-erased callable wrapper.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "mem_fn",
+      "sig": "std::mem_fn(F f)",
+      "doc": "Wrap pointer to member.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "ref",
+      "sig": "std::ref(T& t)",
+      "doc": "Create reference wrapper.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "cref",
+      "sig": "std::cref(const T& t)",
+      "doc": "Create const reference wrapper.",
+      "complexity": "O(1)"
+    }
+  ]
+}

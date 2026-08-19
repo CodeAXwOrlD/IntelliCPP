@@ -1,0 +1,42 @@
+{
+  "header": "iomanip",
+  "description": "I/O manipulators",
+  "methods": [
+    {
+      "name": "setprecision",
+      "sig": "std::setprecision(int n)",
+      "doc": "Set decimal precision.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "setw",
+      "sig": "std::setw(int n)",
+      "doc": "Set field width.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "setfill",
+      "sig": "std::setfill(char c)",
+      "doc": "Set fill character.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "fixed",
+      "sig": "std::fixed",
+      "doc": "Use fixed-point notation.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "scientific",
+      "sig": "std::scientific",
+      "doc": "Use scientific notation.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "boolalpha",
+      "sig": "std::boolalpha",
+      "doc": "Format bool as true/false.",
+      "complexity": "O(1)"
+    }
+  ]
+}

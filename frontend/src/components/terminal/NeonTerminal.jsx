@@ -1,5 +1,5 @@
-import React, { useRef, useEffect } from 'react';
-import { Trash2, X, ChevronUp, ChevronDown } from 'lucide-react';
+import React, { useRef, useEffect, useState } from 'react';
+import { Trash2, X, ChevronUp, ChevronDown, Minimize2, Maximize2 } from 'lucide-react';
 import { useEngine } from '../../context/EngineContext';
 import { useEditor } from '../../context/EditorContext';
 
@@ -14,16 +14,18 @@ export default function NeonTerminal() {
   } = useEngine();
 
   const { terminalHeight, setTerminalHeight, setIsTerminalOpen } = useEditor();
+  const [isMinimized, setIsMinimized] = useState(false);
   const logsEndRef = useRef(null);
 
   // Auto-scroll on new output
   useEffect(() => {
-    if (logsEndRef.current) {
+    if (logsEndRef.current && !isMinimized) {
       logsEndRef.current.scrollTop = logsEndRef.current.scrollHeight;
     }
-  }, [outputLogs, assemblyOutput]);
+  }, [outputLogs, assemblyOutput, isMinimized]);
 
   const toggleHeight = (direction) => {
+    if (isMinimized) setIsMinimized(false);
     if (direction === 'up') {
       setTerminalHeight(prev => Math.min(prev + 80, 500));
     } else {
@@ -32,57 +34,93 @@ export default function NeonTerminal() {
   };
 
   return (
-    <div className="terminal-dock" style={{ height: `${terminalHeight}px` }}>
+    <div 
+      className={`terminal-dock ${isMinimized ? 'minimized' : ''}`} 
+      style={{ height: isMinimized ? '36px' : `${terminalHeight}px` }}
+    >
       {/* TERMINAL HEADER BAR */}
       <div className="terminal-header-bar">
-        <div className="terminal-tabs">
+        <div className="terminal-tabs" role="tablist" aria-label="Terminal Tabs">
           <button
+            role="tab"
+            aria-selected={terminalActiveTab === 'output'}
             className={`term-tab-btn ${terminalActiveTab === 'output' ? 'active' : ''}`}
-            onClick={() => setTerminalActiveTab('output')}
+            onClick={() => {
+              setTerminalActiveTab('output');
+              if (isMinimized) setIsMinimized(false);
+            }}
           >
             Output & Logs
           </button>
           <button
+            role="tab"
+            aria-selected={terminalActiveTab === 'assembly'}
             className={`term-tab-btn ${terminalActiveTab === 'assembly' ? 'active' : ''}`}
-            onClick={() => setTerminalActiveTab('assembly')}
+            onClick={() => {
+              setTerminalActiveTab('assembly');
+              if (isMinimized) setIsMinimized(false);
+            }}
           >
             Clang Assembly (.s)
           </button>
           <button
+            role="tab"
+            aria-selected={terminalActiveTab === 'terminal'}
             className={`term-tab-btn ${terminalActiveTab === 'terminal' ? 'active' : ''}`}
-            onClick={() => setTerminalActiveTab('terminal')}
+            onClick={() => {
+              setTerminalActiveTab('terminal');
+              if (isMinimized) setIsMinimized(false);
+            }}
           >
             Interactive CLI
           </button>
         </div>
 
         {/* CONTROLS */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        <div className="terminal-controls" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          {/* MINIMIZE / EXPAND TOGGLE FOR BOTTOM SHEET */}
+          <button
+            onClick={() => setIsMinimized(prev => !prev)}
+            className="term-control-btn"
+            style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: 4, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            title={isMinimized ? 'Expand Terminal' : 'Minimize Terminal'}
+            aria-label={isMinimized ? 'Expand Terminal' : 'Minimize Terminal'}
+          >
+            {isMinimized ? <Maximize2 size={13} /> : <Minimize2 size={13} />}
+          </button>
           <button
             onClick={() => toggleHeight('down')}
-            style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: 2 }}
+            className="term-control-btn term-resize-btn"
+            style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: 4, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
             title="Decrease Terminal Height"
+            aria-label="Decrease Terminal Height"
           >
             <ChevronDown size={14} />
           </button>
           <button
             onClick={() => toggleHeight('up')}
-            style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: 2 }}
+            className="term-control-btn term-resize-btn"
+            style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: 4, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
             title="Increase Terminal Height"
+            aria-label="Increase Terminal Height"
           >
             <ChevronUp size={14} />
           </button>
           <button
             onClick={clearLogs}
-            style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: 2 }}
+            className="term-control-btn"
+            style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: 4, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
             title="Clear Logs"
+            aria-label="Clear Terminal Logs"
           >
             <Trash2 size={13} />
           </button>
           <button
             onClick={() => setIsTerminalOpen(false)}
-            style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: 2 }}
+            className="term-control-btn"
+            style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: 4, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
             title="Close Terminal"
+            aria-label="Close Terminal"
           >
             <X size={14} />
           </button>

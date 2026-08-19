@@ -1,0 +1,198 @@
+{
+  "header": "string",
+  "description": "Dynamic string container",
+  "methods": [
+    {
+      "name": "length",
+      "sig": "size_type length() const",
+      "doc": "Returns string length.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "size",
+      "sig": "size_type size() const",
+      "doc": "Same as length().",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "empty",
+      "sig": "bool empty() const",
+      "doc": "Returns true if string is empty.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "clear",
+      "sig": "void clear()",
+      "doc": "Clears string content.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "substr",
+      "sig": "string substr(size_t pos=0, size_t len=npos)",
+      "doc": "Returns substring.",
+      "complexity": "O(n)"
+    },
+    {
+      "name": "find",
+      "sig": "size_t find(const string& s, size_t pos=0)",
+      "doc": "First occurrence of s at or after pos.",
+      "complexity": "O(n*m)"
+    },
+    {
+      "name": "rfind",
+      "sig": "size_t rfind(const string& s, size_t pos=npos)",
+      "doc": "Last occurrence of s.",
+      "complexity": "O(n*m)"
+    },
+    {
+      "name": "append",
+      "sig": "string& append(const string& s)",
+      "doc": "Appends s to end.",
+      "complexity": "O(n)"
+    },
+    {
+      "name": "push_back",
+      "sig": "void push_back(char c)",
+      "doc": "Appends single character.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "pop_back",
+      "sig": "void pop_back()",
+      "doc": "Removes last character.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "insert",
+      "sig": "string& insert(size_t pos, const string& s)",
+      "doc": "Inserts s at position pos.",
+      "complexity": "O(n)"
+    },
+    {
+      "name": "erase",
+      "sig": "string& erase(size_t pos=0, size_t len=npos)",
+      "doc": "Erases len chars starting at pos.",
+      "complexity": "O(n)"
+    },
+    {
+      "name": "replace",
+      "sig": "string& replace(size_t pos, size_t len, const string& s)",
+      "doc": "Replaces [pos,pos+len) with s.",
+      "complexity": "O(n)"
+    },
+    {
+      "name": "c_str",
+      "sig": "const char* c_str() const",
+      "doc": "Null-terminated C string.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "at",
+      "sig": "char& at(size_t pos)",
+      "doc": "Bounds-checked char access.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "front",
+      "sig": "char& front()",
+      "doc": "First character.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "back",
+      "sig": "char& back()",
+      "doc": "Last character.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "begin",
+      "sig": "iterator begin()",
+      "doc": "Iterator to first character.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "end",
+      "sig": "iterator end()",
+      "doc": "Iterator past last character.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "compare",
+      "sig": "int compare(const string& s) const",
+      "doc": "Lexicographic comparison.",
+      "complexity": "O(n)"
+    },
+    {
+      "name": "capacity",
+      "sig": "size_type capacity() const",
+      "doc": "Allocated storage capacity.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "reserve",
+      "sig": "void reserve(size_type n)",
+      "doc": "Reserve at least n characters.",
+      "complexity": "O(n)"
+    },
+    {
+      "name": "shrink_to_fit",
+      "sig": "void shrink_to_fit()",
+      "doc": "Reduce capacity to size.",
+      "complexity": "O(n)"
+    },
+    {
+      "name": "find_first_of",
+      "sig": "size_t find_first_of(const string& s, size_t pos=0)",
+      "doc": "First char matching any in s.",
+      "complexity": "O(n)"
+    },
+    {
+      "name": "find_last_of",
+      "sig": "size_t find_last_of(const string& s, size_t pos=npos)",
+      "doc": "Last char matching any in s.",
+      "complexity": "O(n)"
+    },
+    {
+      "name": "find_first_not_of",
+      "sig": "size_t find_first_not_of(const string& s)",
+      "doc": "First char NOT matching any in s.",
+      "complexity": "O(n)"
+    },
+    {
+      "name": "find_last_not_of",
+      "sig": "size_t find_last_not_of(const string& s)",
+      "doc": "Last char NOT matching any in s.",
+      "complexity": "O(n)"
+    },
+    {
+      "name": "swap",
+      "sig": "void swap(string& other)",
+      "doc": "Swap with another string.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "copy",
+      "sig": "size_t copy(char* dest, size_t len, size_t pos=0)",
+      "doc": "Copies len chars to dest.",
+      "complexity": "O(n)"
+    },
+    {
+      "name": "data",
+      "sig": "const char* data() const",
+      "doc": "Pointer to underlying char array.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "assign",
+      "sig": "string& assign(const string& s)",
+      "doc": "Replaces string content.",
+      "complexity": "O(n)"
+    },
+    {
+      "name": "max_size",
+      "sig": "size_type max_size() const",
+      "doc": "Maximum possible string length.",
+      "complexity": "O(1)"
+    }
+  ]
+}

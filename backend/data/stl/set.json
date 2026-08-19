@@ -1,0 +1,114 @@
+{
+  "header": "set",
+  "description": "Sorted unique-element container (Red-Black Tree)",
+  "methods": [
+    {
+      "name": "insert",
+      "sig": "pair<iterator,bool> insert(const T& val)",
+      "doc": "Insert if not already present.",
+      "complexity": "O(log n)"
+    },
+    {
+      "name": "emplace",
+      "sig": "pair<iterator,bool> emplace(Args&&...)",
+      "doc": "Construct in-place if absent.",
+      "complexity": "O(log n)"
+    },
+    {
+      "name": "find",
+      "sig": "iterator find(const T& val)",
+      "doc": "Find val. Returns end() if absent.",
+      "complexity": "O(log n)"
+    },
+    {
+      "name": "erase",
+      "sig": "size_type erase(const T& val)",
+      "doc": "Remove val.",
+      "complexity": "O(log n)"
+    },
+    {
+      "name": "count",
+      "sig": "size_type count(const T& val)",
+      "doc": "1 if present, 0 otherwise.",
+      "complexity": "O(log n)"
+    },
+    {
+      "name": "contains",
+      "sig": "bool contains(const T& val) const",
+      "doc": "C++20: true if val exists.",
+      "complexity": "O(log n)"
+    },
+    {
+      "name": "size",
+      "sig": "size_type size() const",
+      "doc": "Number of unique elements.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "empty",
+      "sig": "bool empty() const",
+      "doc": "True if no elements.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "clear",
+      "sig": "void clear()",
+      "doc": "Remove all elements.",
+      "complexity": "O(n)"
+    },
+    {
+      "name": "begin",
+      "sig": "iterator begin()",
+      "doc": "Iterator to smallest element.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "end",
+      "sig": "iterator end()",
+      "doc": "Iterator past largest element.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "rbegin",
+      "sig": "reverse_iterator rbegin()",
+      "doc": "Reverse iterator to largest.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "rend",
+      "sig": "reverse_iterator rend()",
+      "doc": "Reverse iterator before smallest.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "lower_bound",
+      "sig": "iterator lower_bound(const T& val)",
+      "doc": "First element >= val.",
+      "complexity": "O(log n)"
+    },
+    {
+      "name": "upper_bound",
+      "sig": "iterator upper_bound(const T& val)",
+      "doc": "First element > val.",
+      "complexity": "O(log n)"
+    },
+    {
+      "name": "equal_range",
+      "sig": "pair<it,it> equal_range(const T& val)",
+      "doc": "Range of elements equal to val.",
+      "complexity": "O(log n)"
+    },
+    {
+      "name": "swap",
+      "sig": "void swap(set& other)",
+      "doc": "Swap with another set.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "max_size",
+      "sig": "size_type max_size() const",
+      "doc": "Maximum possible element count.",
+      "complexity": "O(1)"
+    }
+  ]
+}

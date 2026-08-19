@@ -29,6 +29,14 @@
   --accent-red-glow: rgba(244, 63, 94, 0.3);
   --accent-amber: #F59E0B;
 
+  /* Gradients */
+  --gradient-run: linear-gradient(135deg, #00F2FE 0%, #4FACFE 50%, #10B981 100%);
+  --gradient-run-hover: linear-gradient(135deg, #38BDF8 0%, #00F2FE 50%, #34D399 100%);
+
+  /* Popups & Widgets */
+  --bg-monaco-widget: #0D1117;
+  --bg-dropdown-option: #0E1117;
+
   /* Typography Colors */
   --text-primary: #F8FAFC;
   --text-secondary: #CBD5E1;

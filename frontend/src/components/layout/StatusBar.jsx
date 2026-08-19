@@ -13,12 +13,13 @@ export default function StatusBar() {
       <div className="status-left">
         <div className="status-item" style={{ color: isBackendConnected ? 'var(--text-emerald)' : 'var(--accent-red)' }}>
           {isBackendConnected ? <Wifi size={12} /> : <WifiOff size={12} />}
-          <span>{isBackendConnected ? 'Clang Core Connected (127.0.0.1:3001)' : 'Offline / Standalone Mode'}</span>
+          <span className="status-text-desktop">{isBackendConnected ? 'Clang Core Connected (127.0.0.1:3001)' : 'Offline / Standalone Mode'}</span>
+          <span className="status-text-mobile">{isBackendConnected ? 'Connected' : 'Offline'}</span>
         </div>
 
-        <div className="status-item">
+        <div className="status-item status-item-hide-mobile">
           <Database size={12} color="var(--accent-violet)" />
-          <span>Trie Memory: ~{executionStats.memoryUsageKb} KB</span>
+          <span>Trie: ~{executionStats.memoryUsageKb} KB</span>
         </div>
       </div>
 
@@ -28,11 +29,11 @@ export default function StatusBar() {
           <span>Ln {cursorPos.line}, Col {cursorPos.column}</span>
         </div>
 
-        <div className="status-item">
+        <div className="status-item status-item-hide-mobile">
           <span>Spaces: 4</span>
         </div>
 
-        <div className="status-item">
+        <div className="status-item status-item-hide-mobile">
           <span>UTF-8</span>
         </div>
 

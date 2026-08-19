@@ -1,0 +1,66 @@
+{
+  "header": "fstream",
+  "description": "File stream I/O",
+  "methods": [
+    {
+      "name": "open",
+      "sig": "void open(const string& filename)",
+      "doc": "Open file.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "close",
+      "sig": "void close()",
+      "doc": "Close file.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "is_open",
+      "sig": "bool is_open() const",
+      "doc": "Check whether file is open.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "good",
+      "sig": "bool good() const",
+      "doc": "Check stream state.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "read",
+      "sig": "fstream& read(char* s, streamsize n)",
+      "doc": "Read characters from file.",
+      "complexity": "O(n)"
+    },
+    {
+      "name": "write",
+      "sig": "fstream& write(const char* s, streamsize n)",
+      "doc": "Write characters to file.",
+      "complexity": "O(n)"
+    },
+    {
+      "name": "seekg",
+      "sig": "fstream& seekg(streampos pos)",
+      "doc": "Set input position.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "seekp",
+      "sig": "fstream& seekp(streampos pos)",
+      "doc": "Set output position.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "tellg",
+      "sig": "streampos tellg()",
+      "doc": "Get input position.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "tellp",
+      "sig": "streampos tellp()",
+      "doc": "Get output position.",
+      "complexity": "O(1)"
+    }
+  ]
+}

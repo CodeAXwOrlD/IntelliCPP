@@ -1,0 +1,48 @@
+{
+  "header": "sstream",
+  "description": "String stream I/O",
+  "methods": [
+    {
+      "name": "str",
+      "sig": "string str() const",
+      "doc": "Return underlying string.",
+      "complexity": "O(n)"
+    },
+    {
+      "name": "str",
+      "sig": "void str(const string& s)",
+      "doc": "Set underlying string.",
+      "complexity": "O(n)"
+    },
+    {
+      "name": "clear",
+      "sig": "void clear()",
+      "doc": "Clear stream state flags.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "seekg",
+      "sig": "stringstream& seekg(pos_type pos)",
+      "doc": "Set input position.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "seekp",
+      "sig": "stringstream& seekp(pos_type pos)",
+      "doc": "Set output position.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "tellg",
+      "sig": "pos_type tellg()",
+      "doc": "Get input position.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "tellp",
+      "sig": "pos_type tellp()",
+      "doc": "Get output position.",
+      "complexity": "O(1)"
+    }
+  ]
+}

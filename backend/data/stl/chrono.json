@@ -1,0 +1,54 @@
+{
+  "header": "chrono",
+  "description": "Time utilities",
+  "methods": [
+    {
+      "name": "system_clock",
+      "sig": "std::chrono::system_clock",
+      "doc": "Wall-clock time.",
+      "complexity": "-"
+    },
+    {
+      "name": "steady_clock",
+      "sig": "std::chrono::steady_clock",
+      "doc": "Monotonic clock for measurements.",
+      "complexity": "-"
+    },
+    {
+      "name": "high_resolution_clock",
+      "sig": "std::chrono::high_resolution_clock",
+      "doc": "Highest resolution clock available.",
+      "complexity": "-"
+    },
+    {
+      "name": "duration_cast",
+      "sig": "Duration duration_cast(Duration d)",
+      "doc": "Convert between duration types.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "seconds",
+      "sig": "std::chrono::seconds",
+      "doc": "Duration of one second.",
+      "complexity": "-"
+    },
+    {
+      "name": "milliseconds",
+      "sig": "std::chrono::milliseconds",
+      "doc": "Duration of one millisecond.",
+      "complexity": "-"
+    },
+    {
+      "name": "microseconds",
+      "sig": "std::chrono::microseconds",
+      "doc": "Duration of one microsecond.",
+      "complexity": "-"
+    },
+    {
+      "name": "nanoseconds",
+      "sig": "std::chrono::nanoseconds",
+      "doc": "Duration of one nanosecond.",
+      "complexity": "-"
+    }
+  ]
+}

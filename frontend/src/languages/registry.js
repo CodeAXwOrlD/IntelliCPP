@@ -1,3 +1,11 @@
+/**
+ * IntelliCPP Frontend Language Registry
+ * Client-side language configuration, Monaco language IDs, and syntax templates.
+ *
+ * NOTE: The language keys ('cpp', 'python', 'rust') MUST remain synchronized with
+ * backend/languages/registry.js so execution payloads map 1:1 to server toolchains.
+ */
+
 export const SUPPORTED_LANGUAGES = {
   cpp: {
     id: 'cpp',

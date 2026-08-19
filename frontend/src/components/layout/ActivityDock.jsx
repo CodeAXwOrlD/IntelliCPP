@@ -36,6 +36,9 @@ export default function ActivityDock() {
         <div 
           className="dock-item"
           title="New File"
+          aria-label="New File"
+          role="button"
+          tabIndex={0}
           onClick={() => createNewFile(null, activeLanguage.id)}
         >
           <FilePlus size={18} />
@@ -43,6 +46,9 @@ export default function ActivityDock() {
         <div 
           className="dock-item"
           title="Save Active File (⌘S)"
+          aria-label="Save Active File"
+          role="button"
+          tabIndex={0}
           onClick={saveActiveFile}
         >
           <Save size={18} />
@@ -54,6 +60,9 @@ export default function ActivityDock() {
         <div 
           className={`dock-item ${activeDockItem === 'explorer' && isSidebarOpen ? 'active' : ''}`}
           title="File Explorer"
+          aria-label="File Explorer"
+          role="button"
+          tabIndex={0}
           onClick={() => handleDockClick('explorer')}
         >
           <FolderTree size={19} />
@@ -62,6 +71,9 @@ export default function ActivityDock() {
         <div 
           className={`dock-item ${activeDockItem === 'symbols' && isSidebarOpen ? 'active' : ''}`}
           title="AST Symbol Outline"
+          aria-label="AST Symbol Outline"
+          role="button"
+          tabIndex={0}
           onClick={() => handleDockClick('symbols')}
         >
           <Binary size={19} />
@@ -70,6 +82,9 @@ export default function ActivityDock() {
         <div 
           className={`dock-item ${activeDockItem === 'inject' && isSidebarOpen ? 'active' : ''}`}
           title="Quick Header & Library Injector"
+          aria-label="Quick Header & Library Injector"
+          role="button"
+          tabIndex={0}
           onClick={() => handleDockClick('inject')}
         >
           <Zap size={19} />
@@ -80,6 +95,9 @@ export default function ActivityDock() {
         <div 
           className="dock-item"
           title="Settings"
+          aria-label="Editor Settings"
+          role="button"
+          tabIndex={0}
           onClick={() => handleDockClick('settings')}
         >
           <Settings size={18} />

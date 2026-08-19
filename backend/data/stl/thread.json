@@ -1,0 +1,30 @@
+{
+  "header": "thread",
+  "description": "Thread support library",
+  "methods": [
+    {
+      "name": "join",
+      "sig": "void join()",
+      "doc": "Wait for thread to finish.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "detach",
+      "sig": "void detach()",
+      "doc": "Release thread resources.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "joinable",
+      "sig": "bool joinable() const",
+      "doc": "Check if thread can be joined.",
+      "complexity": "O(1)"
+    },
+    {
+      "name": "hardware_concurrency",
+      "sig": "static unsigned int hardware_concurrency()",
+      "doc": "Number of concurrent threads supported.",
+      "complexity": "O(1)"
+    }
+  ]
+}

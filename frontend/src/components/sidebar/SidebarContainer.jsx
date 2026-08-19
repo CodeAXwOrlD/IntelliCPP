@@ -19,31 +19,43 @@ export default function SidebarContainer() {
   };
 
   return (
-    <div className="sidebar-panel">
-      <div className="sidebar-header">
-        <span>{titles[activeDockItem] || 'Sidebar'}</span>
-        <button
-          onClick={() => setIsSidebarOpen(false)}
-          style={{
-            background: 'none',
-            border: 'none',
-            color: 'var(--text-muted)',
-            cursor: 'pointer',
-            padding: 2,
-            display: 'flex'
-          }}
-          title="Close Sidebar"
-        >
-          <X size={14} />
-        </button>
-      </div>
+    <>
+      <div 
+        className="drawer-backdrop sidebar-backdrop" 
+        onClick={() => setIsSidebarOpen(false)}
+        aria-label="Close sidebar overlay"
+      />
+      <div className="sidebar-panel">
+        <div className="sidebar-header">
+          <span>{titles[activeDockItem] || 'Sidebar'}</span>
+          <button
+            onClick={() => setIsSidebarOpen(false)}
+            className="sidebar-close-btn"
+            style={{
+              background: 'none',
+              border: 'none',
+              color: 'var(--text-muted)',
+              cursor: 'pointer',
+              padding: 6,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderRadius: 'var(--radius-xs)'
+            }}
+            title="Close Sidebar"
+            aria-label="Close Sidebar"
+          >
+            <X size={16} />
+          </button>
+        </div>
 
-      <div className="sidebar-content">
-        {activeDockItem === 'explorer' && <FileExplorer />}
-        {activeDockItem === 'symbols' && <SymbolOutline />}
-        {activeDockItem === 'inject' && <QuickInject />}
-        {activeDockItem === 'settings' && <SettingsView />}
+        <div className="sidebar-content">
+          {activeDockItem === 'explorer' && <FileExplorer />}
+          {activeDockItem === 'symbols' && <SymbolOutline />}
+          {activeDockItem === 'inject' && <QuickInject />}
+          {activeDockItem === 'settings' && <SettingsView />}
+        </div>
       </div>
-    </div>
+    </>
   );
 }
