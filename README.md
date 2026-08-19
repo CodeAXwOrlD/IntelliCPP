@@ -8,9 +8,9 @@
 [![Theme](https://img.shields.io/badge/Design-Obsidian%20Cyber--Glass-8B5CF6?style=for-the-badge)](https://github.com/CodeAXwOrlD/IntelliCPP)
 [![License](https://img.shields.io/badge/License-MIT-00F2FE?style=for-the-badge)](LICENSE)
 
-**A high-performance, developer-first C++ IDE featuring a native C++20 Trie engine, real-time memory visualizer, Big-O complexity analyzer, and an ultra-modern Bento Grid glassmorphic UI.**
+**A high-performance, developer-first C++ IDE featuring a native C++20 Trie engine, real-time AST Big-O complexity analyzer, interactive memory visualizer, sandboxed code execution, and an ultra-modern Bento Grid glassmorphic UI with draggable resizers.**
 
-[✨ Live Features](#-key-features) • [🏗️ Architecture](#-system-architecture) • [📊 Benchmarks](#-benchmarks--performance) • [🚀 Quick Start](#-quick-start) • [💡 Multi-Language](#-pluggable-multi-language-support)
+[✨ Key Features](#-key-features) • [🏗️ Architecture](#-system-architecture) • [📊 Real-Time AST Complexity](#-real-time-ast-complexity-analyzer) • [🛡️ Security & Sandboxing](#-security--sandboxing-defense-in-depth) • [🚀 Quick Start](#-quick-start) • [📈 Scaling & Probes](#-high-concurrency-scaling--k8s-probes)
 
 </div>
 
@@ -18,27 +18,30 @@
 
 ## 📸 Overview & UI Design
 
-IntelliCPP reimagines modern developer tooling by blending bare-metal C++20 execution performance with a high-fidelity **Obsidian Cyber-Glass** user interface inspired by Linear and Zed.
+IntelliCPP blends bare-metal C++20 execution performance with a high-fidelity **Obsidian Cyber-Glass** user interface:
 
 ```
 ┌────────────────────────────────────────────────────────────────────────────────────────┐
-│  ⚡ INTELLICPP HUD      [ C++20 Mode ▾ ]    [ ▶ Run Code ]    [ 18µs | 10.4K Symbols ] │
+│  ⚡ INTELLICPP HUD      [ C++20 Mode ▾ ]    [ ▶ Run & Profile ]  [ 18µs | 10.4K Syms ] │
 ├───────────┬────────────────────────────────────────────┬───────────────────────────────┤
-│ EXPLORER  │ main.cpp ×                                  │ 📊 BENTO PROFILER             │
+│ EXPLORER  │ main.cpp ×                                  │ 📊 LIVE ENGINE PROFILER       │
 │ ├─ src/   │ 1  #include <vector>                       │ ┌───────────────────────────┐ │
 │ ├─ include│ 2  #include <algorithm>                    │ │ Trie Search Graph (O(L))  │ │
 │ └─ tests/ │ 3  int main() {                            │ │ Root ─► 'v' ─► 'e' ─► 'c' │ │
 │           │ 4      std::vector<int> nums = {3, 1, 4};  │ └───────────────────────────┘ │
-│ SYMBOLS   │ 5      nums.                               │ ┌───────────────────────────┐ │
-│ • nums    │        ┌─────────────────────────────┐     │ │ STL Heap Visualizer       │ │
-│ • main()  │        │ • push_back(val)   O(1) am. │     │ │ Cap: 8 | Size: 5 | [80B]  │ │
-│           │        │ • emplace_back()   O(1)     │     │ └───────────────────────────┘ │
-│ QUICK     │        │ • pop_back()       O(1)     │     │ ┌───────────────────────────┐ │
-│ INJECT    │        └─────────────────────────────┘     │ │ Big-O Complexity: O(N log N)│ │
-│ +<vector> │                                            │ └───────────────────────────┘ │
+│ SYMBOLS   │ 5      sort(nums.begin(), nums.end());     │ ┌───────────────────────────┐ │
+│ • nums    │ 6      nums.                               │ │ STL Vector Heap Visualizer│ │
+│ • main()  │        ┌─────────────────────────────┐     │ │ Cap: 8 | Size: 5 | [80B]  │ │
+│           │        │ • push_back(val)   O(1) am. │     │ └───────────────────────────┘ │
+│ QUICK     │        │ • emplace_back()   O(1)     │     │ ┌───────────────────────────┐ │
+│ INJECT    │        │ • pop_back()       O(1)     │     │ │ TIME:  O(N log N)         │ │
+│ +<vector> │        └─────────────────────────────┘     │ │ SPACE: O(N) Heap (vector) │ │
+│           │                                            │ └───────────────────────────┘ │
+│ ⟷ Drag    │                                            │ ⟷ Drag Width                  │
 ├───────────┴────────────────────────────────────────────┴───────────────────────────────┤
-│ 💻 NEON TERMINAL: g++ -std=c++20 -O2 main.cpp -o program -> Process exited (code 0)    │
-│ ⚡ Status: 10,482 Symbols Loaded | GCC 11.4.0 Toolchain Ready | UTF-8 | LF | UTF-8     │
+│ ↕ Drag Height (Terminal Resizer: row-resize | Double Click to toggle size)              │
+│ 💻 NEON TERMINAL: [Output & Logs] [Clang Assembly (.s)] [Interactive CLI]              │
+│ ⚡ Status: Ready (127.0.0.1:3001) | Clang-Trie Symbol Indexer: Online | UTF-8          │
 └────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -49,22 +52,64 @@ IntelliCPP reimagines modern developer tooling by blending bare-metal C++20 exec
 ### 1. ⚡ Bare-Metal C++20 Native Trie Engine
 * **$O(L)$ Prefix Search**: Traverses trie by prefix length $L$ rather than searching $N$ symbols ($O(L) \ll O(N)$).
 * **Sub-Microsecond Latency**: Benchmarked at **23µs – 37µs** per autocomplete query across 10,000+ indexed STL symbols.
-* **Node-API Direct Bridge**: Zero IPC communication overhead using `node-addon-api` native C++ bindings.
+* **Deterministic LRU Caching**: In-memory LRU cache instantly resolves identical rapid keystrokes with `X-Cache: HIT`.
 
-### 2. 🧠 Context-Aware Type Inference & Tokenizer
-* **Live AST Tokenizer**: Parses translation units on-the-fly to discover local variables, functions, and scopes.
-* **Smart Member Extraction**: Typing `nums.` inspects the type table (`std::vector<int>`) and surfaces only relevant member functions (`push_back`, `size`, `capacity`, `reserve`).
+### 2. 📊 Real-Time AST Complexity Analyzer
+* **Accurate Big-O Time Complexity**:
+  * $O(N \log N)$: Accurately identifies `std::sort`, `stable_sort`, `ranges::sort`, and loops with logarithmic operations.
+  * $O(N^2)$ / $O(N^3)$: Identifies 2-level and 3-level nested iteration loops.
+  * $O(2^N)$: Identifies branching recursion trees (e.g. `fib(n-1) + fib(n-2)`).
+  * $O(\log N)$: Identifies binary search algorithms (`lower_bound`, `binary_search`) and logarithmic step loops (`i *= 2`).
+  * $O(1)$: Primitive operations and direct memory index access.
+* **Accurate Big-O Space Complexity**:
+  * $O(N)$ Heap Storage: Detects dynamic heap allocations (`std::vector`, `std::map`, `std::unordered_map`, `std::set`, `new[]`).
+  * $O(N^2)$ Dynamic Matrix: Detects 2D containers (`vector<vector<T>>`, dynamic grid arrays).
+  * $O(1)$ Auxiliary: In-place memory operations without heap allocations.
 
-### 3. 📊 Visual Memory & Data Structure Profilers
-* **STL Vector Heap Visualizer**: Real-time interactive model showing internal heap pointer allocations, size vs capacity reallocation thresholds ($2\times$ growth factor), and memory addresses.
-* **Trie Search Graph Visualizer**: Visualizes prefix branch traversal in real-time as you type.
-* **Big-O Complexity Badge**: Analyzes loop nesting, recursion, and algorithm choices to estimate time ($O(1)$, $O(\log N)$, $O(N)$, $O(N \log N)$, $O(N^2)$) and space complexity.
+### 3. 🖥️ Interactive Drag Resizers & Responsive Bento Layout
+* **Vertical Terminal Resizer**: Click and drag the top edge of the terminal up/down to adjust height (`100px` to full screen). Double-click to cycle presets (`180px` ➔ `340px` ➔ `480px`).
+* **Horizontal Sidebar Resizer**: Click and drag the right edge of the file explorer sidebar (`180px` to `550px`).
+* **Horizontal Profiler Resizer**: Click and drag the left edge of the live profiler panel.
+* **Full Breakpoint Adaptability**: Mobile drawer overlays (<640px), compact tablet view (640–1024px), and expanded 3-panel desktop view (>1024px).
 
-### 4. 🎨 Obsidian Cyber-Glass Bento Grid UI
-* **Linear-Grade Aesthetics**: Specular frosted glass panels, glowing electric cyan and violet accents, and custom ambient dot-matrix canvases.
-* **Monaco Editor Integration**: JetBrains Mono typography with programming ligatures, token highlighting, and mini-map.
-* **Spotlight Command Palette (`⌘K` / `Ctrl+K`)**: Instant keyboard-driven navigation, file jumping, and action execution.
-* **Neon Terminal**: Integrated terminal with multi-tab support (Output, Clang Assembly `.s` Viewer, Problems, Debug Console).
+### 4. 🛡️ Security & Sandboxing Defense-in-Depth
+* **Host Resource Limit Sandbox (`ulimit`)**:
+  * `ulimit -v 262144`: 256MB virtual address space ceiling (prevents memory bombs).
+  * `ulimit -u 64`: 64 process/thread limit (prevents fork bombs).
+  * `ulimit -f 10240`: 10MB maximum output file size.
+  * `timeout -k 1 5`: Guaranteed 5-second hard process termination for infinite loops (`while(1){}`).
+  * `maxBuffer: 512KB`: Protects Node.js memory against runaway stdout streams.
+* **Token Bucket Rate Limiting & Concurrency Semaphore**:
+  * Burst allowance of 5 compilations + continuous refill of 1 token every 6 seconds (~10 runs/min max).
+  * Concurrency semaphore capping simultaneous active compilations to **max 2 per IP**.
+* **Strict Input Validation & Path Traversal Defense**:
+  * 50KB code length cap, binary/null-byte rejection, language allowlist validation (`cpp`, `python`, `rust`).
+  * `isPathSafe` traversal checks resolving symlinks and blocking sibling directory prefix escapes.
+* **Security Headers & CORS**: `helmet` Content-Security-Policy (CSP), `X-Frame-Options: SAMEORIGIN`, and environment-driven `ALLOWED_ORIGINS`.
+
+### 5. ⚙️ Modular & Data-Driven Backend
+* **Standalone STL Container Datasets**: 28 self-contained JSON files under `backend/data/stl/<container>.json` (`vector.json`, `string.json`, `map.json`, `algorithm.json`, etc.) dynamically loaded at startup.
+* **Centralized Configuration**: `backend/config.js` managing all ports, timeouts, limits, and toolchain paths (`g++`, `python3`, `rustc`).
+* **Backend Language Execution Registry**: `backend/languages/registry.js` with polymorphic compilation and execution definitions.
+
+---
+
+## 🏗️ System Architecture
+
+```mermaid
+graph TD
+    A[Monaco Editor & React 18 UI] -->|HTTP / Compression| B[Express Gateway Server :3001]
+    A -->|Static AST Analysis| C[Real-Time Complexity Analyzer]
+    
+    B -->|LRU Cache / Trie Index| D[backend/data/stl/*.json]
+    B -->|Node-API Native Bridge| E[codeflow_native.node / C++20 Engine]
+    
+    B -->|Token Bucket Rate Limiter| F[Pluggable Store Adapter]
+    B -->|Enqueue Job| G[Decoupled JobQueue & Worker Pool]
+    
+    G -->|ulimits / Docker Sandbox| H[Toolchain Runners: g++ / python3 / rustc]
+    H -->|stdout / stderr| I[Neon Terminal Panel]
+```
 
 ---
 
@@ -82,45 +127,13 @@ Native C++20 engine benchmarks run on Linux x86_64 (`-std=c++20 -O3`):
 
 ---
 
-## 🏗️ System Architecture
-
-```mermaid
-graph TD
-    A[Monaco Editor / React 18 UI] -->|REST / Proxy| B[Express Backend Server :3001]
-    A -->|Live AST Tokens| C[EngineContext & Profiler HUD]
-    
-    B -->|Direct Native Bindings| D[codeflow_native.node / Node-API]
-    D --> E[C++20 Suggestion Engine]
-    
-    E --> F[O(L) Trie Prefix Graph]
-    E --> G[AST Tokenizer & Parser]
-    E --> H[Contextual Symbol Table]
-    
-    B -->|Isolated Temp Sandbox| I[GCC / G++ C++20 Runner]
-    I -->|stdout / stderr| J[Neon Terminal Panel]
-```
-
----
-
-## 💡 Pluggable Multi-Language Support
-
-IntelliCPP is designed with a pluggable language architecture:
-
-| Language | Engine Support | Standard Library Index | Native Runner |
-|---|---|---|---|
-| 🟦 **C++20** | Native Trie Engine | `<vector>`, `<map>`, `<string>`, `<algorithm>`, `<queue>` + 25 more | `g++ -std=c++20 -O2` |
-| 🟨 **Python 3.12** | Live AST Tokenizer | `numpy`, `pandas`, `math`, `sys`, `collections`, `itertools` | `python3` sandbox |
-| 🟧 **Rust 1.75** | Live AST Tokenizer | `Vec`, `HashMap`, `Option`, `Result`, `String`, `Box` | `rustc -O` sandbox |
-
----
-
 ## 🚀 Quick Start
 
 ### Prerequisites
 * **Node.js**: v18.0.0 or higher
 * **npm**: v8.0.0 or higher
 * **GCC / G++**: Supporting C++20 (`g++ --version` $\ge$ 10.0)
-* **CMake**: 3.12 or higher
+* **Python 3** & **Rust** (optional, for multi-language execution)
 
 ### 1. Installation
 
@@ -135,27 +148,48 @@ npm run install-deps
 
 ### 2. Run the Application
 
-Start both the **Express Backend** and the **React Frontend** concurrently with a single command:
+Start both the **Express Backend** and the **React Frontend** concurrently:
 
 ```bash
 npm run dev
 ```
 
 > 🌐 **Frontend URL**: `http://localhost:3000`  
-> ⚡ **Backend API**: `http://localhost:3001` (`/health`, `/api/getSuggestions`, `/api/runCode`)
+> ⚡ **Backend API**: `http://localhost:3001`  
+> 🩺 **Readiness Probe**: `http://localhost:3001/ready`  
+> 📊 **Health & Telemetry**: `http://localhost:3001/health`
 
 ---
 
-## 🛠️ Individual Commands & Scripts
+## 📈 High-Concurrency Scaling & K8s Probes
 
-| Command | Description |
-|---|---|
-| `npm run dev` | Starts both Frontend (`:3000`) and Backend (`:3001`) concurrently |
-| `npm run dev:frontend` | Starts only the React frontend development server |
-| `npm run dev:server` | Starts only the Express backend server |
-| `npm run build:frontend`| Compiles the production-optimized React bundle (65 kB gzip) |
-| `cd build && make && ./test_backend` | Compiles and executes the native C++20 benchmark suite |
-| `cd backend && npm run build:native` | Rebuilds the `node-addon-api` native C++ binary |
+IntelliCPP is built for seamless horizontal scaling and container orchestration:
+
+* **Kubernetes Probes**:
+  * `GET /live`: Simple liveness probe returning process uptime.
+  * `GET /ready`: Deep readiness probe verifying compiler binaries (`g++`, `rustc`, `python3`), STL database integrity, native addon health, and workspace accessibility.
+* **Decoupled Job Queue**:
+  * Synchronous mode by default for instant responses.
+  * Asynchronous execution supported via `POST /api/runCode?async=true` returning `202 Accepted` + `jobId` for polling via `GET /api/jobs/:id`.
+* **Stateless Store Adapters**:
+  * `MemoryBucketStore` (default for local/single instance).
+  * `RedisBucketStore` (for distributed multi-node clusters).
+* **Detailed Scaling Guide**: See [backend/docs/HORIZONTAL_SCALING.md](backend/docs/HORIZONTAL_SCALING.md).
+
+---
+
+## 🧪 Automated Test Suites
+
+```bash
+# Run backend security & sandboxing test suite (15 tests)
+node backend/test_security.js
+
+# Run concurrency, scaling, LRU cache & probe verification (10 tests)
+node backend/test_concurrency_scaling.js
+
+# Run frontend production build & linter
+cd frontend && npm run build && npm run lint
+```
 
 ---
 
@@ -171,21 +205,31 @@ IntelliCPP/
 │   │   │   ├── modals/           # CommandPalette (⌘K Spotlight)
 │   │   │   ├── profiler/         # TrieVisualizer, MemoryVisualizer, ComplexityBadge
 │   │   │   ├── sidebar/          # FileExplorer, SymbolOutline, QuickInject
-│   │   │   └── terminal/         # NeonTerminal (Output, Assembly, Problems)
+│   │   │   └── terminal/         # NeonTerminal with Draggable Vertical Resizer
 │   │   ├── context/              # EditorContext & EngineContext
 │   │   ├── languages/            # Multi-Language Registry (C++, Python, Rust)
+│   │   ├── utils/                # complexityAnalyzer.js, intelliDocs.js
 │   │   └── styles/               # designTokens.css, bentoLayout.css, animations.css
 │   └── package.json
 │
-├── backend/                      # C++20 Core & Express Server
-│   ├── include/                  # C++ Header declarations (trie.h, tokenizer.h, etc.)
-│   ├── src/                      # C++ Implementations & Node-API binding.cpp
-│   ├── binding.gyp               # node-gyp native addon configuration
-│   ├── server.js                 # Express API server (port 3001)
+├── backend/                      # C++20 Core & Express API Gateway
+│   ├── config.js                 # Centralized environment configuration
+│   ├── data/                     # Modular STL datasets (28 JSON files) & constants
+│   ├── languages/                # Toolchain execution registry
+│   ├── docs/                     # HORIZONTAL_SCALING.md guide
+│   ├── src/
+│   │   ├── cache/                # In-memory LRU Cache (lruCache.js)
+│   │   ├── probes/               # Kubernetes readiness & liveness probes (readiness.js)
+│   │   ├── queue/                # Decoupled JobQueue & Worker Pool (jobQueue.js)
+│   │   ├── security/             # TokenBucketLimiter & Store Adapters (rateLimiter.js)
+│   │   └── binding.cpp           # Node-API C++ addon implementation
+│   ├── test_security.js          # Automated security test suite
+│   ├── test_concurrency_scaling.js # Automated scaling & probe test suite
+│   ├── server.js                 # Express server
 │   └── package.json
 │
 ├── CMakeLists.txt                # CMake C++20 build configuration
-├── test_backend.cpp              # Native benchmark & test suite
+├── test_backend.cpp              # Native C++ benchmark & test suite
 ├── .clangd                       # Language server configuration
 ├── .gitignore                    # 9-layer security ignore rules
 └── package.json                  # Root orchestration scripts
