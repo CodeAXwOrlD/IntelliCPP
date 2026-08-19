@@ -15,7 +15,11 @@ export default function NeonTerminal() {
 
   const { terminalHeight, setTerminalHeight, setIsTerminalOpen } = useEditor();
   const [isMinimized, setIsMinimized] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
   const logsEndRef = useRef(null);
+  const isDraggingRef = useRef(false);
+  const startYRef = useRef(0);
+  const startHeightRef = useRef(terminalHeight);
 
   // Auto-scroll on new output
   useEffect(() => {
@@ -23,6 +27,71 @@ export default function NeonTerminal() {
       logsEndRef.current.scrollTop = logsEndRef.current.scrollHeight;
     }
   }, [outputLogs, assemblyOutput, isMinimized]);
+
+  // Draggable vertical resizer
+  const startResize = (clientY) => {
+    isDraggingRef.current = true;
+    setIsDragging(true);
+    startYRef.current = clientY;
+    startHeightRef.current = terminalHeight;
+    setIsMinimized(false);
+
+    document.body.style.cursor = 'row-resize';
+    document.body.style.userSelect = 'none';
+
+    const onMouseMove = (e) => {
+      if (!isDraggingRef.current) return;
+      const currentY = e.clientY ?? (e.touches && e.touches[0]?.clientY);
+      if (currentY === undefined) return;
+      const deltaY = startYRef.current - currentY;
+      const minHeight = 100;
+      const maxHeight = Math.max(minHeight, window.innerHeight - 150);
+      const newHeight = Math.min(Math.max(startHeightRef.current + deltaY, minHeight), maxHeight);
+      setTerminalHeight(newHeight);
+    };
+
+    const onMouseUp = () => {
+      isDraggingRef.current = false;
+      setIsDragging(false);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+      window.removeEventListener('touchmove', onMouseMove);
+      window.removeEventListener('touchend', onMouseUp);
+    };
+
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
+    window.addEventListener('touchmove', onMouseMove, { passive: false });
+    window.addEventListener('touchend', onMouseUp);
+  };
+
+  const handleMouseDown = (e) => {
+    e.preventDefault();
+    startResize(e.clientY);
+  };
+
+  const handleTouchStart = (e) => {
+    if (e.touches && e.touches[0]) {
+      startResize(e.touches[0].clientY);
+    }
+  };
+
+  const handleDoubleClick = () => {
+    // Quick toggle sizes: compact (160px) -> standard (260px) -> expanded (420px)
+    if (isMinimized) {
+      setIsMinimized(false);
+      return;
+    }
+    if (terminalHeight < 220) {
+      setTerminalHeight(340);
+    } else if (terminalHeight < 380) {
+      setTerminalHeight(480);
+    } else {
+      setTerminalHeight(180);
+    }
+  };
 
   const toggleHeight = (direction) => {
     if (isMinimized) setIsMinimized(false);
@@ -35,9 +104,21 @@ export default function NeonTerminal() {
 
   return (
     <div 
-      className={`terminal-dock ${isMinimized ? 'minimized' : ''}`} 
+      className={`terminal-dock ${isMinimized ? 'minimized' : ''} ${isDragging ? 'resizing' : ''}`} 
       style={{ height: isMinimized ? '36px' : `${terminalHeight}px` }}
     >
+      {/* DRAGGABLE RESIZE HANDLE */}
+      <div 
+        className="terminal-resizer"
+        onMouseDown={handleMouseDown}
+        onTouchStart={handleTouchStart}
+        onDoubleClick={handleDoubleClick}
+        title="Drag up/down to resize terminal | Double click to cycle height"
+        aria-label="Resize terminal handle"
+      >
+        <div className="resizer-handle-indicator-h" />
+      </div>
+
       {/* TERMINAL HEADER BAR */}
       <div className="terminal-header-bar">
         <div className="terminal-tabs" role="tablist" aria-label="Terminal Tabs">

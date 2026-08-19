@@ -1,97 +1,136 @@
 import React, { useMemo } from 'react';
-import { Gauge, Activity } from 'lucide-react';
+import { Gauge, Activity, Sparkles } from 'lucide-react';
 import { useEngine } from '../../context/EngineContext';
 import { useEditor } from '../../context/EditorContext';
-import { getDocumentation } from '../../utils/intelliDocs';
+import { analyzeComplexity } from '../../utils/complexityAnalyzer';
 
 export default function ComplexityBadge() {
-  const { activeWord, astTokens } = useEngine();
-  const { activeFile } = useEditor();
+  const { astTokens } = useEngine();
+  const { activeFile, activeLanguage } = useEditor();
 
-  const { timeComp, algorithm, spaceComp, status } = useMemo(() => {
-    const doc = getDocumentation(activeWord);
-    const content = activeFile?.content || '';
+  const complexityReport = useMemo(() => {
+    const code = activeFile?.content || '';
+    return analyzeComplexity(code, activeLanguage?.id || 'cpp');
+  }, [activeFile?.content, activeLanguage?.id]);
 
-    // Check if token under cursor has direct complexity metadata
-    if (doc && doc.complexity) {
-      const compStr = doc.complexity.split('|')[0].trim();
-      return {
-        timeComp: compStr.includes('O(') ? compStr : `O(1) [${doc.name}]`,
-        algorithm: doc.name,
-        spaceComp: `${Math.max(120, astTokens.length * 48 + 420)} B (Stack/Heap)`,
-        status: 'OPTIMAL'
-      };
-    }
+  const { timeComp, timeReason, spaceComp, spaceReason, status, details } = complexityReport;
 
-    // Check code AST patterns for nested loops or recursion
-    const hasNestedLoops = /for\s*\([^)]*\)\s*\{[^}]*for\s*\([^)]*\)/s.test(content);
-    if (hasNestedLoops) {
-      return {
-        timeComp: 'O(N²)',
-        algorithm: 'Nested Loop Scan',
-        spaceComp: 'O(1) Auxiliary',
-        status: 'WARN'
-      };
-    }
-
-    const hasSingleLoop = /for\s*\([^)]*\)|while\s*\([^)]*\)/.test(content);
-    if (hasSingleLoop) {
-      return {
-        timeComp: 'O(N)',
-        algorithm: 'Linear Iteration',
-        spaceComp: 'O(1) Auxiliary',
-        status: 'OPTIMAL'
-      };
-    }
-
-    return {
-      timeComp: 'O(1)',
-      algorithm: 'Constant Time / Direct',
-      spaceComp: `${Math.max(80, astTokens.length * 32 + 256)} B`,
-      status: 'PASS'
-    };
-  }, [activeWord, activeFile?.content, astTokens]);
+  const statusBadgeStyle = {
+    fontSize: '9px',
+    background:
+      status === 'OPTIMAL'
+        ? 'rgba(16, 185, 129, 0.15)'
+        : status === 'WARN'
+        ? 'rgba(245, 158, 11, 0.15)'
+        : status === 'HIGH'
+        ? 'rgba(244, 63, 94, 0.15)'
+        : 'rgba(0, 242, 254, 0.15)',
+    color:
+      status === 'OPTIMAL'
+        ? 'var(--text-emerald)'
+        : status === 'WARN'
+        ? 'var(--accent-amber)'
+        : status === 'HIGH'
+        ? 'var(--accent-coral)'
+        : 'var(--text-cyan)',
+    padding: '2px 6px',
+    borderRadius: 'var(--radius-xs)',
+    fontWeight: 700,
+    letterSpacing: '0.04em'
+  };
 
   return (
     <div className="bento-card">
       <div className="bento-card-title">
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           <Gauge size={14} color="var(--accent-emerald)" />
-          <span>Complexity & Telemetry</span>
+          <span>Real-Time Complexity & Telemetry</span>
         </div>
-        <span style={{
-          fontSize: '9px',
-          background: status === 'OPTIMAL' ? 'rgba(16, 185, 129, 0.15)' : status === 'WARN' ? 'rgba(245, 158, 11, 0.15)' : 'rgba(0, 242, 254, 0.15)',
-          color: status === 'OPTIMAL' ? 'var(--text-emerald)' : status === 'WARN' ? 'var(--accent-amber)' : 'var(--text-cyan)',
-          padding: '1px 5px',
-          borderRadius: 3,
-          fontWeight: 700
-        }}>
+        <span style={statusBadgeStyle}>
           {status}
         </span>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, marginTop: 2 }}>
-        <div style={{ background: 'rgba(255, 255, 255, 0.02)', padding: '6px 8px', borderRadius: 'var(--radius-xs)', border: '1px solid var(--border-subtle)' }}>
-          <div style={{ fontSize: '9px', color: 'var(--text-muted)' }}>TIME COMPLEXITY</div>
-          <div style={{ fontSize: '11px', fontFamily: 'var(--font-code)', color: 'var(--text-cyan)', fontWeight: 700, marginTop: 2 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, marginTop: 4 }}>
+        {/* TIME COMPLEXITY CARD */}
+        <div 
+          style={{ 
+            background: 'rgba(255, 255, 255, 0.02)', 
+            padding: '8px 10px', 
+            borderRadius: 'var(--radius-xs)', 
+            border: '1px solid var(--border-subtle)' 
+          }}
+          title={timeReason}
+        >
+          <div style={{ fontSize: '9px', color: 'var(--text-muted)', fontWeight: 600, letterSpacing: '0.05em' }}>
+            TIME COMPLEXITY
+          </div>
+          <div style={{ fontSize: '13px', fontFamily: 'var(--font-code)', color: 'var(--text-cyan)', fontWeight: 700, marginTop: 2 }}>
             {timeComp}
           </div>
           <div style={{ fontSize: '9px', color: 'var(--text-dim)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {algorithm}
+            {timeReason}
           </div>
         </div>
 
-        <div style={{ background: 'rgba(255, 255, 255, 0.02)', padding: '6px 8px', borderRadius: 'var(--radius-xs)', border: '1px solid var(--border-subtle)' }}>
-          <div style={{ fontSize: '9px', color: 'var(--text-muted)' }}>SPACE FOOTPRINT</div>
-          <div style={{ fontSize: '11px', fontFamily: 'var(--font-code)', color: 'var(--text-violet)', fontWeight: 700, marginTop: 2 }}>
+        {/* SPACE COMPLEXITY CARD */}
+        <div 
+          style={{ 
+            background: 'rgba(255, 255, 255, 0.02)', 
+            padding: '8px 10px', 
+            borderRadius: 'var(--radius-xs)', 
+            border: '1px solid var(--border-subtle)' 
+          }}
+          title={spaceReason}
+        >
+          <div style={{ fontSize: '9px', color: 'var(--text-muted)', fontWeight: 600, letterSpacing: '0.05em' }}>
+            SPACE COMPLEXITY
+          </div>
+          <div style={{ fontSize: '13px', fontFamily: 'var(--font-code)', color: 'var(--text-violet)', fontWeight: 700, marginTop: 2 }}>
             {spaceComp}
           </div>
-          <div style={{ fontSize: '9px', color: 'var(--text-dim)', marginTop: 2, display: 'flex', alignItems: 'center', gap: 3 }}>
-            <Activity size={10} color="var(--accent-emerald)" />
-            <span>AST Live Tokens: {astTokens.length}</span>
+          <div style={{ fontSize: '9px', color: 'var(--text-dim)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {spaceReason}
           </div>
         </div>
+      </div>
+
+      {/* REASONING & TELEMETRY FOOTER */}
+      {details && details.length > 0 && (
+        <div style={{ 
+          marginTop: 6, 
+          padding: '4px 8px', 
+          background: 'rgba(0, 242, 254, 0.03)', 
+          border: '1px solid rgba(0, 242, 254, 0.1)', 
+          borderRadius: 'var(--radius-xs)',
+          fontSize: '10px',
+          color: 'var(--text-secondary)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 6
+        }}>
+          <Sparkles size={11} color="var(--accent-cyan)" style={{ flexShrink: 0 }} />
+          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {details[0]}
+          </span>
+        </div>
+      )}
+
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'center', 
+        fontSize: '9px', 
+        color: 'var(--text-dim)', 
+        marginTop: 4,
+        paddingTop: 4,
+        borderTop: '1px solid rgba(255, 255, 255, 0.04)'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          <Activity size={10} color="var(--accent-emerald)" />
+          <span>AST Tokens: {astTokens?.length || 0}</span>
+        </div>
+        <span>Real-Time Static Engine</span>
       </div>
     </div>
   );

@@ -267,13 +267,73 @@
 /* COLLAPSIBLE SIDEBAR PANEL */
 .sidebar-panel {
   width: 250px;
-  min-width: 200px;
+  min-width: 180px;
   background: var(--bg-surface);
   border-right: 1px solid var(--border-subtle);
   display: flex;
   flex-direction: column;
   overflow: hidden;
   flex-shrink: 0;
+  position: relative;
+}
+
+.sidebar-panel.resizing {
+  transition: none !important;
+  user-select: none;
+}
+
+.sidebar-resizer {
+  position: absolute;
+  top: 0;
+  right: -4px;
+  bottom: 0;
+  width: 8px;
+  cursor: col-resize;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background var(--duration-fast) ease;
+}
+
+.sidebar-resizer:hover,
+.sidebar-panel.resizing .sidebar-resizer {
+  background: var(--accent-cyan-subtle);
+}
+
+.sidebar-resizer::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 3px;
+  width: 2px;
+  background: transparent;
+  transition: background var(--duration-fast) ease, box-shadow var(--duration-fast) ease;
+}
+
+.sidebar-resizer:hover::after,
+.sidebar-panel.resizing .sidebar-resizer::after {
+  background: var(--accent-cyan);
+  box-shadow: 0 0 8px var(--accent-cyan);
+}
+
+.resizer-handle-indicator-v {
+  width: 3px;
+  height: 36px;
+  border-radius: var(--radius-pill);
+  background: var(--border-glass);
+  transition: all var(--duration-fast) ease;
+  pointer-events: none;
+}
+
+.sidebar-resizer:hover .resizer-handle-indicator-v,
+.sidebar-panel.resizing .resizer-handle-indicator-v,
+.profiler-resizer:hover .resizer-handle-indicator-v,
+.profiler-panel.resizing .resizer-handle-indicator-v {
+  height: 52px;
+  background: var(--accent-cyan);
+  box-shadow: 0 0 10px var(--accent-cyan);
 }
 
 .sidebar-header {
@@ -402,7 +462,7 @@
 /* RIGHT BENTO PROFILER PANEL */
 .profiler-panel {
   width: 320px;
-  min-width: 280px;
+  min-width: 240px;
   background: var(--bg-surface);
   border-left: 1px solid var(--border-subtle);
   display: flex;
@@ -411,6 +471,48 @@
   gap: 12px;
   padding: 12px;
   flex-shrink: 0;
+  position: relative;
+}
+
+.profiler-panel.resizing {
+  transition: none !important;
+  user-select: none;
+}
+
+.profiler-resizer {
+  position: absolute;
+  top: 0;
+  left: -4px;
+  bottom: 0;
+  width: 8px;
+  cursor: col-resize;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background var(--duration-fast) ease;
+}
+
+.profiler-resizer:hover,
+.profiler-panel.resizing .profiler-resizer {
+  background: var(--accent-cyan-subtle);
+}
+
+.profiler-resizer::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 3px;
+  width: 2px;
+  background: transparent;
+  transition: background var(--duration-fast) ease, box-shadow var(--duration-fast) ease;
+}
+
+.profiler-resizer:hover::after,
+.profiler-panel.resizing .profiler-resizer::after {
+  background: var(--accent-cyan);
+  box-shadow: 0 0 8px var(--accent-cyan);
 }
 
 .bento-card {
@@ -446,6 +548,62 @@
   position: relative;
   z-index: 20;
   transition: height var(--duration-normal) var(--ease-spring);
+}
+
+.terminal-dock.resizing {
+  transition: none !important;
+}
+
+.terminal-resizer {
+  position: absolute;
+  top: -4px;
+  left: 0;
+  right: 0;
+  height: 8px;
+  cursor: row-resize;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background var(--duration-fast) ease;
+}
+
+.terminal-resizer:hover,
+.terminal-dock.resizing .terminal-resizer {
+  background: var(--accent-cyan-subtle);
+}
+
+.terminal-resizer::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: transparent;
+  transition: background var(--duration-fast) ease, box-shadow var(--duration-fast) ease;
+}
+
+.terminal-resizer:hover::after,
+.terminal-dock.resizing .terminal-resizer::after {
+  background: var(--accent-cyan);
+  box-shadow: 0 0 8px var(--accent-cyan);
+}
+
+.resizer-handle-indicator-h {
+  width: 36px;
+  height: 3px;
+  border-radius: var(--radius-pill);
+  background: var(--border-glass);
+  transition: all var(--duration-fast) ease;
+  pointer-events: none;
+}
+
+.terminal-resizer:hover .resizer-handle-indicator-h,
+.terminal-dock.resizing .resizer-handle-indicator-h {
+  width: 52px;
+  background: var(--accent-cyan);
+  box-shadow: 0 0 10px var(--accent-cyan);
 }
 
 .terminal-dock.minimized {

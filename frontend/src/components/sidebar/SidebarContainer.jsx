@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useState, useCallback } from 'react';
 import { X } from 'lucide-react';
 import { useEditor } from '../../context/EditorContext';
 import FileExplorer from './FileExplorer';
@@ -7,7 +7,71 @@ import QuickInject from './QuickInject';
 import SettingsView from './SettingsView';
 
 export default function SidebarContainer() {
-  const { activeDockItem, isSidebarOpen, setIsSidebarOpen } = useEditor();
+  const { 
+    activeDockItem, 
+    isSidebarOpen, 
+    setIsSidebarOpen, 
+    sidebarWidth, 
+    setSidebarWidth 
+  } = useEditor();
+
+  const [isDragging, setIsDragging] = useState(false);
+  const isDraggingRef = useRef(false);
+  const startXRef = useRef(0);
+  const startWidthRef = useRef(sidebarWidth);
+
+  const startResize = useCallback((clientX) => {
+    isDraggingRef.current = true;
+    setIsDragging(true);
+    startXRef.current = clientX;
+    startWidthRef.current = sidebarWidth;
+
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+
+    const onMouseMove = (e) => {
+      if (!isDraggingRef.current) return;
+      const currentX = e.clientX ?? (e.touches && e.touches[0]?.clientX);
+      if (currentX === undefined) return;
+      const deltaX = currentX - startXRef.current;
+      const minWidth = 180;
+      const maxWidth = Math.min(550, Math.floor(window.innerWidth * 0.5));
+      const newWidth = Math.min(Math.max(startWidthRef.current + deltaX, minWidth), maxWidth);
+      setSidebarWidth(newWidth);
+    };
+
+    const onMouseUp = () => {
+      isDraggingRef.current = false;
+      setIsDragging(false);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+      window.removeEventListener('touchmove', onMouseMove);
+      window.removeEventListener('touchend', onMouseUp);
+    };
+
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
+    window.addEventListener('touchmove', onMouseMove, { passive: false });
+    window.addEventListener('touchend', onMouseUp);
+  }, [sidebarWidth, setSidebarWidth]);
+
+  const handleMouseDown = (e) => {
+    e.preventDefault();
+    startResize(e.clientX);
+  };
+
+  const handleTouchStart = (e) => {
+    if (e.touches && e.touches[0]) {
+      startResize(e.touches[0].clientX);
+    }
+  };
+
+  const handleDoubleClick = () => {
+    // Toggle between default (250px) and wide (380px)
+    setSidebarWidth(prev => (prev > 300 ? 250 : 380));
+  };
 
   if (!isSidebarOpen) return null;
 
@@ -25,7 +89,10 @@ export default function SidebarContainer() {
         onClick={() => setIsSidebarOpen(false)}
         aria-label="Close sidebar overlay"
       />
-      <div className="sidebar-panel">
+      <div 
+        className={`sidebar-panel ${isDragging ? 'resizing' : ''}`}
+        style={{ width: `${sidebarWidth}px` }}
+      >
         <div className="sidebar-header">
           <span>{titles[activeDockItem] || 'Sidebar'}</span>
           <button
@@ -54,6 +121,18 @@ export default function SidebarContainer() {
           {activeDockItem === 'symbols' && <SymbolOutline />}
           {activeDockItem === 'inject' && <QuickInject />}
           {activeDockItem === 'settings' && <SettingsView />}
+        </div>
+
+        {/* DRAGGABLE RESIZE HANDLE ON RIGHT EDGE */}
+        <div 
+          className="sidebar-resizer"
+          onMouseDown={handleMouseDown}
+          onTouchStart={handleTouchStart}
+          onDoubleClick={handleDoubleClick}
+          title="Drag left/right to resize sidebar | Double click to cycle width"
+          aria-label="Resize sidebar handle"
+        >
+          <div className="resizer-handle-indicator-v" />
         </div>
       </div>
     </>

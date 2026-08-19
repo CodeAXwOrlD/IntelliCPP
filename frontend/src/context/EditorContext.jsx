@@ -33,6 +33,8 @@ export function EditorProvider({ children }) {
   const [activeDockItem, setActiveDockItem] = useState('explorer');
   const [isSidebarOpen, setIsSidebarOpen] = useState(isDesktop);
   const [isProfilerOpen, setIsProfilerOpen] = useState(isDesktop);
+  const [sidebarWidth, setSidebarWidth] = useState(250);
+  const [profilerWidth, setProfilerWidth] = useState(320);
   const [isTerminalOpen, setIsTerminalOpen] = useState(true);
   const [terminalHeight, setTerminalHeight] = useState(240);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
@@ -162,8 +164,12 @@ export function EditorProvider({ children }) {
         setActiveDockItem,
         isSidebarOpen,
         setIsSidebarOpen,
+        sidebarWidth,
+        setSidebarWidth,
         isProfilerOpen,
         setIsProfilerOpen,
+        profilerWidth,
+        setProfilerWidth,
         isTerminalOpen,
         setIsTerminalOpen,
         terminalHeight,

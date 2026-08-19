@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useState, useCallback } from 'react';
 import { Cpu, X } from 'lucide-react';
 import { useEditor } from '../../context/EditorContext';
 import TrieVisualizer from './TrieVisualizer';
@@ -6,7 +6,69 @@ import MemoryVisualizer from './MemoryVisualizer';
 import ComplexityBadge from './ComplexityBadge';
 
 export default function BentoProfiler() {
-  const { isProfilerOpen, setIsProfilerOpen } = useEditor();
+  const { 
+    isProfilerOpen, 
+    setIsProfilerOpen, 
+    profilerWidth, 
+    setProfilerWidth 
+  } = useEditor();
+
+  const [isDragging, setIsDragging] = useState(false);
+  const isDraggingRef = useRef(false);
+  const startXRef = useRef(0);
+  const startWidthRef = useRef(profilerWidth);
+
+  const startResize = useCallback((clientX) => {
+    isDraggingRef.current = true;
+    setIsDragging(true);
+    startXRef.current = clientX;
+    startWidthRef.current = profilerWidth;
+
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+
+    const onMouseMove = (e) => {
+      if (!isDraggingRef.current) return;
+      const currentX = e.clientX ?? (e.touches && e.touches[0]?.clientX);
+      if (currentX === undefined) return;
+      const deltaX = startXRef.current - currentX;
+      const minWidth = 240;
+      const maxWidth = Math.min(550, Math.floor(window.innerWidth * 0.5));
+      const newWidth = Math.min(Math.max(startWidthRef.current + deltaX, minWidth), maxWidth);
+      setProfilerWidth(newWidth);
+    };
+
+    const onMouseUp = () => {
+      isDraggingRef.current = false;
+      setIsDragging(false);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+      window.removeEventListener('touchmove', onMouseMove);
+      window.removeEventListener('touchend', onMouseUp);
+    };
+
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
+    window.addEventListener('touchmove', onMouseMove, { passive: false });
+    window.addEventListener('touchend', onMouseUp);
+  }, [profilerWidth, setProfilerWidth]);
+
+  const handleMouseDown = (e) => {
+    e.preventDefault();
+    startResize(e.clientX);
+  };
+
+  const handleTouchStart = (e) => {
+    if (e.touches && e.touches[0]) {
+      startResize(e.touches[0].clientX);
+    }
+  };
+
+  const handleDoubleClick = () => {
+    setProfilerWidth(prev => (prev > 340 ? 320 : 440));
+  };
 
   if (!isProfilerOpen) return null;
 
@@ -17,7 +79,22 @@ export default function BentoProfiler() {
         onClick={() => setIsProfilerOpen(false)}
         aria-label="Close profiler overlay"
       />
-      <aside className="profiler-panel">
+      <aside 
+        className={`profiler-panel ${isDragging ? 'resizing' : ''}`}
+        style={{ width: `${profilerWidth}px` }}
+      >
+        {/* DRAGGABLE RESIZE HANDLE ON LEFT EDGE */}
+        <div 
+          className="profiler-resizer"
+          onMouseDown={handleMouseDown}
+          onTouchStart={handleTouchStart}
+          onDoubleClick={handleDoubleClick}
+          title="Drag left/right to resize profiler | Double click to cycle width"
+          aria-label="Resize profiler handle"
+        >
+          <div className="resizer-handle-indicator-v" />
+        </div>
+
         <div style={{
           display: 'flex',
           alignItems: 'center',
