@@ -8,7 +8,6 @@ using namespace std;
 int main() {
     cout << "⚡ Initializing IntelliCPP Engine v2.0..." << endl;
     
-    // Type 'v.' to trigger fast Trie autocomplete for vector methods
     vector<int> v = {3, 1, 4, 1, 5, 9, 2, 6};
     sort(v.begin(), v.end());
     
