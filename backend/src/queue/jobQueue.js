@@ -35,13 +35,14 @@ class InMemoryJobQueue extends EventEmitter {
   /**
    * Enqueue a new code execution job
    */
-  enqueue({ code, language = 'cpp', clientIp = '127.0.0.1' }) {
+  enqueue({ code, language = 'cpp', stdin = '', clientIp = '127.0.0.1' }) {
     const jobId = `job_${Date.now()}_${crypto.randomBytes(6).toString('hex')}`;
     const job = {
       id: jobId,
       status: 'queued', // queued | running | completed | failed | timeout
       language,
       code,
+      stdin,
       clientIp,
       codeLength: code.length,
       createdAt: new Date().toISOString(),
@@ -154,7 +155,7 @@ class InMemoryJobQueue extends EventEmitter {
    */
   executeJobInSandbox(job) {
     return new Promise((resolve) => {
-      const { code, language } = job;
+      const { code, language, stdin = '' } = job;
       const langConfig = getLanguage(language);
       if (!langConfig) {
         return resolve({
@@ -183,7 +184,9 @@ class InMemoryJobQueue extends EventEmitter {
 
         const srcFile = path.join(tmpDir, langConfig.filename);
         const binFile = langConfig.outputFilename ? path.join(tmpDir, langConfig.outputFilename) : null;
+        const stdinFile = path.join(tmpDir, 'stdin.txt');
         fs.writeFileSync(srcFile, code, 'utf8');
+        fs.writeFileSync(stdinFile, stdin || '', 'utf8');
 
         // 1. Compilation
         if (langConfig.isCompiled && typeof langConfig.compileCmd === 'function') {
@@ -206,11 +209,11 @@ class InMemoryJobQueue extends EventEmitter {
         let runCommand = '';
         if (config.USE_DOCKER_SANDBOX) {
           const { NETWORK, MEMORY, CPUS, PIDS_LIMIT, USER } = config.DOCKER_FLAGS;
-          runCommand = `docker run --rm --network=${NETWORK} --memory=${MEMORY} --cpus=${CPUS} --pids-limit=${PIDS_LIMIT} --read-only --user ${USER} -v "${tmpDir}:/workspace:rw" -w /workspace ${config.DOCKER_SANDBOX_IMAGE} ${langConfig.dockerRunCmd}`;
+          runCommand = `docker run --rm -i --network=${NETWORK} --memory=${MEMORY} --cpus=${CPUS} --pids-limit=${PIDS_LIMIT} --read-only --user ${USER} -v "${tmpDir}:/workspace:rw" -w /workspace ${config.DOCKER_SANDBOX_IMAGE} ${langConfig.dockerRunCmd} < "${stdinFile}"`;
         } else {
           const targetFile = binFile || srcFile;
           const timeoutSec = Math.ceil((langConfig.executionTimeoutMs || 5000) / 1000);
-          runCommand = `${HOST_ULIMIT_PREFIX} timeout -k 1 ${timeoutSec} ${langConfig.runCmd(targetFile)}`;
+          runCommand = `${HOST_ULIMIT_PREFIX} timeout -k 1 ${timeoutSec} ${langConfig.runCmd(targetFile)} < "${stdinFile}"`;
         }
 
         exec(runCommand, { timeout: config.EXECUTION_HARD_KILL_TIMEOUT_MS, maxBuffer: config.MAX_EXEC_BUFFER_BYTES }, (runErr, stdout, stderr) => {
@@ -218,16 +221,16 @@ class InMemoryJobQueue extends EventEmitter {
           if ((runErr && runErr.killed) || (runErr && runErr.code === 124)) {
             return resolve({
               success: false,
-              output: '',
+              output: stdout || '',
               error: 'Execution timed out (5s limit)',
               exitCode: 124,
               errorCategory: 'timeout'
             });
           }
-          if (runErr && runErr.code !== 0 && !stdout) {
+          if (runErr && runErr.code !== 0) {
             return resolve({
               success: false,
-              output: '',
+              output: stdout || '',
               error: stderr || runErr.message,
               exitCode: runErr.code || 1,
               errorCategory: 'runtime_error'

@@ -36,6 +36,30 @@ const { LRUCache } = require('./src/cache/lruCache');
 const { defaultQueue } = require('./src/queue/jobQueue');
 const { performReadinessCheck } = require('./src/probes/readiness');
 
+// ─────────────────────────────────────────────
+// C++20 N-API NATIVE SUGGESTION ENGINE
+// ─────────────────────────────────────────────
+let nativeEngine = null;
+try {
+  const addonPath = path.resolve(__dirname, './build/Release/codeflow_native.node');
+  if (fs.existsSync(addonPath)) {
+    const { SuggestionEngine } = require(addonPath);
+    nativeEngine = new SuggestionEngine();
+    const stlJsonPath = path.resolve(__dirname, '../data/stl_functions.json');
+    const keywordsPath = path.resolve(__dirname, '../data/cpp_keywords.txt');
+    if (fs.existsSync(stlJsonPath)) {
+      nativeEngine.loadSTLData(stlJsonPath);
+    }
+    if (fs.existsSync(keywordsPath)) {
+      nativeEngine.loadKeywords(keywordsPath);
+    }
+    console.log('[Native] C++20 N-API SuggestionEngine initialized successfully.');
+  }
+} catch (err) {
+  console.warn('[Native] C++ N-API addon unavailable, fallback to JS Trie:', err.message);
+  nativeEngine = null;
+}
+
 const app = express();
 app.set('trust proxy', 1);
 
@@ -336,12 +360,15 @@ app.get('/ready', (req, res) => {
  * GET /health and GET /api/health
  */
 const healthHandler = (req, res) => {
+  const totalMethods = Object.values(STL_DB).reduce((s, c) => s + (c.methods?.length || 0), 0);
   res.json({
     status: 'ok',
     version: '2.0.0',
     timestamp: new Date().toISOString(),
     containers: Object.keys(STL_DB).length,
-    totalMethods: Object.values(STL_DB).reduce((s, c) => s + (c.methods?.length || 0), 0),
+    totalMethods,
+    totalSymbols: totalMethods,
+    nativeEngineLoaded: nativeEngine !== null,
     cache: {
       suggestions: suggestionsCache.getStats(),
       stats: statsCache.getStats()
@@ -424,6 +451,37 @@ app.post('/api/getSuggestions', suggestionsLimiter, (req, res) => {
       if (!allowedContainers.includes(resolvedType)) {
         res.set('X-Cache', 'BYPASS');
         return res.json([]);
+      }
+
+      // If native C++ engine is available, utilize native Trie search
+      if (language === 'cpp' && nativeEngine) {
+        try {
+          nativeEngine.updateSymbols(code || '');
+          const nativeResults = nativeEngine.getSuggestions(prefix, resolvedType, code || '', 0, 20);
+          if (Array.isArray(nativeResults) && nativeResults.length > 0) {
+            const containerInfo = STL_DB[resolvedType];
+            const scored = nativeResults.map(item => {
+              const matchedMethod = containerInfo?.methods?.find(m => m.name === item.text);
+              return {
+                text: item.text,
+                display: `${item.text}()`,
+                type: 'method',
+                doc: matchedMethod?.doc || `Member method of std::${resolvedType}`,
+                sig: matchedMethod?.sig || `${item.text}()`,
+                complexity: matchedMethod?.complexity || 'O(1)',
+                container: resolvedType,
+                header: containerInfo?.header || resolvedType,
+                score: Math.round((item.score || 1) * 100)
+              };
+            });
+            suggestionsCache.set(cacheKey, scored);
+            res.set('X-Cache', 'MISS');
+            res.set('X-Engine', 'C++ N-API Native Trie');
+            return res.json(scored);
+          }
+        } catch (e) {
+          // Fall back gracefully to pure JS Trie below
+        }
       }
 
       const trie = containerTries[resolvedType];
@@ -634,7 +692,7 @@ function validateRunCodeInput(req, res, next) {
  * Supports async polling (?async=true) or default synchronous resolution.
  */
 app.post('/api/runCode', validateRunCodeInput, runCodeLimiter.middleware(), async (req, res) => {
-  const { code } = req.body;
+  const { code, stdin = '' } = req.body;
   const cleanLang = req.cleanLanguage || 'cpp';
   const clientIp = req.headers['x-forwarded-for'] || req.ip || '127.0.0.1';
 
@@ -642,6 +700,7 @@ app.post('/api/runCode', validateRunCodeInput, runCodeLimiter.middleware(), asyn
   const job = defaultQueue.enqueue({
     code,
     language: cleanLang,
+    stdin: typeof stdin === 'string' ? stdin.slice(0, 50 * 1024) : '',
     clientIp
   });
 
@@ -674,6 +733,8 @@ app.post('/api/runCode', validateRunCodeInput, runCodeLimiter.middleware(), asyn
       success: result.success,
       output: result.output || '',
       error: result.error || '',
+      exitCode: result.exitCode ?? (result.success ? 0 : 1),
+      durationMs: finishedJob.durationMs,
       jobId: finishedJob.id
     });
   } catch (err) {
@@ -815,8 +876,12 @@ if (fs.existsSync(frontendBuildPath)) {
     if (req.path.startsWith('/api') || req.path.startsWith('/health') || req.path.startsWith('/ready') || req.path.startsWith('/live')) {
       return next();
     }
+    const indexPath = path.join(frontendBuildPath, 'index.html');
+    if (!fs.existsSync(indexPath)) {
+      return next();
+    }
     res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-    res.sendFile(path.join(frontendBuildPath, 'index.html'));
+    res.sendFile(indexPath);
   });
 }
 

@@ -1,22 +1,24 @@
 import React from 'react';
-import { 
-  Play, 
-  Search, 
-  Terminal, 
-  Cpu, 
-  Layers, 
-  Sparkles, 
+import {
+  Play,
+  Search,
+  PanelBottom,
+  PanelRight,
+  PanelLeft,
   Code2,
   ChevronDown,
-  Menu
+  Menu,
+  Sun,
+  Moon,
+  Loader2
 } from 'lucide-react';
 import { useEditor } from '../../context/EditorContext';
 import { useEngine } from '../../context/EngineContext';
 import { SUPPORTED_LANGUAGES } from '../../languages/registry';
 
 export default function NavbarHUD() {
-  const { 
-    activeLanguage, 
+  const {
+    activeLanguage,
     switchActiveLanguage,
     setIsCommandPaletteOpen,
     isSidebarOpen,
@@ -24,144 +26,144 @@ export default function NavbarHUD() {
     isProfilerOpen,
     setIsProfilerOpen,
     isTerminalOpen,
-    setIsTerminalOpen
+    setIsTerminalOpen,
+    theme,
+    toggleTheme
   } = useEditor();
 
-  const { 
-    latency, 
-    symbolCount, 
-    cacheHitRate, 
-    isBackendConnected, 
-    isRunning, 
-    runCurrentCode 
+  const {
+    latency,
+    symbolCount,
+    isBackendConnected,
+    isRunning,
+    runCurrentCode
   } = useEngine();
 
   return (
-    <header className="navbar-hud glass-specular">
-      {/* BRAND & LOGO */}
+    <header className="navbar-hud">
+      {/* LEFT: BRAND & LANGUAGE */}
       <div className="brand-section">
-        {/* HAMBURGER TOGGLE FOR MOBILE / TABLET */}
         <button
           className="btn-ghost-icon btn-nav-hamburger"
           onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-          title="Toggle Navigation Menu"
-          aria-label="Toggle Navigation Menu"
+          title="Toggle Explorer"
+          aria-label="Toggle Explorer"
         >
           <Menu size={18} />
         </button>
 
         <div className="logo-badge">
-          <Code2 className="logo-hex" />
-          <span className="text-shimmer logo-text" style={{ fontWeight: 800 }}>IntelliCPP</span>
-          <span className="logo-version" style={{ fontSize: '10px', color: 'var(--text-cyan)', fontFamily: 'var(--font-code)' }}>v2.0</span>
+          <Code2 size={18} color="var(--accent-cyan)" />
+          <span className="logo-text">IntelliCPP</span>
         </div>
 
-        {/* CORE STATUS PILL */}
-        <div className={`hud-pill hud-core-pill ${isBackendConnected ? 'active-emerald' : ''}`}>
-          <span className="animate-radar" style={{ 
-            width: 6, 
-            height: 6, 
-            borderRadius: '50%', 
-            backgroundColor: isBackendConnected ? 'var(--accent-emerald)' : 'var(--accent-red)',
-            display: 'inline-block'
-          }}></span>
-          <span>{activeLanguage.badge}</span>
-        </div>
-
-        {/* LANGUAGE SELECTOR */}
         <div className="hud-lang-select-wrapper" style={{ position: 'relative', display: 'inline-block' }}>
           <select
             value={activeLanguage.id}
             onChange={(e) => switchActiveLanguage(e.target.value)}
             className="hud-lang-select"
+            aria-label="Select Programming Language"
             style={{
               appearance: 'none',
-              background: 'rgba(255, 255, 255, 0.05)',
+              background: 'var(--bg-surface-elevated)',
               border: '1px solid var(--border-subtle)',
               borderRadius: 'var(--radius-sm)',
-              color: 'var(--text-secondary)',
-              padding: '4px 24px 4px 10px',
-              fontSize: '11px',
-              fontFamily: 'var(--font-code)',
+              color: 'var(--text-primary)',
+              padding: '5px 28px 5px 10px',
+              fontSize: '12px',
+              fontWeight: 500,
+              fontFamily: 'var(--font-ui)',
               cursor: 'pointer',
               outline: 'none'
             }}
           >
             {Object.values(SUPPORTED_LANGUAGES).map(lang => (
               <option key={lang.id} value={lang.id} style={{ background: 'var(--bg-dropdown-option)', color: 'var(--text-primary)' }}>
-                {lang.name}
+                {lang.badge}
               </option>
             ))}
           </select>
-          <ChevronDown size={12} style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: 'var(--text-muted)' }} />
+          <ChevronDown size={13} style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: 'var(--text-muted)' }} />
         </div>
       </div>
 
-      {/* CENTER: COMMAND PALETTE TRIGGER & BREADCRUMBS */}
+      {/* CENTER: COMMAND PALETTE */}
       <div className="hud-center">
-        <button 
+        <button
           className="command-search-btn"
           onClick={() => setIsCommandPaletteOpen(true)}
           title="Open Command Palette (⌘K / Ctrl+K)"
           aria-label="Open Command Palette"
         >
-          <div className="command-search-inner" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <Search size={14} className="command-search-icon" style={{ marginTop: 2 }} />
-            <span className="command-search-label">Search symbols, STL headers, refactor actions...</span>
+          <div className="command-search-inner">
+            <Search size={14} className="command-search-icon" />
+            <span className="command-search-label">Search files, symbols, or commands...</span>
           </div>
           <span className="kbd-shortcut">⌘K</span>
         </button>
       </div>
 
-      {/* RIGHT TELEMETRY & ACTIONS */}
+      {/* RIGHT: ACTIONS & LAYOUT CONTROLS */}
       <div className="hud-actions">
-        {/* TELEMETRY PILL */}
-        <div className="hud-pill hud-telemetry-pill" style={{ background: 'rgba(0, 242, 254, 0.05)', borderColor: 'rgba(0, 242, 254, 0.2)' }}>
-          <Sparkles size={12} color="var(--accent-cyan)" />
-          <span className="telemetry-item-latency" style={{ color: 'var(--text-cyan)' }}>{latency}µs</span>
-          <span className="telemetry-separator" style={{ opacity: 0.4 }}>|</span>
-          <span className="telemetry-item-syms">{symbolCount.toLocaleString()} Syms</span>
-          <span className="telemetry-separator" style={{ opacity: 0.4 }}>|</span>
-          <span className="telemetry-item-hit" style={{ color: 'var(--text-emerald)' }}>{cacheHitRate}% Hit</span>
-        </div>
+        {(isBackendConnected || latency !== null) && (
+          <div className="hud-pill hud-telemetry-pill" title="Live API status">
+            <span
+              style={{
+                width: 7,
+                height: 7,
+                borderRadius: '50%',
+                backgroundColor: isBackendConnected ? 'var(--accent-emerald)' : 'var(--accent-amber)',
+                display: 'inline-block'
+              }}
+            />
+            {symbolCount !== null && <span>{symbolCount} symbols</span>}
+            {latency !== null && <span>{latency} ms</span>}
+          </div>
+        )}
 
-        {/* RUN & PROFILE BUTTON */}
-        <button 
+        <button
           className="btn-run-primary"
           onClick={runCurrentCode}
           disabled={isRunning}
-          title="Compile, Execute & Profile (F5)"
-          aria-label="Run and profile code"
+          title="Compile & Run (F5)"
+          aria-label="Run Code"
         >
-          <Play size={14} fill="var(--bg-void)" />
-          <span className="btn-run-label">{isRunning ? 'Compiling...' : 'Run & Profile'}</span>
+          {isRunning ? <Loader2 size={14} className="animate-spin" /> : <Play size={14} fill="currentColor" />}
+          <span className="btn-run-label">{isRunning ? 'Running...' : 'Run'}</span>
         </button>
 
-        {/* TOGGLE BUTTONS */}
         <div className="hud-toggle-group" style={{ display: 'flex', gap: 4 }}>
-          <button 
+          <button
+            className="btn-ghost-icon"
+            onClick={toggleTheme}
+            title={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} Mode`}
+            aria-label="Toggle Color Theme"
+          >
+            {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
+          </button>
+          <button
             className={`btn-ghost-icon ${isSidebarOpen ? 'active' : ''}`}
             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-            title="Toggle File Sidebar"
-            aria-label="Toggle File Sidebar"
+            title="Toggle Sidebar"
+            aria-label="Toggle Sidebar"
           >
-            <Layers size={15} />
+            <PanelLeft size={15} />
           </button>
-          <button 
-            className={`btn-ghost-icon ${isProfilerOpen ? 'active' : ''}`}
-            onClick={() => setIsProfilerOpen(!isProfilerOpen)}
-            title="Toggle Memory & Trie Profiler"
-            aria-label="Toggle Memory & Trie Profiler"
-          >
-            <Cpu size={15} />
-          </button>
-          <button 
+          <button
             className={`btn-ghost-icon ${isTerminalOpen ? 'active' : ''}`}
             onClick={() => setIsTerminalOpen(!isTerminalOpen)}
-            title="Toggle Neon Terminal"
-            aria-label="Toggle Neon Terminal"
+            title="Toggle Output Panel"
+            aria-label="Toggle Output Panel"
           >
-            <Terminal size={15} />
+            <PanelBottom size={15} />
+          </button>
+          <button
+            className={`btn-ghost-icon ${isProfilerOpen ? 'active' : ''}`}
+            onClick={() => setIsProfilerOpen(!isProfilerOpen)}
+            title="Toggle Code Insights"
+            aria-label="Toggle Code Insights"
+          >
+            <PanelRight size={15} />
           </button>
         </div>
       </div>

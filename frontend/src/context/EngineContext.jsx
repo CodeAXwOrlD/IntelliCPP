@@ -4,29 +4,73 @@ import { useEditor } from './EditorContext';
 const EngineContext = createContext(null);
 const API_BASE = process.env.REACT_APP_API_BASE || '/api';
 
+/**
+ * Parse compiler/runtime stderr into structured diagnostics for Monaco markers & Problems tab.
+ */
+function parseDiagnostics(errorText, languageId) {
+  if (!errorText) return [];
+  const diagnostics = [];
+  const lines = errorText.split('\n');
+
+  for (const line of lines) {
+    // GCC / Clang: file.cpp:12:5: error: expected ';' before '}' token
+    if (languageId === 'cpp') {
+      const match = line.match(/:(\d+):(\d+):\s+(error|warning|note):\s+(.+)$/);
+      if (match) {
+        diagnostics.push({
+          line: parseInt(match[1], 10),
+          column: parseInt(match[2], 10),
+          severity: match[3] === 'warning' ? 'warning' : match[3] === 'note' ? 'info' : 'error',
+          message: match[4].trim()
+        });
+      }
+    } else if (languageId === 'python') {
+      // Python: File "...", line 4
+      const match = line.match(/File\s+"[^"]+",\s+line\s+(\d+)/);
+      if (match) {
+        diagnostics.push({
+          line: parseInt(match[1], 10),
+          column: 1,
+          severity: 'error',
+          message: lines[lines.length - 1] || 'Python runtime/syntax error'
+        });
+      }
+    } else if (languageId === 'rust') {
+      // Rust: --> main.rs:4:5
+      const match = line.match(/-->\s+[^:]+:(\d+):(\d+)/);
+      if (match) {
+        diagnostics.push({
+          line: parseInt(match[1], 10),
+          column: parseInt(match[2], 10),
+          severity: 'error',
+          message: errorText.split('\n')[0] || 'Rust compiler error'
+        });
+      }
+    }
+  }
+  return diagnostics;
+}
+
 export function EngineProvider({ children }) {
-  const { activeFile, activeLanguage, cursorPos } = useEditor();
+  const { activeFile, activeLanguage, cursorPos, setIsTerminalOpen } = useEditor();
 
-  // Engine telemetry & state
-  const [latency, setLatency] = useState(18);
-  const [symbolCount] = useState(10420);
-  const [cacheHitRate] = useState(94.2);
-  const [isBackendConnected, setIsBackendConnected] = useState(true);
+  // Real Engine Telemetry (populated from /health and actual API calls)
+  const [latency, setLatency] = useState(null);
+  const [symbolCount, setSymbolCount] = useState(null);
+  const [cacheHitRate, setCacheHitRate] = useState(null);
+  const [isBackendConnected, setIsBackendConnected] = useState(false);
 
-  // Execution & Output state
+  // Execution & I/O state
   const [isRunning, setIsRunning] = useState(false);
-  const [outputLogs, setOutputLogs] = useState([
-    '⚡ IntelliCPP Engine v2.0 Initialized [C++20 ISO/IEC 14882]',
-    '✓ Clang-Trie Symbol Indexer: 10,420 STL symbols loaded in 1.4ms',
-    '✓ Memory Arena & Vector Profiler: Online (127.0.0.1:3001)',
-    'Ready. Press F5 or click "Run & Profile" to compile and execute.'
-  ]);
-  const [terminalActiveTab, setTerminalActiveTab] = useState('output');
-  const [assemblyOutput, setAssemblyOutput] = useState('');
-  const [executionStats, setExecutionStats] = useState({
-    executionTimeMs: 0,
-    memoryUsageKb: 4820,
-    exitCode: 0
+  const [stdinInput, setStdinInput] = useState('');
+  const [terminalActiveTab, setTerminalActiveTab] = useState('io');
+  const [diagnostics, setDiagnostics] = useState([]);
+  const [lastRunResult, setLastRunResult] = useState({
+    status: 'idle', // 'idle' | 'running' | 'success' | 'error'
+    stdout: '',
+    stderr: '',
+    exitCode: null,
+    durationMs: null
   });
 
   // Autocomplete Suggestions
@@ -34,18 +78,29 @@ export function EngineProvider({ children }) {
   const [isSuggesting, setIsSuggesting] = useState(false);
   const [astTokens, setAstTokens] = useState([]);
 
-  // Backend Health Polling
+  // Backend Health & Real Telemetry Polling
   useEffect(() => {
     const checkHealth = async () => {
       try {
         const res = await fetch(`${API_BASE}/health`, { method: 'GET' });
-        setIsBackendConnected(res.ok);
+        if (res.ok) {
+          setIsBackendConnected(true);
+          const data = await res.json().catch(() => null);
+          if (data?.cache?.suggestions?.hitRate !== undefined) {
+            setCacheHitRate(parseFloat(data.cache.suggestions.hitRate));
+          }
+          if (typeof data?.totalSymbols === 'number') {
+            setSymbolCount(data.totalSymbols);
+          }
+        } else {
+          setIsBackendConnected(false);
+        }
       } catch {
         setIsBackendConnected(false);
       }
     };
     checkHealth();
-    const interval = setInterval(checkHealth, 8000);
+    const interval = setInterval(checkHealth, 10000);
     return () => clearInterval(interval);
   }, []);
 
@@ -53,8 +108,7 @@ export function EngineProvider({ children }) {
   useEffect(() => {
     if (!activeFile?.content) return;
     const content = activeFile.content;
-    
-    // Extract user-defined identifiers dynamically
+
     const regex = /\b(?:int|float|double|char|string|auto|void|class|struct|def|fn|let|const|var)\s+([a-zA-Z_][a-zA-Z0-9_]*)/g;
     const tokens = [];
     let match;
@@ -76,7 +130,7 @@ export function EngineProvider({ children }) {
     return match ? match[1] : '';
   })();
 
-  // Query Autocomplete Suggestions from API or fallback to built-in Trie
+  // Query Autocomplete Suggestions from API or fallback to local symbols
   const querySuggestions = useCallback(async (prefix, line, column) => {
     if (!prefix || prefix.length < 1) {
       setSuggestions([]);
@@ -87,9 +141,8 @@ export function EngineProvider({ children }) {
     setIsSuggesting(true);
 
     try {
-      // 1. First check local multi-language symbols + active AST tokens
       const localBuiltins = activeLanguage.builtinSymbols || [];
-      const matchedBuiltins = localBuiltins.filter(s => 
+      const matchedBuiltins = localBuiltins.filter(s =>
         s.name.toLowerCase().includes(prefix.toLowerCase())
       );
 
@@ -98,13 +151,12 @@ export function EngineProvider({ children }) {
         .map(name => ({
           name,
           type: 'variable',
-          detail: `User Identifier (Live AST)`,
-          complexity: 'O(1) Local Scope'
+          detail: 'User Identifier (Local Scope)',
+          complexity: 'Local'
         }));
 
       let combined = [...matchedBuiltins, ...matchedAst];
 
-      // 2. Try querying backend Trie API if available
       try {
         const res = await fetch(`${API_BASE}/getSuggestions`, {
           method: 'POST',
@@ -120,42 +172,49 @@ export function EngineProvider({ children }) {
 
         if (res.ok) {
           const data = await res.json();
-          if (data && Array.isArray(data.suggestions)) {
-            const apiSuggestions = data.suggestions.map(item => typeof item === 'string' ? { name: item, type: 'stl', detail: 'STL Symbol' } : item);
+          const list = Array.isArray(data) ? data : data?.suggestions;
+          if (Array.isArray(list)) {
+            const apiSuggestions = list.map(item =>
+              typeof item === 'string'
+                ? { name: item, type: 'stl', detail: 'STL Symbol' }
+                : { name: item.text || item.name, ...item }
+            );
             combined = [...apiSuggestions, ...combined];
           }
         }
       } catch {
-        // Backend offline, local Trie handles suggestions
+        // Local fallback handles suggestions
       }
 
-      // Deduplicate suggestions by name
       const uniqueMap = new Map();
       combined.forEach(item => {
-        if (!uniqueMap.has(item.name)) uniqueMap.set(item.name, item);
+        if (item.name && !uniqueMap.has(item.name)) uniqueMap.set(item.name, item);
       });
 
-      const finalSuggestions = Array.from(uniqueMap.values()).slice(0, 10);
-      setSuggestions(finalSuggestions);
-
-      const elapsed = Math.max(1, Math.round((performance.now() - startTime) * 10) / 10);
-      setLatency(elapsed < 5 ? 12 : elapsed);
+      setSuggestions(Array.from(uniqueMap.values()).slice(0, 10));
+      const elapsed = Math.round((performance.now() - startTime) * 10) / 10;
+      setLatency(elapsed);
     } finally {
       setIsSuggesting(false);
     }
   }, [activeFile, activeLanguage, astTokens]);
 
-  // Code Execution Runner
+  // Real Code Execution Runner
   const runCurrentCode = async () => {
     if (isRunning || !activeFile) return;
 
     setIsRunning(true);
+    setIsTerminalOpen(true);
+    setDiagnostics([]);
+    setLastRunResult({
+      status: 'running',
+      stdout: '',
+      stderr: '',
+      exitCode: null,
+      durationMs: null
+    });
+
     const startExec = performance.now();
-    setOutputLogs(prev => [
-      ...prev,
-      `\n--- [Running ${activeFile.name}] ---`,
-      `Compiling ${activeFile.name} (${activeLanguage.badge})...`
-    ]);
 
     try {
       const res = await fetch(`${API_BASE}/runCode`, {
@@ -164,84 +223,60 @@ export function EngineProvider({ children }) {
         body: JSON.stringify({
           code: activeFile.content,
           language: activeLanguage.id,
+          stdin: stdinInput,
           fileName: activeFile.name
         })
       });
 
       const elapsed = Math.round(performance.now() - startExec);
+      const data = await res.json().catch(() => ({}));
 
-      if (res.ok) {
-        const data = await res.json();
-        if (data.output) {
-          setOutputLogs(prev => [
-            ...prev,
-            data.output,
-            `\n✓ Program exited with code 0 (${elapsed}ms execution time)`
-          ]);
-        } else if (data.error) {
-          setOutputLogs(prev => [
-            ...prev,
-            `❌ Compiler Diagnostic / Runtime Error:`,
-            data.error
-          ]);
-        }
+      if (res.ok && data.success) {
+        setLastRunResult({
+          status: 'success',
+          stdout: data.output || '',
+          stderr: data.error || '',
+          exitCode: data.exitCode ?? 0,
+          durationMs: data.durationMs ?? elapsed
+        });
       } else {
-        // Simulated local fallback run if serverless sandbox isn't attached
-        setOutputLogs(prev => [
-          ...prev,
-          `⚡ Output:\nHello, IntelliCPP!\nSorted elements: 1 1 2 3 4 5 6 9\n`,
-          `✓ Program exited with code 0 (${elapsed}ms execution time)`
-        ]);
+        const errMsg = data.error || `Request failed (HTTP ${res.status})`;
+        const parsedDiags = parseDiagnostics(errMsg, activeLanguage.id);
+        setDiagnostics(parsedDiags);
+        setLastRunResult({
+          status: 'error',
+          stdout: data.output || '',
+          stderr: errMsg,
+          exitCode: data.exitCode ?? (res.ok ? 1 : res.status),
+          durationMs: data.durationMs ?? elapsed
+        });
+        if (parsedDiags.length > 0) {
+          setTerminalActiveTab('problems');
+        }
       }
-
-      // Generate Clang Assembly preview
-      setAssemblyOutput(`
-.LC0:
-        .string "⚡ Initializing IntelliCPP Engine v2.0..."
-.LC1:
-        .string "Sorted elements: "
-main:
-        push    rbp
-        mov     rbp, rsp
-        push    r15
-        push    r14
-        push    r13
-        push    r12
-        push    rbx
-        sub     rsp, 72
-        mov     edi, OFFSET FLAT:.LC0
-        call    std::basic_ostream<char, std::char_traits<char> >& std::operator<<
-        lea     rax, [rbp-96]
-        mov     rdi, rax
-        call    std::vector<int, std::allocator<int> >::vector()
-        xor     eax, eax
-        add     rsp, 72
-        pop     rbx
-        pop     r12
-        pop     r13
-        pop     r14
-        pop     r15
-        pop     rbp
-        ret
-      `.trim());
-
-      setExecutionStats({
-        executionTimeMs: elapsed,
-        memoryUsageKb: Math.round(4200 + Math.random() * 800),
-        exitCode: 0
-      });
     } catch (err) {
-      setOutputLogs(prev => [
-        ...prev,
-        `❌ Execution Error: ${err.message || 'Failed to reach compiler backend'}`
-      ]);
+      const elapsed = Math.round(performance.now() - startExec);
+      setLastRunResult({
+        status: 'error',
+        stdout: '',
+        stderr: err.message || 'Failed to reach execution backend',
+        exitCode: 1,
+        durationMs: elapsed
+      });
     } finally {
       setIsRunning(false);
     }
   };
 
-  const clearLogs = () => {
-    setOutputLogs(['Terminal buffer cleared.']);
+  const clearOutput = () => {
+    setDiagnostics([]);
+    setLastRunResult({
+      status: 'idle',
+      stdout: '',
+      stderr: '',
+      exitCode: null,
+      durationMs: null
+    });
   };
 
   return (
@@ -252,18 +287,19 @@ main:
         cacheHitRate,
         isBackendConnected,
         isRunning,
-        outputLogs,
+        stdinInput,
+        setStdinInput,
         terminalActiveTab,
         setTerminalActiveTab,
-        assemblyOutput,
-        executionStats,
+        diagnostics,
+        lastRunResult,
         suggestions,
         isSuggesting,
         astTokens,
         activeWord,
         querySuggestions,
         runCurrentCode,
-        clearLogs
+        clearOutput
       }}
     >
       {children}
@@ -272,7 +308,7 @@ main:
 }
 
 export function useEngine() {
-  const context = useContext(EngineContext);
-  if (!context) throw new Error('useEngine must be used within an EngineProvider');
-  return context;
+  const ctx = useContext(EngineContext);
+  if (!ctx) throw new Error('useEngine must be used within an EngineProvider');
+  return ctx;
 }

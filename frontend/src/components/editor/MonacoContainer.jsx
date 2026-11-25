@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useCallback } from 'react';
+import React, { useRef, useEffect, useCallback, useMemo } from 'react';
 import Editor from '@monaco-editor/react';
 import { useEditor } from '../../context/EditorContext';
 import { useEngine } from '../../context/EngineContext';
@@ -15,10 +15,12 @@ export default function MonacoContainer() {
     isTerminalOpen,
     isSidebarOpen,
     isProfilerOpen,
-    terminalHeight
+    terminalHeight,
+    theme
   } = useEditor();
-  const { astTokens } = useEngine();
+  const { astTokens, diagnostics } = useEngine();
   const wrapperRef = useRef(null);
+  const monacoInstanceRef = useRef(null);
   const completionDisposableRef = useRef(null);
   const hoverDisposableRef = useRef(null);
 
@@ -66,78 +68,85 @@ export default function MonacoContainer() {
   }, [isTerminalOpen, isSidebarOpen, isProfilerOpen, terminalHeight, triggerLayout]);
 
   const handleEditorWillMount = (monaco) => {
-    monaco.editor.defineTheme('obsidian-cyber-dark', {
+    monacoInstanceRef.current = monaco;
+    monaco.editor.defineTheme('intellicpp-dark', {
       base: 'vs-dark',
       inherit: true,
       rules: [
-        { token: 'keyword', foreground: '00F2FE', fontStyle: 'bold' },
-        { token: 'type', foreground: '67F4B7' },
-        { token: 'identifier', foreground: 'F8FAFC' },
-        { token: 'string', foreground: 'FFB4AB' },
-        { token: 'number', foreground: 'FFC470' },
-        { token: 'comment', foreground: '64748B', fontStyle: 'italic' },
-        { token: 'delimiter', foreground: '849495' },
-        { token: 'function', foreground: 'D0BCFF' },
-        { token: 'operator', foreground: '6FF6FF' }
+        { token: 'keyword', foreground: '60A5FA', fontStyle: 'bold' },
+        { token: 'type', foreground: '34D399' },
+        { token: 'identifier', foreground: 'F4F4F5' },
+        { token: 'string', foreground: 'FCA5A5' },
+        { token: 'number', foreground: 'FBBF24' },
+        { token: 'comment', foreground: '71717A', fontStyle: 'italic' },
+        { token: 'function', foreground: 'A5B4FC' }
       ],
       colors: {
-        'editor.background': '#07080B',
-        'editor.foreground': '#E3E2E6',
-        'editorGutter.background': '#07080B',
-        'editorLineNumber.foreground': '#4B5563',
-        'editorLineNumber.activeForeground': '#00F2FE',
-        'editor.selectionBackground': 'rgba(0, 242, 254, 0.18)',
-        'editor.inactiveSelectionBackground': 'rgba(0, 242, 254, 0.08)',
-        'editor.selectionHighlightBackground': 'rgba(0, 242, 254, 0.12)',
-        'editor.findMatchBackground': 'rgba(0, 242, 254, 0.25)',
-        'editor.findMatchHighlightBackground': 'rgba(0, 242, 254, 0.12)',
-        'editor.findMatchBorder': 'rgba(0, 242, 254, 0.5)',
-        'editor.lineHighlightBackground': 'rgba(0, 242, 254, 0.04)',
-        'editor.lineHighlightBorder': 'rgba(0, 242, 254, 0.15)',
-        'editorCursor.foreground': '#00F2FE',
-        'editorWhitespace.foreground': 'rgba(255, 255, 255, 0.08)',
-        'editorIndentGuide.background': 'rgba(255, 255, 255, 0.05)',
-        'editorIndentGuide.activeBackground': 'rgba(0, 242, 254, 0.25)',
-        'editorWidget.background': '#0E1117',
-        'editorWidget.border': 'rgba(0, 242, 254, 0.35)',
-        'editorSuggestWidget.background': '#0E1117',
-        'editorSuggestWidget.border': 'rgba(0, 242, 254, 0.35)',
-        'editorSuggestWidget.selectedBackground': 'rgba(0, 242, 254, 0.16)',
-        'editorSuggestWidget.selectedIconForeground': '#00F2FE',
-        'editorSuggestWidget.foreground': '#E3E2E6',
-        'editorSuggestWidget.highlightForeground': '#00F2FE',
-        'editorSuggestWidget.focusHighlightForeground': '#00F2FE',
-        'list.activeSelectionBackground': 'rgba(0, 242, 254, 0.16)',
-        'list.activeSelectionForeground': '#FFFFFF',
-        'list.activeSelectionIconForeground': '#00F2FE',
-        'list.focusBackground': 'rgba(0, 242, 254, 0.16)',
-        'list.focusForeground': '#FFFFFF',
-        'list.focusOutline': 'rgba(0, 242, 254, 0.4)',
-        'list.hoverBackground': 'rgba(255, 255, 255, 0.05)',
-        'list.hoverForeground': '#E3E2E6',
-        'list.highlightForeground': '#00F2FE',
-        'editorHoverWidget.background': '#0D1117',
-        'editorHoverWidget.border': 'rgba(0, 242, 254, 0.35)',
-        'editorHoverWidget.foreground': '#E3E2E6',
-        'editorError.foreground': '#F43F5E',
-        'editorError.background': 'rgba(244, 63, 94, 0.06)',
-        'editorError.border': 'transparent',
-        'editorWarning.foreground': '#F59E0B',
-        'editorWarning.background': 'rgba(245, 158, 11, 0.06)',
-        'editorInfo.foreground': '#00F2FE',
-        'editorGutter.modifiedBackground': '#00F2FE',
-        'editorGutter.addedBackground': '#10B981',
-        'editorGutter.deletedBackground': '#F43F5E',
-        'editorOverviewRuler.border': 'transparent',
-        'editorOverviewRuler.errorForeground': 'rgba(244, 63, 94, 0.5)',
-        'editorOverviewRuler.warningForeground': 'rgba(245, 158, 11, 0.5)'
+        'editor.background': '#09090B',
+        'editor.foreground': '#E4E4E7',
+        'editorGutter.background': '#09090B',
+        'editorLineNumber.foreground': '#71717A',
+        'editorLineNumber.activeForeground': '#FAFAFA',
+        'editor.selectionBackground': 'rgba(59, 130, 246, 0.3)',
+        'editor.lineHighlightBackground': '#00000000',
+        'editor.lineHighlightBorder': '#00000000',
+        'editorCursor.foreground': '#FFFFFF',
+        'editorWidget.background': '#18181B',
+        'editorWidget.border': '#27272A',
+        'editorSuggestWidget.background': '#18181B',
+        'editorSuggestWidget.border': '#27272A',
+        'editorSuggestWidget.selectedBackground': 'rgba(59, 130, 246, 0.2)',
+        'editorHoverWidget.background': '#18181B',
+        'editorHoverWidget.border': '#27272A'
+      }
+    });
+
+    monaco.editor.defineTheme('intellicpp-light', {
+      base: 'vs',
+      inherit: true,
+      rules: [],
+      colors: {
+        'editor.background': '#FFFFFF',
+        'editorGutter.background': '#FFFFFF',
+        'editor.lineHighlightBackground': '#F8FAFC',
+        'editorCursor.foreground': '#2563EB'
       }
     });
   };
 
+  useEffect(() => {
+    const monaco = monacoInstanceRef.current;
+    const editor = monacoEditorRef.current;
+    if (!monaco || !editor) return;
+    const model = editor.getModel();
+    if (!model) return;
+
+    const markers = (diagnostics || []).map(d => ({
+      startLineNumber: Math.max(1, d.line),
+      startColumn: Math.max(1, d.column || 1),
+      endLineNumber: Math.max(1, d.line),
+      endColumn: Math.max(1, (d.column || 1) + 12),
+      message: d.message,
+      severity:
+        d.severity === 'warning'
+          ? monaco.MarkerSeverity.Warning
+          : d.severity === 'info'
+          ? monaco.MarkerSeverity.Info
+          : monaco.MarkerSeverity.Error
+    }));
+    monaco.editor.setModelMarkers(model, 'intellicpp-compiler', markers);
+  }, [diagnostics, activeFile?.id, monacoEditorRef]);
+
   const handleEditorDidMount = (editor, monaco) => {
     monacoEditorRef.current = editor;
     triggerLayout();
+
+    // Ensure click anywhere in editor wrapper properly places cursor
+    editor.onMouseDown(() => {
+      editor.focus();
+    });
+
+    editor.focus();
 
     editor.onDidChangeCursorPosition((e) => {
       if (e.position) {
@@ -152,7 +161,7 @@ export default function MonacoContainer() {
     const langId = activeLanguage.monacoId || 'cpp';
 
     const completionProvider = monaco.languages.registerCompletionItemProvider(langId, {
-      triggerCharacters: ['.', ':', '>', '#', '<', '"', ' '],
+      triggerCharacters: ['.', ':', '>', '#', '<', '"'],
       provideCompletionItems: (model, position) => {
         try {
           const word = model.getWordUntilPosition(position);
@@ -308,9 +317,9 @@ export default function MonacoContainer() {
               });
             }
 
-            if (suggestions.length > 0) {
-              return { suggestions };
-            }
+            // If typing member access (e.g. v. or v.pu), strictly return member methods
+            // Never leak global symbols/keywords into member dot completions
+            return { suggestions };
           }
 
           // Top-level symbols
@@ -444,49 +453,67 @@ export default function MonacoContainer() {
     hoverDisposableRef.current = hoverProvider;
   };
 
-  const isTouchScreen = typeof window !== 'undefined' && window.innerWidth < 640;
+  const editorOptions = useMemo(() => {
+    const isTouch = typeof window !== 'undefined' && window.innerWidth < 640;
+    return {
+      fontSize: editorSettings.fontSize,
+      fontFamily: "'JetBrains Mono', monospace",
+      fontLigatures: editorSettings.fontLigatures,
+      minimap: { enabled: editorSettings.minimap && !isTouch, scale: 0.8 },
+      wordWrap: editorSettings.wordWrap ? 'on' : 'off',
+      lineNumbers: editorSettings.lineNumbers ? 'on' : 'off',
+      automaticLayout: true,
+      smoothScrolling: true,
+      cursorBlinking: 'blink',
+      cursorStyle: 'line',
+      cursorWidth: 2,
+      cursorSmoothCaretAnimation: 'off',
+      renderLineHighlight: 'none',
+      scrollBeyondLastLine: false,
+      padding: { top: 12, bottom: 12 },
+      suggestOnTriggerCharacters: true,
+      quickSuggestions: { other: true, comments: false, strings: true },
+      hover: {
+        enabled: !isTouch,
+        delay: 200,
+        sticky: true
+      },
+      suggest: {
+        showWords: false,
+        preview: true,
+        filterGraceful: true,
+        showClasses: true,
+        showFunctions: true,
+        showKeywords: true,
+        showMethods: true,
+        showVariables: true,
+        showModules: true,
+        showSnippets: true
+      },
+      guides: {
+        indentation: true,
+        highlightActiveIndentation: true
+      }
+    };
+  }, [editorSettings]);
 
   return (
-    <div className="monaco-wrapper" ref={wrapperRef}>
+    <div
+      className="monaco-wrapper"
+      ref={wrapperRef}
+      onClick={() => monacoEditorRef.current?.focus()}
+    >
       <Editor
         height="100%"
-        theme="obsidian-cyber-dark"
+        path={activeFile ? `intellicpp://${activeFile.id}/${activeFile.name}` : 'intellicpp://0/main.cpp'}
+        theme={theme === 'light' ? 'intellicpp-light' : 'intellicpp-dark'}
         language={activeLanguage.monacoId || 'cpp'}
         value={activeFile?.content || ''}
         onChange={(value) => updateFileContent(value || '')}
         beforeMount={handleEditorWillMount}
         onMount={handleEditorDidMount}
-        options={{
-          fontSize: editorSettings.fontSize,
-          fontFamily: "'JetBrains Mono', monospace",
-          fontLigatures: editorSettings.fontLigatures,
-          minimap: { enabled: editorSettings.minimap && !isTouchScreen, scale: 0.8 },
-          wordWrap: editorSettings.wordWrap ? 'on' : 'off',
-          lineNumbers: editorSettings.lineNumbers ? 'on' : 'off',
-          automaticLayout: true,
-          smoothScrolling: true,
-          cursorBlinking: 'smooth',
-          cursorSmoothCaretAnimation: 'on',
-          renderLineHighlight: 'line',
-          renderLineHighlightOnlyWhenFocus: true,
-          scrollBeyondLastLine: false,
-          padding: { top: 12, bottom: 12 },
-          suggestOnTriggerCharacters: true,
-          quickSuggestions: { other: true, comments: false, strings: true },
-          hover: {
-            enabled: !isTouchScreen,
-            delay: 200,
-            sticky: true
-          },
-          suggest: {
-            showWords: true,
-            preview: true
-          },
-          guides: {
-            indentation: true,
-            highlightActiveIndentation: true
-          }
-        }}
+        options={editorOptions}
+        keepCurrentModel={false}
       />
     </div>
   );

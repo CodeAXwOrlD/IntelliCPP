@@ -1,5 +1,5 @@
 import React from 'react';
-import { Zap } from 'lucide-react';
+import { Code } from 'lucide-react';
 import { useEditor } from '../../context/EditorContext';
 
 export default function QuickInject() {
@@ -7,9 +7,9 @@ export default function QuickInject() {
   const injects = activeLanguage.quickInjects || [];
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
       <div style={{ fontSize: '11px', color: 'var(--text-muted)', lineHeight: 1.4 }}>
-        Click any capsule to inject pre-configured header, library, or template directly into the active editor.
+        Inject pre-configured header or boilerplate template directly into the cursor position.
       </div>
 
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 4 }}>
@@ -20,27 +20,27 @@ export default function QuickInject() {
             style={{
               display: 'inline-flex',
               alignItems: 'center',
-              gap: 6,
-              background: 'rgba(0, 242, 254, 0.08)',
-              border: '1px solid rgba(0, 242, 254, 0.25)',
-              borderRadius: 'var(--radius-pill)',
-              padding: '4px 10px',
-              color: 'var(--text-cyan)',
+              gap: 5,
+              background: 'var(--bg-surface-elevated)',
+              border: '1px solid var(--border-subtle)',
+              borderRadius: 'var(--radius-xs)',
+              padding: '4px 8px',
+              color: 'var(--text-primary)',
               fontSize: '11px',
               fontFamily: 'var(--font-code)',
               cursor: 'pointer',
-              transition: 'all 150ms ease'
+              transition: 'border-color 120ms ease, background 120ms ease'
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = 'var(--accent-cyan)';
-              e.currentTarget.style.boxShadow = '0 0 10px rgba(0, 242, 254, 0.3)';
+              e.currentTarget.style.borderColor = 'var(--border-hover)';
+              e.currentTarget.style.background = 'var(--bg-glass-active)';
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = 'rgba(0, 242, 254, 0.25)';
-              e.currentTarget.style.boxShadow = 'none';
+              e.currentTarget.style.borderColor = 'var(--border-subtle)';
+              e.currentTarget.style.background = 'var(--bg-surface-elevated)';
             }}
           >
-            <Zap size={11} />
+            <Code size={11} color="var(--text-muted)" />
             <span>{inj.label}</span>
           </button>
         ))}

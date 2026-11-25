@@ -15,7 +15,7 @@ import './styles/animations.css';
 
 function IDEWorkspace() {
   return (
-    <div className="app-container bg-ambient-grid">
+    <div className="app-container">
       {/* TOP NAVBAR HUD */}
       <NavbarHUD />
 

@@ -50,7 +50,9 @@ export default function TrieVisualizer() {
           <GitCommit size={14} color="var(--accent-cyan)" />
           <span>O(L) Trie Prefix Graph</span>
         </div>
-        <span style={{ fontSize: '10px', color: 'var(--text-emerald)' }}>⚡ {latency}µs</span>
+        <span style={{ fontSize: '10px', color: 'var(--text-emerald)', fontWeight: 500 }}>
+          {latency !== null ? `${latency} ms` : 'O(L)'}
+        </span>
       </div>
 
       <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
@@ -94,7 +96,7 @@ export default function TrieVisualizer() {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        background: 'rgba(7, 8, 11, 0.7)',
+        background: 'var(--bg-void)',
         padding: '10px 8px',
         borderRadius: 'var(--radius-sm)',
         border: '1px solid var(--border-subtle)',
@@ -111,7 +113,7 @@ export default function TrieVisualizer() {
               flexShrink: 0
             }}>
               <div style={{
-                width: node.level === 0 ? 28 : (node.isTerminal ? 32 : 24),
+                width: node.level === 0 ? 30 : (node.isTerminal ? 36 : 26),
                 height: 24,
                 borderRadius: 'var(--radius-xs)',
                 display: 'flex',
@@ -119,28 +121,25 @@ export default function TrieVisualizer() {
                 justifyContent: 'center',
                 fontSize: node.isTerminal ? '9px' : '10px',
                 fontFamily: 'var(--font-code)',
-                fontWeight: 700,
-                background: node.active ? 'linear-gradient(135deg, rgba(0, 242, 254, 0.2), rgba(139, 92, 246, 0.2))' : 'rgba(255, 255, 255, 0.04)',
-                border: node.active ? '1px solid var(--accent-cyan)' : '1px solid var(--border-subtle)',
-                color: node.active ? 'var(--text-cyan)' : 'var(--text-dim)',
-                boxShadow: node.active ? '0 0 8px rgba(0, 242, 254, 0.3)' : 'none',
-                transition: 'all 200ms ease'
+                fontWeight: 600,
+                background: node.active ? 'var(--bg-surface-elevated)' : 'transparent',
+                border: node.active ? '1px solid var(--border-hover)' : '1px solid var(--border-subtle)',
+                color: node.active ? 'var(--text-primary)' : 'var(--text-dim)',
+                transition: 'all 120ms ease'
               }}>
                 {node.char}
               </div>
               {node.isTerminal && (
-                <span style={{ fontSize: '8px', color: 'var(--accent-emerald)', fontWeight: 600 }}>Leaf</span>
+                <span style={{ fontSize: '8px', color: 'var(--text-emerald)', fontWeight: 600 }}>Leaf</span>
               )}
             </div>
             {idx < displayNodes.length - 1 && (
               <div style={{
                 flex: 1,
                 minWidth: 8,
-                height: 2,
-                background: node.active ? 'var(--accent-cyan)' : 'var(--border-subtle)',
-                boxShadow: node.active ? '0 0 6px var(--accent-cyan)' : 'none',
-                margin: '0 3px',
-                transition: 'all 200ms ease'
+                height: 1,
+                background: 'var(--border-glass)',
+                margin: '0 3px'
               }} />
             )}
           </React.Fragment>

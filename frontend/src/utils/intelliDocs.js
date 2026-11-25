@@ -366,19 +366,20 @@ export function deduceContextType(code, lineNumber, columnNumber) {
     const prefix = dotMatch[2] || '';
 
     // Search for variable declaration across entire code translation unit
+    // Match: vector<int> v, std::vector<int> v, string s, map<K, V> m, etc.
+    const knownTypes = [
+      'vector', 'string', 'map', 'unordered_map', 'set', 'unordered_set',
+      'stack', 'queue', 'priority_queue', 'deque', 'list',
+      'unique_ptr', 'shared_ptr'
+    ];
+
     const typeRegex = new RegExp(
-      `(?:(?:std::)?([a-zA-Z_][a-zA-Z0-9_]*)\\s*<[^>]*>|(?:std::)?(string|vector|map|unordered_map|set|unordered_set|stack|queue|priority_queue|deque|list|unique_ptr|shared_ptr))\\s+[*&]*\\b${objectName}\\b`,
-      'g'
+      '(?:(?:std::)?(' + knownTypes.join('|') + '))(?:\\s*<[^;\\r\\n]+>)?\\s+[*&]*\\b' + objectName + '\\b'
     );
 
-    let match;
-    let deducedType = '';
-    while ((match = typeRegex.exec(code)) !== null) {
-      deducedType = (match[1] || match[2] || '').toLowerCase();
-    }
-
-    if (deducedType) {
-      return { objectName, type: deducedType, prefix, isMemberAccess: true };
+    const match = code.match(typeRegex);
+    if (match && match[1]) {
+      return { objectName, type: match[1].toLowerCase(), prefix, isMemberAccess: true };
     }
 
     return { objectName, type: 'unknown_object', prefix, isMemberAccess: true };

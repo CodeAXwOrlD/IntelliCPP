@@ -104,8 +104,8 @@ export default function BentoProfiler() {
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <Cpu size={15} color="var(--accent-cyan)" />
-            <span style={{ fontSize: '11px', fontFamily: 'var(--font-code)', fontWeight: 700, letterSpacing: '0.08em', color: 'var(--text-primary)', textTransform: 'uppercase' }}>
-              Live Engine Profiler
+            <span style={{ fontSize: '12px', fontFamily: 'var(--font-ui)', fontWeight: 600, letterSpacing: '0.02em', color: 'var(--text-primary)' }}>
+              Code Insights
             </span>
           </div>
           <button

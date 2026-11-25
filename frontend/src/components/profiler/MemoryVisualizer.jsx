@@ -84,21 +84,21 @@ export default function MemoryVisualizer() {
 
       {/* METRICS & CONTROLS */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '11px', fontFamily: 'var(--font-code)' }}>
-        <span>Size: <b style={{ color: 'var(--text-cyan)' }}>{elements.length}</b></span>
-        <span>Cap: <b style={{ color: 'var(--text-violet)' }}>{capacity}</b></span>
-        <div style={{ display: 'flex', gap: 3 }}>
+        <span>Size: <b style={{ color: 'var(--text-primary)' }}>{elements.length}</b></span>
+        <span>Cap: <b style={{ color: 'var(--text-secondary)' }}>{capacity}</b></span>
+        <div style={{ display: 'flex', gap: 4 }}>
           <button
             onClick={pushElement}
             style={{
               display: 'inline-flex',
               alignItems: 'center',
               gap: 2,
-              background: 'var(--accent-cyan-subtle)',
-              border: '1px solid rgba(0, 242, 254, 0.3)',
+              background: 'var(--bg-surface-elevated)',
+              border: '1px solid var(--border-subtle)',
               borderRadius: 'var(--radius-xs)',
-              color: 'var(--text-cyan)',
-              padding: '2px 5px',
-              fontSize: '10px',
+              color: 'var(--text-primary)',
+              padding: '2px 6px',
+              fontSize: '11px',
               cursor: 'pointer'
             }}
             title="push_back() O(1) amortized"
@@ -113,12 +113,12 @@ export default function MemoryVisualizer() {
               display: 'inline-flex',
               alignItems: 'center',
               gap: 2,
-              background: 'rgba(244, 63, 94, 0.08)',
-              border: '1px solid rgba(244, 63, 94, 0.25)',
+              background: 'var(--bg-surface-elevated)',
+              border: '1px solid var(--border-subtle)',
               borderRadius: 'var(--radius-xs)',
-              color: 'var(--accent-coral)',
-              padding: '2px 5px',
-              fontSize: '10px',
+              color: 'var(--text-secondary)',
+              padding: '2px 6px',
+              fontSize: '11px',
               cursor: elements.length === 0 ? 'not-allowed' : 'pointer',
               opacity: elements.length === 0 ? 0.4 : 1
             }}
@@ -130,12 +130,12 @@ export default function MemoryVisualizer() {
           <button
             onClick={shrinkToFit}
             style={{
-              background: 'rgba(255, 255, 255, 0.04)',
+              background: 'var(--bg-surface-elevated)',
               border: '1px solid var(--border-subtle)',
               borderRadius: 'var(--radius-xs)',
               color: 'var(--text-muted)',
-              padding: '2px 5px',
-              fontSize: '9px',
+              padding: '2px 6px',
+              fontSize: '10px',
               cursor: 'pointer'
             }}
             title="shrink_to_fit()"
@@ -151,16 +151,15 @@ export default function MemoryVisualizer() {
           display: 'flex',
           alignItems: 'center',
           gap: 4,
-          fontSize: '9px',
+          fontSize: '10px',
           color: 'var(--accent-amber)',
-          background: 'rgba(245, 158, 11, 0.1)',
-          border: '1px solid rgba(245, 158, 11, 0.3)',
-          padding: '2px 6px',
-          borderRadius: 3,
-          animation: 'pulseGlow 800ms infinite'
+          background: 'rgba(245, 158, 11, 0.08)',
+          border: '1px solid rgba(245, 158, 11, 0.25)',
+          padding: '3px 8px',
+          borderRadius: 3
         }}>
           <Zap size={10} />
-          <span><b>2x Heap Growth:</b> Reallocated memory buffer to {baseAddr}</span>
+          <span><b>Buffer Resized:</b> Vector reallocated to {baseAddr} (2x geometric growth)</span>
         </div>
       )}
 
@@ -168,13 +167,13 @@ export default function MemoryVisualizer() {
       <div style={{
         display: 'grid',
         gridTemplateColumns: `repeat(${Math.min(capacity, 16)}, 1fr)`,
-        gap: 2,
-        background: 'rgba(7, 8, 11, 0.7)',
-        padding: 4,
+        gap: 3,
+        background: 'var(--bg-void)',
+        padding: 5,
         borderRadius: 'var(--radius-xs)',
         border: reallocFlash ? '1px solid var(--accent-amber)' : '1px solid var(--border-subtle)',
         marginTop: 4,
-        transition: 'border 300ms ease'
+        transition: 'border 200ms ease'
       }}>
         {Array.from({ length: capacity }).map((_, idx) => {
           const isFilled = idx < elements.length;
@@ -191,16 +190,16 @@ export default function MemoryVisualizer() {
                 justifyContent: 'center',
                 borderRadius: 2,
                 background: isFilled 
-                  ? 'linear-gradient(180deg, rgba(0, 242, 254, 0.25), rgba(139, 92, 246, 0.15))' 
-                  : 'rgba(255, 255, 255, 0.02)',
-                border: isFilled ? '1px solid rgba(0, 242, 254, 0.4)' : '1px dashed var(--border-subtle)',
-                fontSize: '9px',
+                  ? 'var(--bg-surface-elevated)' 
+                  : 'transparent',
+                border: isFilled ? '1px solid var(--border-hover)' : '1px dashed var(--border-subtle)',
+                fontSize: '10px',
                 fontFamily: 'var(--font-code)',
                 color: isFilled ? 'var(--text-primary)' : 'var(--text-dim)',
-                fontWeight: isFilled ? 700 : 400,
-                transition: 'all 200ms ease'
+                fontWeight: isFilled ? 600 : 400,
+                transition: 'all 120ms ease'
               }}
-              title={isFilled ? `Element[${idx}] = ${val} at ${baseAddr}+${idx * 4} (sizeof(int)=4)` : `Unallocated Capacity Slot[${idx}]`}
+              title={isFilled ? `Element[${idx}] = ${val}` : `Empty Capacity Slot[${idx}]`}
             >
               <span>{isFilled ? val : '·'}</span>
             </div>
@@ -208,8 +207,8 @@ export default function MemoryVisualizer() {
         })}
       </div>
 
-      <div style={{ fontSize: '9px', color: 'var(--text-dim)', fontFamily: 'var(--font-code)', display: 'flex', justifyContent: 'space-between', marginTop: 2 }}>
-        <span>Addr: {baseAddr}</span>
+      <div style={{ fontSize: '10px', color: 'var(--text-dim)', fontFamily: 'var(--font-code)', display: 'flex', justifyContent: 'space-between', marginTop: 2 }}>
+        <span>Heap Buffer {baseAddr}</span>
         <span>Contiguous Int32 [4B]</span>
       </div>
     </div>

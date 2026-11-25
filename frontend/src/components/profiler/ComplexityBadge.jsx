@@ -16,35 +16,35 @@ export default function ComplexityBadge() {
   const { timeComp, timeReason, spaceComp, spaceReason, status, details } = complexityReport;
 
   const statusBadgeStyle = {
-    fontSize: '9px',
+    fontSize: '10px',
     background:
       status === 'OPTIMAL'
-        ? 'rgba(16, 185, 129, 0.15)'
+        ? 'rgba(52, 211, 153, 0.12)'
         : status === 'WARN'
-        ? 'rgba(245, 158, 11, 0.15)'
+        ? 'rgba(245, 158, 11, 0.12)'
         : status === 'HIGH'
-        ? 'rgba(244, 63, 94, 0.15)'
-        : 'rgba(0, 242, 254, 0.15)',
+        ? 'rgba(239, 68, 68, 0.12)'
+        : 'rgba(96, 165, 250, 0.12)',
     color:
       status === 'OPTIMAL'
         ? 'var(--text-emerald)'
         : status === 'WARN'
         ? 'var(--accent-amber)'
         : status === 'HIGH'
-        ? 'var(--accent-coral)'
+        ? 'var(--accent-red)'
         : 'var(--text-cyan)',
-    padding: '2px 6px',
-    borderRadius: 'var(--radius-xs)',
-    fontWeight: 700,
-    letterSpacing: '0.04em'
+    padding: '2px 8px',
+    borderRadius: 'var(--radius-pill)',
+    fontWeight: 600,
+    letterSpacing: '0.02em'
   };
 
   return (
     <div className="bento-card">
       <div className="bento-card-title">
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <Gauge size={14} color="var(--accent-emerald)" />
-          <span>Real-Time Complexity & Telemetry</span>
+          <Gauge size={14} color="var(--text-secondary)" />
+          <span>Complexity & Telemetry</span>
         </div>
         <span style={statusBadgeStyle}>
           {status}
@@ -55,20 +55,20 @@ export default function ComplexityBadge() {
         {/* TIME COMPLEXITY CARD */}
         <div 
           style={{ 
-            background: 'rgba(255, 255, 255, 0.02)', 
+            background: 'var(--bg-surface-elevated)', 
             padding: '8px 10px', 
             borderRadius: 'var(--radius-xs)', 
             border: '1px solid var(--border-subtle)' 
           }}
           title={timeReason}
         >
-          <div style={{ fontSize: '9px', color: 'var(--text-muted)', fontWeight: 600, letterSpacing: '0.05em' }}>
+          <div style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 600, letterSpacing: '0.04em' }}>
             TIME COMPLEXITY
           </div>
-          <div style={{ fontSize: '13px', fontFamily: 'var(--font-code)', color: 'var(--text-cyan)', fontWeight: 700, marginTop: 2 }}>
+          <div style={{ fontSize: '13px', fontFamily: 'var(--font-code)', color: 'var(--text-primary)', fontWeight: 600, marginTop: 2 }}>
             {timeComp}
           </div>
-          <div style={{ fontSize: '9px', color: 'var(--text-dim)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          <div style={{ fontSize: '10px', color: 'var(--text-dim)', marginTop: 3, lineHeight: 1.35 }}>
             {timeReason}
           </div>
         </div>
@@ -76,20 +76,20 @@ export default function ComplexityBadge() {
         {/* SPACE COMPLEXITY CARD */}
         <div 
           style={{ 
-            background: 'rgba(255, 255, 255, 0.02)', 
+            background: 'var(--bg-surface-elevated)', 
             padding: '8px 10px', 
             borderRadius: 'var(--radius-xs)', 
             border: '1px solid var(--border-subtle)' 
           }}
           title={spaceReason}
         >
-          <div style={{ fontSize: '9px', color: 'var(--text-muted)', fontWeight: 600, letterSpacing: '0.05em' }}>
+          <div style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 600, letterSpacing: '0.04em' }}>
             SPACE COMPLEXITY
           </div>
-          <div style={{ fontSize: '13px', fontFamily: 'var(--font-code)', color: 'var(--text-violet)', fontWeight: 700, marginTop: 2 }}>
+          <div style={{ fontSize: '13px', fontFamily: 'var(--font-code)', color: 'var(--text-primary)', fontWeight: 600, marginTop: 2 }}>
             {spaceComp}
           </div>
-          <div style={{ fontSize: '9px', color: 'var(--text-dim)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          <div style={{ fontSize: '10px', color: 'var(--text-dim)', marginTop: 3, lineHeight: 1.35 }}>
             {spaceReason}
           </div>
         </div>

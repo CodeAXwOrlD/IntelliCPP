@@ -12,9 +12,9 @@ export const SUPPORTED_LANGUAGES = {
     name: 'C++20',
     extension: '.cpp',
     monacoId: 'cpp',
-    badge: 'C++20 Clang',
+    badge: 'C++20 (GCC)',
     standard: 'C++20 ISO/IEC 14882',
-    iconColor: '#00F2FE',
+    iconColor: '#3B82F6',
     defaultFileName: 'main.cpp',
     defaultCode: `#include <iostream>
 #include <vector>

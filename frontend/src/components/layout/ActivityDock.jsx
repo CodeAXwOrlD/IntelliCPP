@@ -5,7 +5,9 @@ import {
   Zap, 
   Settings, 
   FilePlus, 
-  Save 
+  FolderOpen,
+  Save,
+  Check
 } from 'lucide-react';
 import { useEditor } from '../../context/EditorContext';
 
@@ -16,7 +18,9 @@ export default function ActivityDock() {
     isSidebarOpen, 
     setIsSidebarOpen, 
     createNewFile, 
-    saveActiveFile,
+    openSystemFile,
+    saveSystemFile,
+    saveStatus,
     activeLanguage 
   } = useEditor();
 
@@ -45,13 +49,24 @@ export default function ActivityDock() {
         </div>
         <div 
           className="dock-item"
-          title="Save Active File (⌘S)"
-          aria-label="Save Active File"
+          title="Open File from Computer (Ctrl+O)"
+          aria-label="Open File from Computer"
           role="button"
           tabIndex={0}
-          onClick={saveActiveFile}
+          onClick={openSystemFile}
         >
-          <Save size={18} />
+          <FolderOpen size={18} />
+        </div>
+        <div 
+          className={`dock-item ${saveStatus === 'saved' ? 'saved-active' : ''}`}
+          title={saveStatus === 'saved' ? 'Saved to System' : 'Save / Export to Disk (Ctrl+S)'}
+          aria-label="Save File"
+          role="button"
+          tabIndex={0}
+          onClick={saveSystemFile}
+          style={saveStatus === 'saved' ? { color: 'var(--text-emerald)' } : {}}
+        >
+          {saveStatus === 'saved' ? <Check size={18} /> : <Save size={18} />}
         </div>
 
         <div style={{ width: '60%', height: 1, background: 'var(--border-subtle)', margin: '4px 0' }} />

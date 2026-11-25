@@ -1,40 +1,43 @@
-import React, { useRef, useEffect, useState } from 'react';
-import { Trash2, X, ChevronUp, ChevronDown, Minimize2, Maximize2 } from 'lucide-react';
+import React, { useRef, useState } from 'react';
+import {
+  Trash2,
+  X,
+  ChevronUp,
+  ChevronDown,
+  Copy,
+  Check,
+  AlertCircle,
+  CheckCircle2,
+  Loader2,
+  TerminalSquare
+} from 'lucide-react';
 import { useEngine } from '../../context/EngineContext';
 import { useEditor } from '../../context/EditorContext';
 
 export default function NeonTerminal() {
-  const { 
-    outputLogs, 
-    terminalActiveTab, 
-    setTerminalActiveTab, 
-    assemblyOutput, 
-    clearLogs,
-    isRunning 
+  const {
+    stdinInput,
+    setStdinInput,
+    terminalActiveTab,
+    setTerminalActiveTab,
+    diagnostics,
+    lastRunResult,
+    clearOutput,
+    isRunning
   } = useEngine();
 
-  const { terminalHeight, setTerminalHeight, setIsTerminalOpen } = useEditor();
-  const [isMinimized, setIsMinimized] = useState(false);
+  const { terminalHeight, setTerminalHeight, setIsTerminalOpen, monacoEditorRef } = useEditor();
   const [isDragging, setIsDragging] = useState(false);
-  const logsEndRef = useRef(null);
+  const [copied, setCopied] = useState(false);
   const isDraggingRef = useRef(false);
   const startYRef = useRef(0);
   const startHeightRef = useRef(terminalHeight);
 
-  // Auto-scroll on new output
-  useEffect(() => {
-    if (logsEndRef.current && !isMinimized) {
-      logsEndRef.current.scrollTop = logsEndRef.current.scrollHeight;
-    }
-  }, [outputLogs, assemblyOutput, isMinimized]);
-
-  // Draggable vertical resizer
   const startResize = (clientY) => {
     isDraggingRef.current = true;
     setIsDragging(true);
     startYRef.current = clientY;
     startHeightRef.current = terminalHeight;
-    setIsMinimized(false);
 
     document.body.style.cursor = 'row-resize';
     document.body.style.userSelect = 'none';
@@ -44,10 +47,9 @@ export default function NeonTerminal() {
       const currentY = e.clientY ?? (e.touches && e.touches[0]?.clientY);
       if (currentY === undefined) return;
       const deltaY = startYRef.current - currentY;
-      const minHeight = 100;
-      const maxHeight = Math.max(minHeight, window.innerHeight - 150);
-      const newHeight = Math.min(Math.max(startHeightRef.current + deltaY, minHeight), maxHeight);
-      setTerminalHeight(newHeight);
+      const minHeight = 140;
+      const maxHeight = Math.max(minHeight, window.innerHeight - 160);
+      setTerminalHeight(Math.min(Math.max(startHeightRef.current + deltaY, minHeight), maxHeight));
     };
 
     const onMouseUp = () => {
@@ -67,204 +69,169 @@ export default function NeonTerminal() {
     window.addEventListener('touchend', onMouseUp);
   };
 
-  const handleMouseDown = (e) => {
-    e.preventDefault();
-    startResize(e.clientY);
+  const handleCopy = () => {
+    const text = [lastRunResult.stdout, lastRunResult.stderr].filter(Boolean).join('\n');
+    if (!text) return;
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
   };
 
-  const handleTouchStart = (e) => {
-    if (e.touches && e.touches[0]) {
-      startResize(e.touches[0].clientY);
-    }
-  };
-
-  const handleDoubleClick = () => {
-    // Quick toggle sizes: compact (160px) -> standard (260px) -> expanded (420px)
-    if (isMinimized) {
-      setIsMinimized(false);
-      return;
-    }
-    if (terminalHeight < 220) {
-      setTerminalHeight(340);
-    } else if (terminalHeight < 380) {
-      setTerminalHeight(480);
-    } else {
-      setTerminalHeight(180);
-    }
+  const jumpToDiagnostic = (diag) => {
+    const editor = monacoEditorRef.current;
+    if (!editor) return;
+    editor.revealLineInCenter(diag.line);
+    editor.setPosition({ lineNumber: diag.line, column: diag.column || 1 });
+    editor.focus();
   };
 
   const toggleHeight = (direction) => {
-    if (isMinimized) setIsMinimized(false);
     if (direction === 'up') {
-      setTerminalHeight(prev => Math.min(prev + 80, 500));
+      setTerminalHeight(prev => Math.min(prev + 80, 520));
     } else {
       setTerminalHeight(prev => Math.max(prev - 80, 140));
     }
   };
 
   return (
-    <div 
-      className={`terminal-dock ${isMinimized ? 'minimized' : ''} ${isDragging ? 'resizing' : ''}`} 
-      style={{ height: isMinimized ? '36px' : `${terminalHeight}px` }}
+    <section
+      className={`terminal-dock ${isDragging ? 'resizing' : ''}`}
+      style={{ height: `${terminalHeight}px` }}
     >
-      {/* DRAGGABLE RESIZE HANDLE */}
-      <div 
+      {/* DRAG RESIZER */}
+      <div
         className="terminal-resizer"
-        onMouseDown={handleMouseDown}
-        onTouchStart={handleTouchStart}
-        onDoubleClick={handleDoubleClick}
-        title="Drag up/down to resize terminal | Double click to cycle height"
-        aria-label="Resize terminal handle"
+        onMouseDown={(e) => { e.preventDefault(); startResize(e.clientY); }}
+        onTouchStart={(e) => e.touches?.[0] && startResize(e.touches[0].clientY)}
+        title="Drag to resize output panel"
       >
         <div className="resizer-handle-indicator-h" />
       </div>
 
-      {/* TERMINAL HEADER BAR */}
+      {/* PANEL HEADER */}
       <div className="terminal-header-bar">
-        <div className="terminal-tabs" role="tablist" aria-label="Terminal Tabs">
+        <div className="terminal-tabs">
           <button
-            role="tab"
-            aria-selected={terminalActiveTab === 'output'}
-            className={`term-tab-btn ${terminalActiveTab === 'output' ? 'active' : ''}`}
-            onClick={() => {
-              setTerminalActiveTab('output');
-              if (isMinimized) setIsMinimized(false);
-            }}
+            className={`term-tab-btn ${terminalActiveTab === 'io' ? 'active' : ''}`}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
+            onClick={() => setTerminalActiveTab('io')}
           >
-            Output & Logs
+            <TerminalSquare size={13} />
+            <span>Input &amp; Output</span>
           </button>
+
           <button
-            role="tab"
-            aria-selected={terminalActiveTab === 'assembly'}
-            className={`term-tab-btn ${terminalActiveTab === 'assembly' ? 'active' : ''}`}
-            onClick={() => {
-              setTerminalActiveTab('assembly');
-              if (isMinimized) setIsMinimized(false);
-            }}
+            className={`term-tab-btn ${terminalActiveTab === 'problems' ? 'active' : ''}`}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
+            onClick={() => setTerminalActiveTab('problems')}
           >
-            Clang Assembly (.s)
-          </button>
-          <button
-            role="tab"
-            aria-selected={terminalActiveTab === 'terminal'}
-            className={`term-tab-btn ${terminalActiveTab === 'terminal' ? 'active' : ''}`}
-            onClick={() => {
-              setTerminalActiveTab('terminal');
-              if (isMinimized) setIsMinimized(false);
-            }}
-          >
-            Interactive CLI
+            <AlertCircle size={13} />
+            <span>Problems</span>
+            {diagnostics.length > 0 && (
+              <span className="diag-count-badge">{diagnostics.length}</span>
+            )}
           </button>
         </div>
 
-        {/* CONTROLS */}
-        <div className="terminal-controls" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-          {/* MINIMIZE / EXPAND TOGGLE FOR BOTTOM SHEET */}
-          <button
-            onClick={() => setIsMinimized(prev => !prev)}
-            className="term-control-btn"
-            style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: 4, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-            title={isMinimized ? 'Expand Terminal' : 'Minimize Terminal'}
-            aria-label={isMinimized ? 'Expand Terminal' : 'Minimize Terminal'}
-          >
-            {isMinimized ? <Maximize2 size={13} /> : <Minimize2 size={13} />}
+        {/* STATUS & CONTROLS */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          {isRunning && (
+            <span className="exec-status-pill running">
+              <Loader2 size={12} className="animate-spin" />
+              Compiling &amp; Running...
+            </span>
+          )}
+          {!isRunning && lastRunResult.status === 'success' && (
+            <span className="exec-status-pill success">
+              <CheckCircle2 size={12} />
+              Exited {lastRunResult.exitCode} • {lastRunResult.durationMs}ms
+            </span>
+          )}
+          {!isRunning && lastRunResult.status === 'error' && (
+            <span className="exec-status-pill error">
+              <AlertCircle size={12} />
+              Failed (Exit {lastRunResult.exitCode}) • {lastRunResult.durationMs}ms
+            </span>
+          )}
+
+          <button className="btn-ghost-icon" onClick={handleCopy} title="Copy Output" aria-label="Copy Output">
+            {copied ? <Check size={14} color="var(--accent-emerald)" /> : <Copy size={14} />}
           </button>
-          <button
-            onClick={() => toggleHeight('down')}
-            className="term-control-btn term-resize-btn"
-            style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: 4, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-            title="Decrease Terminal Height"
-            aria-label="Decrease Terminal Height"
-          >
-            <ChevronDown size={14} />
+          <button className="btn-ghost-icon" onClick={clearOutput} title="Clear Output" aria-label="Clear Output">
+            <Trash2 size={14} />
           </button>
-          <button
-            onClick={() => toggleHeight('up')}
-            className="term-control-btn term-resize-btn"
-            style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: 4, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-            title="Increase Terminal Height"
-            aria-label="Increase Terminal Height"
-          >
+          <button className="btn-ghost-icon" onClick={() => toggleHeight('up')} title="Expand Panel" aria-label="Expand Panel">
             <ChevronUp size={14} />
           </button>
-          <button
-            onClick={clearLogs}
-            className="term-control-btn"
-            style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: 4, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-            title="Clear Logs"
-            aria-label="Clear Terminal Logs"
-          >
-            <Trash2 size={13} />
+          <button className="btn-ghost-icon" onClick={() => toggleHeight('down')} title="Collapse Panel" aria-label="Collapse Panel">
+            <ChevronDown size={14} />
           </button>
-          <button
-            onClick={() => setIsTerminalOpen(false)}
-            className="term-control-btn"
-            style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: 4, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-            title="Close Terminal"
-            aria-label="Close Terminal"
-          >
+          <button className="btn-ghost-icon" onClick={() => setIsTerminalOpen(false)} title="Close Panel" aria-label="Close Panel">
             <X size={14} />
           </button>
         </div>
       </div>
 
-      {/* TERMINAL BODY CONTENT */}
-      <div className="terminal-body" ref={logsEndRef}>
-        {/* OUTPUT TAB */}
-        {terminalActiveTab === 'output' && (
-          <div>
-            {outputLogs.map((log, idx) => {
-              const isError = log.includes('❌') || log.includes('error:') || log.includes('Error:');
-              const isSuccess = log.includes('✓') || log.includes('Hello,') || log.includes('Sorted');
-              const isHeader = log.startsWith('---') || log.includes('[Running');
+      {/* PANEL BODY */}
+      <div className="io-panel-body">
+        {terminalActiveTab === 'io' ? (
+          <div className="io-split-grid">
+            {/* STDIN CARD */}
+            <div className="io-card">
+              <div className="io-card-label">Standard Input (stdin)</div>
+              <textarea
+                className="io-stdin-textarea"
+                value={stdinInput}
+                onChange={(e) => setStdinInput(e.target.value)}
+                placeholder="Enter input values here (e.g. 15 27)..."
+                spellCheck={false}
+              />
+            </div>
 
-              return (
-                <div
-                  key={idx}
-                  style={{
-                    color: isError ? 'var(--accent-coral)' : isSuccess ? 'var(--accent-emerald)' : isHeader ? 'var(--accent-cyan)' : 'var(--text-secondary)',
-                    whiteSpace: 'pre-wrap',
-                    marginBottom: 2
-                  }}
-                >
-                  {log}
-                </div>
-              );
-            })}
-
-            {isRunning && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--text-cyan)', marginTop: 6 }}>
-                <span className="animate-radar" style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--accent-cyan)' }} />
-                <span>Compiling translation unit with C++20 Clang...</span>
+            {/* STDOUT / STDERR CARD */}
+            <div className="io-card">
+              <div className="io-card-label">Program Output</div>
+              <div className="io-output-box">
+                {lastRunResult.status === 'idle' && (
+                  <span className="io-placeholder">Click Run (F5) to compile and execute your code.</span>
+                )}
+                {lastRunResult.status === 'running' && (
+                  <span className="io-placeholder">Executing in sandbox...</span>
+                )}
+                {lastRunResult.stdout && (
+                  <pre className="io-stdout">{lastRunResult.stdout}</pre>
+                )}
+                {lastRunResult.stderr && (
+                  <pre className="io-stderr">{lastRunResult.stderr}</pre>
+                )}
+                {lastRunResult.status === 'success' && !lastRunResult.stdout && !lastRunResult.stderr && (
+                  <span className="io-placeholder">Program finished with no output.</span>
+                )}
               </div>
+            </div>
+          </div>
+        ) : (
+          <div className="problems-list">
+            {diagnostics.length === 0 ? (
+              <div className="io-placeholder" style={{ padding: 16 }}>
+                No compiler problems detected.
+              </div>
+            ) : (
+              diagnostics.map((d, idx) => (
+                <button
+                  key={idx}
+                  className="problem-row"
+                  onClick={() => jumpToDiagnostic(d)}
+                >
+                  <AlertCircle size={14} color={d.severity === 'warning' ? 'var(--accent-amber)' : 'var(--accent-red)'} />
+                  <span className="problem-loc">Ln {d.line}, Col {d.column}</span>
+                  <span className="problem-msg">{d.message}</span>
+                </button>
+              ))
             )}
           </div>
         )}
-
-        {/* ASSEMBLY TAB */}
-        {terminalActiveTab === 'assembly' && (
-          <div>
-            <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: 6 }}>
-              Target: x86_64-pc-linux-gnu | Optimizer: -O3 | Standard: C++20
-            </div>
-            <pre style={{ margin: 0, color: 'var(--text-violet)', fontSize: '11px', fontFamily: 'var(--font-code)' }}>
-              {assemblyOutput || '; Compile the active file to generate assembly output (F5)'}
-            </pre>
-          </div>
-        )}
-
-        {/* TERMINAL CLI TAB */}
-        {terminalActiveTab === 'terminal' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-            <div style={{ color: 'var(--text-muted)' }}>IntelliCPP Sandboxed Terminal Session (Node-API Bridge)</div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
-              <span style={{ color: 'var(--accent-cyan)' }}>intellicpp@sandbox:~$</span>
-              <span style={{ color: 'var(--text-emerald)' }}>./main</span>
-            </div>
-            <div style={{ color: 'var(--text-secondary)' }}>Hello, IntelliCPP!</div>
-          </div>
-        )}
       </div>
-    </div>
+    </section>
   );
 }
