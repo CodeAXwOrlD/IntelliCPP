@@ -1,6 +1,7 @@
 /**
- * Vercel Serverless Function for Suggestions
- * Pure JavaScript version - no native C++ dependency
+ * Serverless Autocomplete & Suggestion Provider
+ * Lightweight JS Trie fallback for edge/serverless CDN deployments.
+ * Full C++20 N-API Trie native engine runs on dedicated Docker/Linux backend.
  */
 
 const path = require('path');
