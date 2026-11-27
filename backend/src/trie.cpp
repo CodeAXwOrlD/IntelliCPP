@@ -1,6 +1,7 @@
 #include "../include/trie.h"
 #include <algorithm>
 #include <chrono>
+#include <functional>
 
 namespace codeflow {
 
