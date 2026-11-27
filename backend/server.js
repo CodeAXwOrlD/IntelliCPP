@@ -36,9 +36,6 @@ const { LRUCache } = require('./src/cache/lruCache');
 const { defaultQueue } = require('./src/queue/jobQueue');
 const { performReadinessCheck } = require('./src/probes/readiness');
 
-// ─────────────────────────────────────────────
-// C++20 N-API NATIVE SUGGESTION ENGINE
-// ─────────────────────────────────────────────
 let nativeEngine = null;
 try {
   const addonPath = path.resolve(__dirname, './build/Release/codeflow_native.node');
@@ -63,9 +60,6 @@ try {
 const app = express();
 app.set('trust proxy', 1);
 
-// ─────────────────────────────────────────────
-// COMPRESSION & SECURITY HEADERS
-// ─────────────────────────────────────────────
 app.use(compression());
 
 app.use(helmet({
@@ -100,10 +94,8 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-Execution-Mode']
 }));
 
-// Body payload size cap
 app.use(express.json({ limit: config.BODY_PAYLOAD_LIMIT }));
 
-// Global fallback rate limiter
 const globalApiLimiter = rateLimit({
   windowMs: config.RATE_LIMITS.GLOBAL_API.WINDOW_MS,
   max: config.RATE_LIMITS.GLOBAL_API.MAX_PER_WINDOW,
@@ -114,7 +106,6 @@ const globalApiLimiter = rateLimit({
 });
 app.use('/api/', globalApiLimiter);
 
-// Autocomplete / Suggestions rate limiter
 const suggestionsLimiter = rateLimit({
   windowMs: config.RATE_LIMITS.SUGGESTIONS.WINDOW_MS,
   max: config.RATE_LIMITS.SUGGESTIONS.MAX_PER_WINDOW,
@@ -124,7 +115,6 @@ const suggestionsLimiter = rateLimit({
   message: { error: 'Autocomplete rate limit exceeded. Please slow down.' }
 });
 
-// Advanced Token Bucket & Concurrency Limiter for Code Execution
 const runCodeLimiter = new TokenBucketLimiter({
   capacity: config.RATE_LIMITS.RUN_CODE.BURST_CAPACITY,
   refillRatePerSec: config.RATE_LIMITS.RUN_CODE.REFILL_PER_SEC,
@@ -132,11 +122,9 @@ const runCodeLimiter = new TokenBucketLimiter({
   message: 'Code execution rate limit exceeded. Please wait a moment before running code again.'
 });
 
-// In-Memory LRU Caches
 const suggestionsCache = new LRUCache({ capacity: 2000, ttlMs: 5 * 60 * 1000 });
 const statsCache = new LRUCache({ capacity: 1000, ttlMs: 5 * 60 * 1000 });
 
-// Request timing
 app.use((req, res, next) => {
   req._startTime = Date.now();
   next();

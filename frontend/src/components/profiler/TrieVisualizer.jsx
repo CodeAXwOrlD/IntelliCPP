@@ -8,7 +8,6 @@ export default function TrieVisualizer() {
   const [manualPrefix, setManualPrefix] = useState('');
   const [isSearching, setIsSearching] = useState(false);
 
-  // Use active editor word if available, else manual test input
   const currentQuery = isSearching ? manualPrefix : (activeWord || manualPrefix || 'vec');
   const cleanQuery = currentQuery.replace(/[^a-zA-Z0-9_]/g, '').slice(0, 5);
 

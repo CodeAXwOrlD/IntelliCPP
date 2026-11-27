@@ -69,7 +69,6 @@ export default function SidebarContainer() {
   };
 
   const handleDoubleClick = () => {
-    // Toggle between default (250px) and wide (380px)
     setSidebarWidth(prev => (prev > 300 ? 250 : 380));
   };
 

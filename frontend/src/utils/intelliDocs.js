@@ -1,5 +1,4 @@
 export const CPP_DOCS = {
-  // ── Containers ───────────────────────────────────────────────────────
   vector: {
     name: 'std::vector<T>',
     header: '<vector>',
@@ -121,7 +120,6 @@ export const CPP_DOCS = {
     example: `#include <memory>\n\nauto p1 = std::make_shared<std::string>("data");`
   },
 
-  // ── Methods ──────────────────────────────────────────────────────────
   push_back: {
     name: 'push_back(const T& val)',
     header: '<vector> / <string> / <deque> / <list>',
@@ -240,7 +238,6 @@ export const CPP_DOCS = {
     example: `if (myMap.find("key") != myMap.end()) { /* found */ }`
   },
 
-  // ── Algorithms ───────────────────────────────────────────────────────
   sort: {
     name: 'std::sort(first, last)',
     header: '<algorithm>',
@@ -287,7 +284,6 @@ export const CPP_DOCS = {
     example: `auto it = std::upper_bound(v.begin(), v.end(), 10);`
   },
 
-  // ── Keywords ─────────────────────────────────────────────────────────
   constexpr: {
     name: 'constexpr specifier',
     header: 'C++ Core Language',
@@ -335,65 +331,192 @@ export const CPP_DOCS = {
   }
 };
 
-/**
- * Extract all declared user variables and identifiers from code
- * Supports:
- * - STL containers: stack<int> st, vector<int> vec, map<string, int> mp, etc.
- * - Primitive types: int count, float val, double d, bool flag, char c, etc.
- * - Auto and pointers: auto ptr, Node* head
- * - Loops and assignments: for (int i = 0; ...)
- */
-export function extractDeclaredVariables(code) {
-  if (!code) return [];
-  const variables = [];
-  const seen = new Set();
+const CPP_KEYWORDS = new Set([
+  'int', 'float', 'double', 'char', 'void', 'bool', 'auto', 'long', 'short',
+  'unsigned', 'signed', 'const', 'static', 'return', 'if', 'else', 'for',
+  'while', 'do', 'switch', 'case', 'break', 'continue', 'struct', 'class',
+  'namespace', 'using', 'std', 'include', 'define', 'ifdef', 'ifndef',
+  'endif', 'elif', 'undef', 'pragma', 'defined', 'main', 'true', 'false', 'nullptr'
+]);
 
-  const addVar = (name, type) => {
-    if (!name || seen.has(name)) return;
-    const keywords = new Set([
-      'int', 'float', 'double', 'char', 'void', 'bool', 'auto', 'long', 'short',
-      'unsigned', 'signed', 'const', 'static', 'return', 'if', 'else', 'for',
-      'while', 'do', 'switch', 'case', 'break', 'continue', 'struct', 'class',
-      'namespace', 'using', 'std', 'include', 'main', 'true', 'false', 'nullptr'
-    ]);
-    if (keywords.has(name)) return;
-    seen.add(name);
-    variables.push({
-      name,
-      type: type || 'variable',
-      detail: `Local Variable (${type || 'auto'})`
-    });
-  };
-
-  // 1. Template & Container declarations: e.g. stack<int> st; vector<string> vec;
+function extractLineVars(line) {
+  const found = [];
   const containerRegex = /\b(?:(?:std::)?(?:vector|string|map|unordered_map|set|unordered_set|stack|queue|priority_queue|deque|list|unique_ptr|shared_ptr|pair))\s*(?:<[^;{}\n]+>)?\s+[*&]*([a-zA-Z_][a-zA-Z0-9_]*)\b/g;
   let match;
-  while ((match = containerRegex.exec(code)) !== null) {
+  while ((match = containerRegex.exec(line)) !== null) {
     const rawType = match[0].trim().split(/\s+/)[0];
-    addVar(match[1], rawType);
+    found.push({ name: match[1], type: rawType, detail: `Local Variable (${rawType})` });
   }
 
-  // 2. Primitive & standard type declarations: e.g. int count = 0; float total;
   const primitiveRegex = /\b(?:int|float|double|char|bool|long|short|unsigned|int64_t|size_t|auto)\s+[*&]*([a-zA-Z_][a-zA-Z0-9_]*)\b/g;
-  while ((match = primitiveRegex.exec(code)) !== null) {
+  while ((match = primitiveRegex.exec(line)) !== null) {
     const rawType = match[0].trim().split(/\s+/)[0];
-    addVar(match[1], rawType);
+    found.push({ name: match[1], type: rawType, detail: `Local Variable (${rawType})` });
   }
 
-  // 3. Custom type declarations: e.g. TreeNode* root; MyClass obj;
   const customTypeRegex = /\b([A-Z][a-zA-Z0-9_]*)\s+[*&]*([a-zA-Z_][a-zA-Z0-9_]*)\s*(?:=|;|\(|\{)/g;
-  while ((match = customTypeRegex.exec(code)) !== null) {
-    addVar(match[2], match[1]);
+  while ((match = customTypeRegex.exec(line)) !== null) {
+    found.push({ name: match[2], type: match[1], detail: `Local Variable (${match[1]})` });
   }
 
-  return variables;
+  return found;
 }
 
-/**
- * Real-Time Client-Side Syntax Validator
- * Checks bracket/parenthesis/brace parity, unclosed strings, and missing statement semicolons.
- * Disappears immediately as user fixes code in real time without needing to click Run.
- */
+function extractConditionIds(expr) {
+  if (!expr) return [];
+  const ids = expr.match(/\b[a-zA-Z_][a-zA-Z0-9_]*\b/g) || [];
+  return ids.filter(id => id !== 'defined' && !CPP_KEYWORDS.has(id));
+}
+
+export function analyzeScopesAtCursor(code, cursorLineNumber, cursorColumn = Infinity) {
+  const empty = { prioritySymbols: [], localVars: [], closedSymbols: [] };
+  if (!code) return empty;
+
+  const lines = code.split('\n');
+  const limit = Math.min(cursorLineNumber || lines.length, lines.length);
+
+  const ppStack = [];
+  const activeGlobalMacros = new Map();
+  const activeLocalVars = new Map();
+  const closedSymbols = new Map();
+
+  for (let i = 0; i < limit; i++) {
+    let line = lines[i];
+    if (i === limit - 1 && Number.isFinite(cursorColumn)) {
+      line = line.slice(0, Math.max(0, cursorColumn - 1));
+    }
+    const stripped = line.replace(/\/\/.*$/, '').trim();
+    if (!stripped) continue;
+
+    if (stripped.startsWith('#')) {
+      // Skip incomplete directive on the cursor line itself so typing "#if FO" doesn't self-complete as defined
+      if (i === limit - 1 && Number.isFinite(cursorColumn)) continue;
+
+      const condOpen = stripped.match(/^#\s*(ifdef|ifndef|if)\s+(.+)$/);
+      if (condOpen) {
+        const condIds = extractConditionIds(condOpen[2]);
+        ppStack.push({
+          directive: condOpen[1],
+          conditionSymbols: new Set(condIds),
+          definedMacros: new Map(),
+          declaredVars: new Map()
+        });
+        continue;
+      }
+
+      const elifMatch = stripped.match(/^#\s*elif\s+(.+)$/);
+      if (elifMatch && ppStack.length > 0) {
+        extractConditionIds(elifMatch[1]).forEach(id => ppStack[ppStack.length - 1].conditionSymbols.add(id));
+        continue;
+      }
+
+      const defineMatch = stripped.match(/^#\s*define\s+([a-zA-Z_][a-zA-Z0-9_]*)(?:\([^)]*\))?(?:\s+(.*))?$/);
+      if (defineMatch) {
+        const name = defineMatch[1];
+        const val = (defineMatch[2] || '').trim();
+        const macroEntry = {
+          name,
+          type: 'macro',
+          detail: val ? `#define ${name} ${val}` : `#define ${name}`
+        };
+        closedSymbols.delete(name);
+        if (ppStack.length > 0) {
+          ppStack[ppStack.length - 1].definedMacros.set(name, macroEntry);
+        } else {
+          activeGlobalMacros.set(name, macroEntry);
+        }
+        continue;
+      }
+
+      const undefMatch = stripped.match(/^#\s*undef\s+([a-zA-Z_][a-zA-Z0-9_]*)/);
+      if (undefMatch) {
+        const name = undefMatch[1];
+        activeGlobalMacros.delete(name);
+        ppStack.forEach(frame => {
+          frame.definedMacros.delete(name);
+          frame.conditionSymbols.delete(name);
+        });
+        closedSymbols.set(name, { name, type: 'macro', detail: 'Undefined (#undef)' });
+        continue;
+      }
+
+      if (/^#\s*endif\b/.test(stripped)) {
+        const frame = ppStack.pop();
+        if (frame) {
+          frame.conditionSymbols.forEach(sym => {
+            if (!activeGlobalMacros.has(sym)) {
+              closedSymbols.set(sym, { name: sym, type: 'macro', detail: 'Scoped out (#endif)' });
+            }
+          });
+          frame.definedMacros.forEach((entry, name) => {
+            closedSymbols.set(name, { ...entry, detail: `${entry.detail} (Closed #endif)` });
+          });
+        }
+        continue;
+      }
+      continue;
+    }
+
+    const vars = extractLineVars(stripped);
+    for (const v of vars) {
+      if (CPP_KEYWORDS.has(v.name)) continue;
+      if (ppStack.length > 0) {
+        ppStack[ppStack.length - 1].declaredVars.set(v.name, {
+          ...v,
+          detail: `Conditional Scope (${v.type})`
+        });
+      } else {
+        activeLocalVars.set(v.name, v);
+      }
+    }
+  }
+
+  const priorityMap = new Map();
+  // Active open #if / #ifdef / #ifndef frame symbols & variables come first
+  for (const frame of ppStack) {
+    frame.declaredVars.forEach((v, name) => priorityMap.set(name, v));
+    frame.definedMacros.forEach((m, name) => priorityMap.set(name, m));
+    frame.conditionSymbols.forEach(sym => {
+      if (!priorityMap.has(sym)) {
+        priorityMap.set(sym, { name: sym, type: 'macro', detail: `Preprocessor Guard (#${frame.directive})` });
+      }
+    });
+  }
+  activeGlobalMacros.forEach((m, name) => {
+    if (!priorityMap.has(name)) priorityMap.set(name, m);
+  });
+
+  const localVars = [];
+  activeLocalVars.forEach((v, name) => {
+    if (!priorityMap.has(name)) localVars.push(v);
+  });
+
+  const closedList = [];
+  closedSymbols.forEach((s, name) => {
+    if (!priorityMap.has(name) && !activeLocalVars.has(name)) closedList.push(s);
+  });
+
+  return {
+    prioritySymbols: Array.from(priorityMap.values()),
+    localVars,
+    closedSymbols: closedList
+  };
+}
+
+export function extractDeclaredVariables(code) {
+  if (!code) return [];
+  const { prioritySymbols, localVars } = analyzeScopesAtCursor(code, code.split('\n').length);
+  const seen = new Set();
+  const result = [];
+  for (const item of [...prioritySymbols, ...localVars]) {
+    if (!seen.has(item.name)) {
+      seen.add(item.name);
+      result.push(item);
+    }
+  }
+  return result;
+}
+
 export function validateSyntax(code, languageId = 'cpp') {
   if (!code) return [];
   const diagnostics = [];
@@ -406,7 +529,6 @@ export function validateSyntax(code, languageId = 'cpp') {
     const line = lines[i];
     const trimmed = line.trim();
 
-    // Skip empty lines, whole-line comments, and preprocessor directives
     if (!trimmed || trimmed.startsWith('//') || trimmed.startsWith('#')) {
       continue;
     }
@@ -418,7 +540,6 @@ export function validateSyntax(code, languageId = 'cpp') {
       const char = line[col];
       const prev = col > 0 ? line[col - 1] : '';
 
-      // Block comments /* ... */
       if (!inString) {
         if (!inBlockComment && char === '/' && line[col + 1] === '*') {
           inBlockComment = true;
@@ -431,13 +552,12 @@ export function validateSyntax(code, languageId = 'cpp') {
           continue;
         }
         if (!inBlockComment && char === '/' && line[col + 1] === '/') {
-          break; // Single line comment
+          break;
         }
       }
 
       if (inBlockComment) continue;
 
-      // String literals
       if ((char === '"' || char === "'") && prev !== '\\') {
         if (!inString) {
           inString = true;
@@ -450,7 +570,6 @@ export function validateSyntax(code, languageId = 'cpp') {
 
       if (inString) continue;
 
-      // Bracket matching
       if (char === '{' || char === '(' || char === '[') {
         stack.push({ char, line: i + 1, col: col + 1 });
       } else if (char === '}' || char === ')' || char === ']') {
@@ -485,7 +604,6 @@ export function validateSyntax(code, languageId = 'cpp') {
       });
     }
 
-    // Check missing semicolon on statements
     if (languageId === 'cpp' || languageId === 'rust') {
       if (
         !inBlockComment &&
@@ -528,7 +646,6 @@ export function validateSyntax(code, languageId = 'cpp') {
     }
   }
 
-  // Unclosed opening brackets
   while (stack.length > 0) {
     const unclosed = stack.pop();
     diagnostics.push({
@@ -542,9 +659,6 @@ export function validateSyntax(code, languageId = 'cpp') {
   return diagnostics;
 }
 
-/**
- * Deduce container/type and syntax context from AST snippet before cursor
- */
 export function deduceContextType(code, lineNumber, columnNumber) {
   if (!code) return { objectName: '', type: 'global', prefix: '' };
 
@@ -552,62 +666,73 @@ export function deduceContextType(code, lineNumber, columnNumber) {
   const currentLine = lines[lineNumber - 1] || '';
   const textBeforeCursor = currentLine.slice(0, columnNumber - 1);
 
-  // 1. Check for Preprocessor Directives: e.g. "#", "#in", "#inc", "#def"
-  const directiveMatch = textBeforeCursor.match(/^\s*#([a-zA-Z0-9_]*)$/);
+  const includeMatch =
+    textBeforeCursor.match(/#\s*include\s*<([a-zA-Z0-9_./]*)$/) ||
+    textBeforeCursor.match(/#\s*include\s*"([a-zA-Z0-9_./]*)$/);
+  if (includeMatch) {
+    const delimiter = textBeforeCursor.includes('"') ? '"' : '<';
+    return { objectName: 'include', type: 'include_header', prefix: includeMatch[1] || '', delimiter, isInclude: true };
+  }
+
+  const macroCondMatch = textBeforeCursor.match(/^\s*#\s*(ifdef|ifndef|undef|if|elif)\s+(?:.*[^a-zA-Z0-9_])?([a-zA-Z0-9_]*)$/);
+  if (macroCondMatch) {
+    return { objectName: macroCondMatch[1], type: 'macro_condition', directive: macroCondMatch[1], prefix: macroCondMatch[2] || '', isMacroCondition: true };
+  }
+
+  const defineNameMatch = textBeforeCursor.match(/^\s*#\s*define\s+([a-zA-Z0-9_]*)$/);
+  if (defineNameMatch) {
+    return { objectName: 'define', type: 'define_name', prefix: defineNameMatch[1] || '', isDefineName: true };
+  }
+
+  const defineBodyMatch = textBeforeCursor.match(/^\s*#\s*define\s+[a-zA-Z_][a-zA-Z0-9_]*(?:\([^)]*\))?\s+(?:.*[^a-zA-Z0-9_])?([a-zA-Z0-9_]*)$/);
+  if (defineBodyMatch) {
+    return { objectName: 'define', type: 'define_body', prefix: defineBodyMatch[1] || '', isDefineBody: true };
+  }
+
+  const pragmaMatch = textBeforeCursor.match(/^\s*#\s*pragma\s+([a-zA-Z0-9_]*)$/);
+  if (pragmaMatch) {
+    return { objectName: 'pragma', type: 'pragma', prefix: pragmaMatch[1] || '', isPragma: true };
+  }
+
+  const directiveMatch = textBeforeCursor.match(/^\s*#\s*([a-zA-Z0-9_]*)$/);
   if (directiveMatch) {
     return { objectName: '#', type: 'directive', prefix: directiveMatch[1] || '', isDirective: true };
   }
 
-  // 2. Check for #include header access: e.g. "#include <", "#include<", "#include <stack", "#include<stack"
-  const includeMatch = textBeforeCursor.match(/#include\s*<([a-zA-Z0-9_]*)$/) || 
-                       textBeforeCursor.match(/#include<([a-zA-Z0-9_]*)$/) ||
-                       textBeforeCursor.match(/#include\s*"([a-zA-Z0-9_]*)$/);
-  if (includeMatch) {
-    return { objectName: 'include', type: 'include_header', prefix: includeMatch[1] || '', isInclude: true };
+  if (/^\s*#/.test(textBeforeCursor)) {
+    return { objectName: '#', type: 'preprocessor_other', prefix: '', isPreprocessorOther: true };
   }
 
-  // 3. Check for member dot/arrow access: e.g. "nums.p", "v.", "my_map->in"
   const dotMatch = textBeforeCursor.match(/([a-zA-Z_][a-zA-Z0-9_]*)\s*(?:\.|->)([a-zA-Z0-9_]*)$/);
   if (dotMatch) {
     const objectName = dotMatch[1];
     const prefix = dotMatch[2] || '';
-
-    // Search for variable declaration across entire code translation unit
-    // Match: vector<int> v, std::vector<int> v, string s, map<K, V> m, etc.
     const knownTypes = [
       'vector', 'string', 'map', 'unordered_map', 'set', 'unordered_set',
       'stack', 'queue', 'priority_queue', 'deque', 'list',
       'unique_ptr', 'shared_ptr'
     ];
-
     const typeRegex = new RegExp(
       '(?:(?:std::)?(' + knownTypes.join('|') + '))(?:\\s*<[^;\\r\\n]+>)?\\s+[*&]*\\b' + objectName + '\\b'
     );
-
     const match = code.match(typeRegex);
     if (match && match[1]) {
       return { objectName, type: match[1].toLowerCase(), prefix, isMemberAccess: true };
     }
-
     return { objectName, type: 'unknown_object', prefix, isMemberAccess: true };
   }
 
-  // 4. Check for std:: namespace access
   const stdMatch = textBeforeCursor.match(/std::([a-zA-Z0-9_]*)$/);
   if (stdMatch) {
     return { objectName: 'std', type: 'std_namespace', prefix: stdMatch[1] || '', isNamespace: true };
   }
 
-  // 5. Word prefix for general autocomplete
   const wordMatch = textBeforeCursor.match(/([a-zA-Z_][a-zA-Z0-9_]*)$/);
   const prefix = wordMatch ? wordMatch[1] : '';
 
   return { objectName: '', type: 'global', prefix, isMemberAccess: false };
 }
 
-/**
- * Lookup rich documentation for Hover Provider
- */
 export function getDocumentation(symbolName) {
   if (!symbolName) return null;
   const cleanName = symbolName.replace(/^std::/, '').trim();

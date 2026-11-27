@@ -4,7 +4,6 @@ import { SUPPORTED_LANGUAGES, getLanguageByFilename } from '../languages/registr
 const EditorContext = createContext(null);
 
 export function EditorProvider({ children }) {
-  // Initial file set with localStorage persistence
   const [files, setFiles] = useState(() => {
     if (typeof window !== 'undefined') {
       try {
@@ -28,13 +27,11 @@ export function EditorProvider({ children }) {
 
   const [activeFileId, setActiveFileId] = useState(1);
   const nextFileId = useRef(4);
-  const [saveStatus, setSaveStatus] = useState(null); // null | 'saved' | 'error'
+  const [saveStatus, setSaveStatus] = useState(null);
 
-  // Active file & language derivation
   const activeFile = files.find(f => f.id === activeFileId) || files[0] || null;
   const activeLanguage = activeFile ? getLanguageByFilename(activeFile.name) : SUPPORTED_LANGUAGES.cpp;
 
-  // Editor cursor & telemetry
   const [cursorPos, setCursorPos] = useState({ line: 1, column: 1 });
   const [editorSettings, setEditorSettings] = useState({
     fontSize: 14,
@@ -44,7 +41,6 @@ export function EditorProvider({ children }) {
     fontLigatures: true
   });
 
-  // Layout View States (Mobile-aware initial states)
   const isDesktop = typeof window !== 'undefined' ? window.innerWidth > 1024 : true;
   const [activeDockItem, setActiveDockItem] = useState('explorer');
   const [isSidebarOpen, setIsSidebarOpen] = useState(isDesktop);
@@ -70,10 +66,8 @@ export function EditorProvider({ children }) {
     setTheme(prev => (prev === 'dark' ? 'light' : 'dark'));
   }, []);
 
-  // Editor ref for direct operations
   const monacoEditorRef = useRef(null);
 
-  // File Operations
   const updateFileContent = (content) => {
     setFiles(prev => prev.map(file => {
       if (file.id === activeFileId) {
@@ -154,9 +148,7 @@ export function EditorProvider({ children }) {
     }, 2500);
   }, [activeFileId]);
 
-  // Open File from local system file manager
   const openSystemFile = useCallback(async () => {
-    // 1. Try modern File System Access API
     if (typeof window !== 'undefined' && 'showOpenFilePicker' in window) {
       try {
         const [handle] = await window.showOpenFilePicker({
@@ -179,7 +171,6 @@ export function EditorProvider({ children }) {
       }
     }
 
-    // 2. Universal fallback using native file input element
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = '.cpp,.hpp,.c,.h,.cc,.cxx,.py,.rs,.js,.txt,.json,.md';
@@ -221,14 +212,11 @@ export function EditorProvider({ children }) {
     setTimeout(() => setSaveStatus(null), 2500);
   }, []);
 
-  // Save / Export Active File to local system disk via native file manager
   const saveSystemFile = useCallback(async () => {
     if (!activeFile) return;
 
-    // Save internally first
     await saveActiveFile();
 
-    // 1. Try modern File System Access API
     if (typeof window !== 'undefined' && 'showSaveFilePicker' in window) {
       try {
         const ext = activeFile.name.includes('.') ? `.${activeFile.name.split('.').pop()}` : '.cpp';
@@ -252,7 +240,6 @@ export function EditorProvider({ children }) {
       }
     }
 
-    // 2. Universal fallback: trigger browser save/download dialog
     const blob = new Blob([activeFile.content || ''], { type: 'text/plain;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -305,7 +292,6 @@ export function EditorProvider({ children }) {
     editor.focus();
   };
 
-  // Keyboard shortcut listener (Cmd+K / Ctrl+K, Ctrl+S, Ctrl+O)
   useEffect(() => {
     const handleKeyDown = (e) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
