@@ -117,7 +117,8 @@ export default function NeonTerminal() {
             onClick={() => setTerminalActiveTab('io')}
           >
             <TerminalSquare size={13} />
-            <span>Input &amp; Output</span>
+            <span className="term-tab-title-full">Input &amp; Output</span>
+            <span className="term-tab-title-short">I/O</span>
           </button>
 
           <button
@@ -134,23 +135,23 @@ export default function NeonTerminal() {
         </div>
 
         {/* STATUS & CONTROLS */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div className="terminal-controls-group">
           {isRunning && (
             <span className="exec-status-pill running">
               <Loader2 size={12} className="animate-spin" />
-              Compiling &amp; Running...
+              <span className="status-pill-text">Running...</span>
             </span>
           )}
           {!isRunning && lastRunResult.status === 'success' && (
             <span className="exec-status-pill success">
               <CheckCircle2 size={12} />
-              Exited {lastRunResult.exitCode} • {lastRunResult.durationMs}ms
+              <span className="status-pill-text">Exited {lastRunResult.exitCode} • {lastRunResult.durationMs}ms</span>
             </span>
           )}
           {!isRunning && lastRunResult.status === 'error' && (
             <span className="exec-status-pill error">
               <AlertCircle size={12} />
-              Failed (Exit {lastRunResult.exitCode}) • {lastRunResult.durationMs}ms
+              <span className="status-pill-text">Exit {lastRunResult.exitCode} • {lastRunResult.durationMs}ms</span>
             </span>
           )}
 

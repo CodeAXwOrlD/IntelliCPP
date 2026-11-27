@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useEditor } from './EditorContext';
+import { extractDeclaredVariables, validateSyntax } from '../utils/intelliDocs';
 
 const EngineContext = createContext(null);
 const API_BASE = process.env.REACT_APP_API_BASE || '/api';
@@ -54,13 +55,11 @@ function parseDiagnostics(errorText, languageId) {
 export function EngineProvider({ children }) {
   const { activeFile, activeLanguage, cursorPos, setIsTerminalOpen } = useEditor();
 
-  // Real Engine Telemetry (populated from /health and actual API calls)
   const [latency, setLatency] = useState(null);
   const [symbolCount, setSymbolCount] = useState(null);
   const [cacheHitRate, setCacheHitRate] = useState(null);
   const [isBackendConnected, setIsBackendConnected] = useState(false);
 
-  // Execution & I/O state
   const [isRunning, setIsRunning] = useState(false);
   const [stdinInput, setStdinInput] = useState('');
   const [terminalActiveTab, setTerminalActiveTab] = useState('io');
@@ -73,12 +72,10 @@ export function EngineProvider({ children }) {
     durationMs: null
   });
 
-  // Autocomplete Suggestions
   const [suggestions, setSuggestions] = useState([]);
   const [isSuggesting, setIsSuggesting] = useState(false);
   const [astTokens, setAstTokens] = useState([]);
 
-  // Backend Health & Real Telemetry Polling
   useEffect(() => {
     const checkHealth = async () => {
       try {
@@ -104,23 +101,31 @@ export function EngineProvider({ children }) {
     return () => clearInterval(interval);
   }, []);
 
-  // Real-time AST Tokenizer & Symbol Extractor
   useEffect(() => {
     if (!activeFile?.content) return;
     const content = activeFile.content;
-
-    const regex = /\b(?:int|float|double|char|string|auto|void|class|struct|def|fn|let|const|var)\s+([a-zA-Z_][a-zA-Z0-9_]*)/g;
-    const tokens = [];
-    let match;
-    while ((match = regex.exec(content)) !== null) {
-      if (match[1] && !tokens.includes(match[1])) {
-        tokens.push(match[1]);
-      }
-    }
-    setAstTokens(tokens);
+    const declared = extractDeclaredVariables(content);
+    setAstTokens(declared.map(d => d.name));
   }, [activeFile?.content]);
 
-  // Live Token at Cursor Position
+  useEffect(() => {
+    if (!activeFile?.content) {
+      setDiagnostics([]);
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      const liveErrors = validateSyntax(activeFile.content, activeLanguage.id);
+      if (liveErrors.length > 0) {
+        setDiagnostics(liveErrors);
+      } else {
+        setDiagnostics([]);
+      }
+    }, 200);
+
+    return () => clearTimeout(timer);
+  }, [activeFile?.content, activeLanguage.id]);
+
   const activeWord = (() => {
     if (!activeFile?.content || !cursorPos) return '';
     const lines = activeFile.content.split('\n');
@@ -130,7 +135,6 @@ export function EngineProvider({ children }) {
     return match ? match[1] : '';
   })();
 
-  // Query Autocomplete Suggestions from API or fallback to local symbols
   const querySuggestions = useCallback(async (prefix, line, column) => {
     if (!prefix || prefix.length < 1) {
       setSuggestions([]);
@@ -183,7 +187,7 @@ export function EngineProvider({ children }) {
           }
         }
       } catch {
-        // Local fallback handles suggestions
+        // local fallback
       }
 
       const uniqueMap = new Map();
@@ -199,7 +203,6 @@ export function EngineProvider({ children }) {
     }
   }, [activeFile, activeLanguage, astTokens]);
 
-  // Real Code Execution Runner
   const runCurrentCode = async () => {
     if (isRunning || !activeFile) return;
 

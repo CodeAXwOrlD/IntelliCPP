@@ -2,7 +2,7 @@ import React, { useRef, useEffect, useCallback, useMemo } from 'react';
 import Editor from '@monaco-editor/react';
 import { useEditor } from '../../context/EditorContext';
 import { useEngine } from '../../context/EngineContext';
-import { deduceContextType, getDocumentation } from '../../utils/intelliDocs';
+import { deduceContextType, getDocumentation, extractDeclaredVariables } from '../../utils/intelliDocs';
 
 export default function MonacoContainer() {
   const { 
@@ -34,7 +34,6 @@ export default function MonacoContainer() {
     }
   }, [monacoEditorRef]);
 
-  // ResizeObserver and Orientation / Window Resize Listeners
   useEffect(() => {
     const handleResize = () => {
       triggerLayout();
@@ -60,7 +59,6 @@ export default function MonacoContainer() {
     };
   }, [triggerLayout]);
 
-  // Trigger editor layout when panels or terminal dock resize/toggle
   useEffect(() => {
     triggerLayout();
     const timer = setTimeout(triggerLayout, 300);
@@ -87,7 +85,9 @@ export default function MonacoContainer() {
         'editorGutter.background': '#09090B',
         'editorLineNumber.foreground': '#71717A',
         'editorLineNumber.activeForeground': '#FAFAFA',
-        'editor.selectionBackground': 'rgba(59, 130, 246, 0.3)',
+        'editor.selectionBackground': '#264F7880',
+        'editor.selectionHighlightBackground': '#264F7840',
+        'editor.inactiveSelectionBackground': '#3A3D4160',
         'editor.lineHighlightBackground': '#00000000',
         'editor.lineHighlightBorder': '#00000000',
         'editorCursor.foreground': '#FFFFFF',
@@ -141,7 +141,6 @@ export default function MonacoContainer() {
     monacoEditorRef.current = editor;
     triggerLayout();
 
-    // Ensure click anywhere in editor wrapper properly places cursor
     editor.onMouseDown(() => {
       editor.focus();
     });
@@ -175,36 +174,47 @@ export default function MonacoContainer() {
 
           const context = deduceContextType(code, position.lineNumber, position.column);
 
-          // Directives (#include, #define, #pragma)
           if (context.isDirective) {
             const lineText = model.getLineContent(position.lineNumber);
-            const textBefore = lineText.slice(0, position.column - 1);
-            const hasHash = textBefore.trimStart().startsWith('#');
-
+            const hashIndex = lineText.indexOf('#');
+            const hashCol = hashIndex >= 0 ? hashIndex + 1 : 1;
             /* eslint-disable no-template-curly-in-string */
             const directives = [
-              { label: 'include <...>', insertText: hasHash ? 'include <${1:iostream}>' : '#include <${1:iostream}>', detail: 'Standard header' },
-              { label: 'include "..."', insertText: hasHash ? 'include "${1:header.h}"' : '#include "${1:header.h}"', detail: 'Local header' },
-              { label: 'define', insertText: hasHash ? 'define ${1:MACRO} ${2:val}' : '#define ${1:MACRO} ${2:val}', detail: 'Macro definition' },
-              { label: 'pragma once', insertText: hasHash ? 'pragma once' : '#pragma once', detail: 'Header guard' },
-              { label: 'ifdef', insertText: hasHash ? 'ifdef ${1:MACRO}\n$0\n#endif' : '#ifdef ${1:MACRO}\n$0\n#endif', detail: 'Conditional ifdef' },
-              { label: 'ifndef', insertText: hasHash ? 'ifndef ${1:MACRO}\n#define ${1:MACRO}\n$0\n#endif' : '#ifndef ${1:MACRO}\n#define ${1:MACRO}\n$0\n#endif', detail: 'Conditional ifndef' }
+              { label: '#include <...>', insert: 'include <${1:iostream}>', filter: 'include' },
+              { label: '#include "..."', insert: 'include "${1:header.h}"', filter: 'include' },
+              { label: '#define',        insert: 'define ${1:MACRO} ${2:value}', filter: 'define' },
+              { label: '#pragma once',   insert: 'pragma once',                 filter: 'pragma' },
+              { label: '#ifdef',         insert: 'ifdef ${1:MACRO}\n$0\n#endif',         filter: 'ifdef' },
+              { label: '#ifndef',        insert: 'ifndef ${1:MACRO}\n#define ${1:MACRO}\n$0\n#endif', filter: 'ifndef' },
+              { label: '#if',            insert: 'if ${1:condition}\n$0\n#endif',        filter: 'if' },
+              { label: '#elif',          insert: 'elif ${1:condition}',                   filter: 'elif' },
+              { label: '#else',          insert: 'else',                                  filter: 'else' },
+              { label: '#endif',         insert: 'endif',                                 filter: 'endif' },
             ];
             /* eslint-enable no-template-curly-in-string */
-
+            // Range covers from '#' to cursor; insertText MUST NOT include '#'
+            // because '#' is left in place (startColumn points to char after '#').
+            // filterText without '#': Monaco word-token is "incl" (strips '#'),
+            // so "incl" prefix-matches "include" correctly.
+            const dRange = {
+              startLineNumber: position.lineNumber, endLineNumber: position.lineNumber,
+              startColumn: hashCol + 1,  // char AFTER '#', so '#' stays
+              endColumn: position.column // cover typed chars: "incl"
+            };
             return {
-              suggestions: directives.map(d => ({
+              suggestions: directives.map((d, i) => ({
                 label: d.label,
                 kind: monaco.languages.CompletionItemKind.Snippet,
-                insertText: d.insertText,
+                insertText: d.insert,
+                filterText: d.filter,
                 insertTextRules: monaco.languages.CompletionItemInsertValueRule.InsertAsSnippet,
-                detail: d.detail,
-                range
-              }))
+                detail: 'Preprocessor',
+                sortText: `000${i}_${d.filter}`,
+                range: dRange,
+              })),
             };
           }
 
-          // Header completions inside #include <...
           if (context.isInclude) {
             const headers = [
               { name: 'stack', desc: 'LIFO adapter' },
@@ -241,7 +251,6 @@ export default function MonacoContainer() {
             };
           }
 
-          // Member access
           if (context.isMemberAccess) {
             const targetType = context.type;
             const suggestions = [];
@@ -317,13 +326,35 @@ export default function MonacoContainer() {
               });
             }
 
-            // If typing member access (e.g. v. or v.pu), strictly return member methods
-            // Never leak global symbols/keywords into member dot completions
             return { suggestions };
           }
 
-          // Top-level symbols
+          /* eslint-disable no-template-curly-in-string */
           const topLevelCppSymbols = [
+            { name: '#include <...>', insertText: '#include <${1:iostream}>', type: 'snippet', detail: 'Standard Header', complexity: 'Preprocessor' },
+            { name: 'include', insertText: '#include <${1:iostream}>', type: 'snippet', detail: '#include <...>', complexity: 'Preprocessor' },
+            { name: '#include "..."', insertText: '#include "${1:header.h}"', type: 'snippet', detail: 'Local Header', complexity: 'Preprocessor' },
+            { name: '#define', insertText: '#define ${1:MACRO} ${2:value}', type: 'snippet', detail: 'Macro Definition', complexity: 'Preprocessor' },
+            { name: 'define', insertText: '#define ${1:MACRO} ${2:value}', type: 'snippet', detail: '#define MACRO', complexity: 'Preprocessor' },
+            { name: '#pragma once', insertText: '#pragma once', type: 'snippet', detail: 'Header guard', complexity: 'Preprocessor' },
+            { name: 'pragma', insertText: '#pragma once', type: 'snippet', detail: '#pragma once', complexity: 'Preprocessor' },
+            { name: '#ifdef', insertText: '#ifdef ${1:MACRO}\n$0\n#endif', type: 'snippet', detail: 'Conditional ifdef', complexity: 'Preprocessor' },
+            { name: 'ifdef', insertText: '#ifdef ${1:MACRO}\n$0\n#endif', type: 'snippet', detail: '#ifdef MACRO', complexity: 'Preprocessor' },
+            { name: '#ifndef', insertText: '#ifndef ${1:MACRO}\n#define ${1:MACRO}\n$0\n#endif', type: 'snippet', detail: 'Header guard', complexity: 'Preprocessor' },
+            { name: 'ifndef', insertText: '#ifndef ${1:MACRO}\n#define ${1:MACRO}\n$0\n#endif', type: 'snippet', detail: '#ifndef MACRO', complexity: 'Preprocessor' },
+            { name: '#if', insertText: '#if ${1:condition}\n$0\n#endif', type: 'snippet', detail: 'Preprocessor if', complexity: 'Preprocessor' },
+            { name: '#elif', insertText: '#elif ${1:condition}', type: 'snippet', detail: 'Preprocessor elif', complexity: 'Preprocessor' },
+            { name: '#else', insertText: '#else', type: 'snippet', detail: 'Preprocessor else', complexity: 'Preprocessor' },
+            { name: '#endif', insertText: '#endif', type: 'snippet', detail: 'End conditional', complexity: 'Preprocessor' },
+            { name: 'endif', insertText: '#endif', type: 'snippet', detail: '#endif', complexity: 'Preprocessor' },
+            { name: 'if', insertText: 'if (${1:condition}) {\n\t$0\n}', type: 'snippet', detail: 'if statement', complexity: 'Branch' },
+            { name: 'else', insertText: 'else {\n\t$0\n}', type: 'snippet', detail: 'else statement', complexity: 'Branch' },
+            { name: 'else if', insertText: 'else if (${1:condition}) {\n\t$0\n}', type: 'snippet', detail: 'else if statement', complexity: 'Branch' },
+            { name: 'for', insertText: 'for (int ${1:i} = 0; ${1:i} < ${2:n}; ++${1:i}) {\n\t$0\n}', type: 'snippet', detail: 'for loop', complexity: 'Loop' },
+            { name: 'while', insertText: 'while (${1:condition}) {\n\t$0\n}', type: 'snippet', detail: 'while loop', complexity: 'Loop' },
+            { name: 'do while', insertText: 'do {\n\t$0\n} while (${1:condition});', type: 'snippet', detail: 'do-while loop', complexity: 'Loop' },
+            { name: 'switch', insertText: 'switch (${1:expr}) {\n\tcase ${2:val}:\n\t\t$0\n\t\tbreak;\n\tdefault:\n\t\tbreak;\n}', type: 'snippet', detail: 'switch statement', complexity: 'Branch' },
+            { name: 'return', insertText: 'return $0;', type: 'keyword', detail: 'return statement', complexity: 'Control' },
             { name: 'vector', type: 'class', detail: 'std::vector<T>', complexity: 'O(1) amortized push' },
             { name: 'string', type: 'class', detail: 'std::string', complexity: 'O(1) amortized append' },
             { name: 'map', type: 'class', detail: 'std::map<K, V>', complexity: 'O(log N)' },
@@ -346,33 +377,56 @@ export default function MonacoContainer() {
             { name: 'constexpr', type: 'keyword', detail: 'Compile-time constant', complexity: 'Zero cost' },
             { name: 'auto', type: 'keyword', detail: 'Deduced type', complexity: 'Compile-time' },
             { name: 'template<typename T>', type: 'keyword', detail: 'Template declaration', complexity: 'Compile-time' },
-            { name: 'const', type: 'keyword', detail: 'Constant qualifier', complexity: 'Safety' }
+            { name: 'const', type: 'keyword', detail: 'Constant qualifier', complexity: 'Safety' },
+            { name: 'struct', insertText: 'struct ${1:Name} {\n\t$0\n};', type: 'snippet', detail: 'struct declaration', complexity: 'Type' },
+            { name: 'class', insertText: 'class ${1:Name} {\npublic:\n\t${1:Name}();\n\t~$1();\nprivate:\n\t$0\n};', type: 'snippet', detail: 'class declaration', complexity: 'Type' }
           ];
+          /* eslint-enable no-template-curly-in-string */
+
+          const declaredVars = extractDeclaredVariables(code);
+          const localVariableNames = new Set(declaredVars.map(v => v.name));
+          if (Array.isArray(astTokens)) {
+            astTokens.forEach(t => {
+              if (t && !localVariableNames.has(t)) {
+                declaredVars.push({ name: t, type: 'variable', detail: 'Local Identifier' });
+              }
+            });
+          }
+
+          const localVariableItems = declaredVars.map(v => ({
+            label: v.name,
+            kind: monaco.languages.CompletionItemKind.Variable,
+            insertText: v.name,
+            detail: `[Local] ${v.detail || v.type}`,
+            documentation: {
+              value: `**Local Variable**: \`${v.name}\`\n\nType: \`${v.type}\`\n\n*(User-declared scope identifier - Priority 1)*`
+            },
+            sortText: `0000_${v.name}`,
+            range
+          }));
 
           const symbolItems = topLevelCppSymbols.map(sym => ({
             label: sym.name,
-            kind: sym.type === 'class' 
+            kind: sym.type === 'snippet'
+              ? monaco.languages.CompletionItemKind.Snippet
+              : sym.type === 'class' 
               ? monaco.languages.CompletionItemKind.Class 
               : sym.type === 'function' 
               ? monaco.languages.CompletionItemKind.Function 
               : sym.type === 'keyword'
               ? monaco.languages.CompletionItemKind.Keyword
               : monaco.languages.CompletionItemKind.Variable,
-            insertText: sym.name,
+            insertText: sym.insertText || sym.name,
+            insertTextRules: sym.type === 'snippet'
+              ? monaco.languages.CompletionItemInsertValueRule.InsertAsSnippet
+              : undefined,
             detail: `[${sym.complexity}] ${sym.detail}`,
-            range
-          }));
-
-          const astItems = astTokens.map(tok => ({
-            label: tok,
-            kind: monaco.languages.CompletionItemKind.Variable,
-            insertText: tok,
-            detail: 'Local Identifier',
+            sortText: `0100_${sym.name.replace('#', '')}`,
             range
           }));
 
           return {
-            suggestions: [...symbolItems, ...astItems]
+            suggestions: [...localVariableItems, ...symbolItems]
           };
         } catch (err) {
           return { suggestions: [] };
@@ -472,7 +526,7 @@ export default function MonacoContainer() {
       scrollBeyondLastLine: false,
       padding: { top: 12, bottom: 12 },
       suggestOnTriggerCharacters: true,
-      quickSuggestions: { other: true, comments: false, strings: true },
+      quickSuggestions: { other: true, comments: true, strings: true },
       hover: {
         enabled: !isTouch,
         delay: 200,

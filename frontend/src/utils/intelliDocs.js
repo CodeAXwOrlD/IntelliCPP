@@ -336,6 +336,213 @@ export const CPP_DOCS = {
 };
 
 /**
+ * Extract all declared user variables and identifiers from code
+ * Supports:
+ * - STL containers: stack<int> st, vector<int> vec, map<string, int> mp, etc.
+ * - Primitive types: int count, float val, double d, bool flag, char c, etc.
+ * - Auto and pointers: auto ptr, Node* head
+ * - Loops and assignments: for (int i = 0; ...)
+ */
+export function extractDeclaredVariables(code) {
+  if (!code) return [];
+  const variables = [];
+  const seen = new Set();
+
+  const addVar = (name, type) => {
+    if (!name || seen.has(name)) return;
+    const keywords = new Set([
+      'int', 'float', 'double', 'char', 'void', 'bool', 'auto', 'long', 'short',
+      'unsigned', 'signed', 'const', 'static', 'return', 'if', 'else', 'for',
+      'while', 'do', 'switch', 'case', 'break', 'continue', 'struct', 'class',
+      'namespace', 'using', 'std', 'include', 'main', 'true', 'false', 'nullptr'
+    ]);
+    if (keywords.has(name)) return;
+    seen.add(name);
+    variables.push({
+      name,
+      type: type || 'variable',
+      detail: `Local Variable (${type || 'auto'})`
+    });
+  };
+
+  // 1. Template & Container declarations: e.g. stack<int> st; vector<string> vec;
+  const containerRegex = /\b(?:(?:std::)?(?:vector|string|map|unordered_map|set|unordered_set|stack|queue|priority_queue|deque|list|unique_ptr|shared_ptr|pair))\s*(?:<[^;{}\n]+>)?\s+[*&]*([a-zA-Z_][a-zA-Z0-9_]*)\b/g;
+  let match;
+  while ((match = containerRegex.exec(code)) !== null) {
+    const rawType = match[0].trim().split(/\s+/)[0];
+    addVar(match[1], rawType);
+  }
+
+  // 2. Primitive & standard type declarations: e.g. int count = 0; float total;
+  const primitiveRegex = /\b(?:int|float|double|char|bool|long|short|unsigned|int64_t|size_t|auto)\s+[*&]*([a-zA-Z_][a-zA-Z0-9_]*)\b/g;
+  while ((match = primitiveRegex.exec(code)) !== null) {
+    const rawType = match[0].trim().split(/\s+/)[0];
+    addVar(match[1], rawType);
+  }
+
+  // 3. Custom type declarations: e.g. TreeNode* root; MyClass obj;
+  const customTypeRegex = /\b([A-Z][a-zA-Z0-9_]*)\s+[*&]*([a-zA-Z_][a-zA-Z0-9_]*)\s*(?:=|;|\(|\{)/g;
+  while ((match = customTypeRegex.exec(code)) !== null) {
+    addVar(match[2], match[1]);
+  }
+
+  return variables;
+}
+
+/**
+ * Real-Time Client-Side Syntax Validator
+ * Checks bracket/parenthesis/brace parity, unclosed strings, and missing statement semicolons.
+ * Disappears immediately as user fixes code in real time without needing to click Run.
+ */
+export function validateSyntax(code, languageId = 'cpp') {
+  if (!code) return [];
+  const diagnostics = [];
+  const lines = code.split('\n');
+
+  const stack = [];
+  let inBlockComment = false;
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const trimmed = line.trim();
+
+    // Skip empty lines, whole-line comments, and preprocessor directives
+    if (!trimmed || trimmed.startsWith('//') || trimmed.startsWith('#')) {
+      continue;
+    }
+
+    let inString = false;
+    let stringChar = '';
+
+    for (let col = 0; col < line.length; col++) {
+      const char = line[col];
+      const prev = col > 0 ? line[col - 1] : '';
+
+      // Block comments /* ... */
+      if (!inString) {
+        if (!inBlockComment && char === '/' && line[col + 1] === '*') {
+          inBlockComment = true;
+          col++;
+          continue;
+        }
+        if (inBlockComment && char === '*' && line[col + 1] === '/') {
+          inBlockComment = false;
+          col++;
+          continue;
+        }
+        if (!inBlockComment && char === '/' && line[col + 1] === '/') {
+          break; // Single line comment
+        }
+      }
+
+      if (inBlockComment) continue;
+
+      // String literals
+      if ((char === '"' || char === "'") && prev !== '\\') {
+        if (!inString) {
+          inString = true;
+          stringChar = char;
+        } else if (char === stringChar) {
+          inString = false;
+        }
+        continue;
+      }
+
+      if (inString) continue;
+
+      // Bracket matching
+      if (char === '{' || char === '(' || char === '[') {
+        stack.push({ char, line: i + 1, col: col + 1 });
+      } else if (char === '}' || char === ')' || char === ']') {
+        const expected = char === '}' ? '{' : char === ')' ? '(' : '[';
+        if (stack.length === 0) {
+          diagnostics.push({
+            line: i + 1,
+            column: col + 1,
+            severity: 'error',
+            message: `Unmatched closing bracket '${char}'`
+          });
+        } else {
+          const top = stack.pop();
+          if (top.char !== expected) {
+            diagnostics.push({
+              line: i + 1,
+              column: col + 1,
+              severity: 'error',
+              message: `Mismatched bracket: expected '${top.char === '{' ? '}' : top.char === '(' ? ')' : ']'}' but found '${char}'`
+            });
+          }
+        }
+      }
+    }
+
+    if (inString) {
+      diagnostics.push({
+        line: i + 1,
+        column: line.length,
+        severity: 'error',
+        message: 'Unterminated string literal'
+      });
+    }
+
+    // Check missing semicolon on statements
+    if (languageId === 'cpp' || languageId === 'rust') {
+      if (
+        !inBlockComment &&
+        trimmed.length > 2 &&
+        !trimmed.endsWith(';') &&
+        !trimmed.endsWith('{') &&
+        !trimmed.endsWith('}') &&
+        !trimmed.endsWith(':') &&
+        !trimmed.endsWith(',') &&
+        !trimmed.endsWith('\\') &&
+        !trimmed.startsWith('if') &&
+        !trimmed.startsWith('else') &&
+        !trimmed.startsWith('for') &&
+        !trimmed.startsWith('while') &&
+        !trimmed.startsWith('switch') &&
+        !trimmed.startsWith('case') &&
+        !trimmed.startsWith('default') &&
+        !trimmed.startsWith('struct') &&
+        !trimmed.startsWith('class') &&
+        !trimmed.startsWith('namespace') &&
+        !trimmed.startsWith('template') &&
+        !trimmed.startsWith('public') &&
+        !trimmed.startsWith('private') &&
+        !trimmed.startsWith('protected') &&
+        !trimmed.includes('main(') &&
+        !lines[i + 1]?.trim().startsWith('{')
+      ) {
+        if (
+          /\b(return|cout|cin|int|float|double|char|string|auto|vector|stack|queue|map|set)\b/.test(trimmed) &&
+          !trimmed.endsWith(')')
+        ) {
+          diagnostics.push({
+            line: i + 1,
+            column: line.length + 1,
+            severity: 'error',
+            message: "Expected ';' at end of statement"
+          });
+        }
+      }
+    }
+  }
+
+  // Unclosed opening brackets
+  while (stack.length > 0) {
+    const unclosed = stack.pop();
+    diagnostics.push({
+      line: unclosed.line,
+      column: unclosed.col,
+      severity: 'error',
+      message: `Unclosed opening bracket '${unclosed.char}'`
+    });
+  }
+
+  return diagnostics;
+}
+
+/**
  * Deduce container/type and syntax context from AST snippet before cursor
  */
 export function deduceContextType(code, lineNumber, columnNumber) {
