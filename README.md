@@ -2,14 +2,17 @@
 
 <div align="center">
 
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-intellicpp.onrender.com-10B981?style=for-the-badge&logo=render&logoColor=white)](https://intellicpp.onrender.com/)
 [![C++ Standard](https://img.shields.io/badge/C%2B%2B-20-00599C?style=for-the-badge&logo=c%2B%2B&logoColor=white)](https://isocpp.org/)
 [![React](https://img.shields.io/badge/React-18-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://reactjs.org/)
 [![Node-API](https://img.shields.io/badge/Node--API-N--API%20v8-339933?style=for-the-badge&logo=node.js&logoColor=white)](https://nodejs.org/)
-[![Automated Tests](https://img.shields.io/badge/Tests-32%20Passed%20%2F%200%20Failed-10B981?style=for-the-badge)](backend/test_security.js)
-[![UI Theme](https://img.shields.io/badge/UI-VS%20Code%20Zinc%20Modern-3B82F6?style=for-the-badge)](https://github.com/CodeAXwOrlD/IntelliCPP)
+[![Automated Tests](https://img.shields.io/badge/Tests-31%20Passed%20%2F%200%20Failed-10B981?style=for-the-badge)](backend/test_security.js)
+[![Docker](https://img.shields.io/badge/Docker-Multi--Stage-2496ED?style=for-the-badge&logo=docker&logoColor=white)](Dockerfile)
 [![License](https://img.shields.io/badge/License-MIT-gray?style=for-the-badge)](LICENSE)
 
-**A production-ready C++20 web IDE featuring a native C++20 Trie engine bound via N-API, real-time AST Big-O complexity analyzer, native OS File System Access API integration, sandboxed multi-language execution, and 32 automated security & concurrency test suites.**
+**A production-ready C++20, Python, and Rust web IDE featuring a native C++20 Trie engine bound via Node-API (`N-API`), context-isolated Monaco IntelliSense, real-time AST Big-O complexity analysis, native OS File System Access API integration, sandboxed execution, and 31 automated security & concurrency tests.**
+
+**[🚀 Launch Live IDE](https://intellicpp.onrender.com/)**
 
 <br />
 
@@ -17,7 +20,7 @@
   <img src="assets/screenshots/full_ide_preview.png" alt="IntelliCPP Full IDE Dashboard" width="98%" style="border-radius: 8px; border: 1px solid #27272A;" />
 </p>
 
-[✨ Key Features](#-key-features) • [📸 Interface Tour](#-user-interface-tour) • [🏗️ System Architecture](#-system-architecture) • [🧪 Automated Test Suites](#-automated-test-suites-32-tests) • [🛡️ Security Sandboxing](#-security--sandboxing-defense-in-depth) • [🚀 Quick Start](#-quick-start)
+[✨ Key Features](#-key-features) • [📸 Interface Tour](#-user-interface-tour) • [🏗️ System Architecture](#-system-architecture) • [🧪 Automated Test Suites](#-automated-test-suites-31-tests) • [🛡️ Security Sandboxing](#-security--sandboxing-defense-in-depth) • [🚀 Quick Start](#-quick-start)
 
 </div>
 
@@ -67,16 +70,16 @@ IntelliCPP combines bare-metal C++20 execution performance with a clean, distrac
 
 ---
 
-## 🎯 Engineering Highlights (Google XYZ Resume Points)
+## 🎯 Engineering Highlights
 
-* **Low-Latency IntelliSense Engine**:
-  * *Accomplished sub-millisecond ($<2\text{ms}$) prefix retrieval across 345+ C++ STL symbols by developing a custom C++20 Trie engine bound to Node.js via N-API (`node-addon-api`) and backing it with an in-memory LRU cache.*
-* **Security & Sandboxed Execution**:
-  * *Built a multi-language (C++20, Python, Rust) cloud execution sandbox achieving 100% pass rate across 15 automated security tests, enforcing strict 5-second process hard-kills, stdin piping, 50KB payload limits, and path-traversal prevention.*
-* **High-Concurrency Scalability**:
-  * *Scaled API throughput by 65% under concurrent load by implementing an asynchronous Event-Driven Job Queue with polling fallbacks, gzip compression, and dual-layer rate limiting (Token Bucket + IP burst control).*
-* **Full-Stack Developer Experience**:
-  * *Delivered an accessible Web IDE featuring Monaco Editor, File System Access API for native OS file I/O (`Ctrl+O`, `Ctrl+S`), offline-first `localStorage` workspace persistence, and real-time AST syntax diagnostics.*
+* **Sub-2-Microsecond Native Trie Engine**:
+  * *Engineered a custom **C++20 Trie** (`O(L)` prefix search) bound to Node.js via **Node-API (`N-API`)** indexing **28 STL containers (345 methods)** and **50 headers**, stress-tested at **1.0–1.8 µs** lookup latency across **1,550** symbols with an automatic pure-JS Trie + `O(1)` hash-map fallback.*
+* **Context-Isolated Monaco IntelliSense & Static AST Profiler**:
+  * *Extended **Monaco Editor** with strict C++20 context isolation (preprocessor directives with `#define`/`#if`/`#endif` scope priority, nested `<...>` template arguments, zero-space type inference like `stack<int>st;`), real-time syntax diagnostics, and live `O(1)`–`O(2ⁿ)` AST Big-O & heap allocation telemetry.*
+* **Hardened Execution Sandbox & High-Concurrency Backend**:
+  * *Architected a non-blocking **C++20 / Python 3 / Rust** execution pipeline backed by an async `O(1)`-dequeue **Job Queue** (4 workers), **LRU cache**, **Token-Bucket** + concurrency rate limiting, **Helmet CSP**, and `ulimit`/5s timeout hard-kills, verified by **31/31** automated security and concurrency checks.*
+* **Native OS File I/O & Multi-Stage Docker Deployment**:
+  * *Integrated the **File System Access API** (`Ctrl+O`, `Ctrl+Shift+S`) with `localStorage` persistence and packaged frontend + Node.js + N-API + `g++`/`python3`/`rustc` toolchains into a multi-stage **Docker** image deployed on **Render**.*
 
 ---
 
@@ -126,32 +129,32 @@ IntelliCPP combines bare-metal C++20 execution performance with a clean, distrac
 
 ```mermaid
 graph TD
-    A[Monaco Editor & React 18 UI] -->|HTTP / Compression| B[Express Gateway Server :3001]
+    A[Monaco Editor & React 18 UI] -->|HTTP / Gzip Compression| B[Express Gateway Server :3001]
     A -->|File System Access API| FS[Native OS File Manager]
-    A -->|Offline Sync| LS[Local Storage Workspace Cache]
-    A -->|Static AST Analysis| C[Real-Time Complexity Analyzer]
+    A -->|Offline Sync| LS[LocalStorage Workspace]
+    A -->|Static AST Analysis| C[Real-Time Big-O & Scope Engine]
     
-    B -->|LRU Cache / Trie Index| D[backend/data/stl_functions.json]
-    B -->|Node-API Native Bridge| E[codeflow_native.node / C++20 Engine]
+    B -->|LRU Cache / 28 STL JSONs + O(1) Maps| D[backend/data/stl/*.json]
+    B -->|Node-API Native Bridge| E[codeflow_native.node / C++20 Trie]
     
-    B -->|Token Bucket Rate Limiter| F[Security Middleware & Helmet]
-    B -->|Enqueue Job + STDIN| G[Decoupled JobQueue & Worker Pool]
+    B -->|Token Bucket & Concurrency Limiter| F[Helmet CSP & Input Validation]
+    B -->|Enqueue Job + STDIN| G[Async InMemoryJobQueue - 4 Workers]
     
-    G -->|ulimits / Sandboxed Subprocess| H[Toolchain Runners: g++ / python3 / rustc]
+    G -->|ulimits + 5s timeout| H[Toolchains: g++ C++20 / python3 / rustc]
     H -->|stdout / stderr| I[Terminal Dock & Monaco Markers]
 ```
 
 ---
 
-## 🧪 Automated Test Suites (32 Tests)
+## 🧪 Automated Test Suites (31 Tests)
 
-The project includes an extensive automated test harness covering security vulnerabilities, concurrent load, and edge cases:
+The project includes automated test suites covering security boundaries, caching, probes, and concurrent execution:
 
 ### 1. Security & Sandbox Test Suite (`backend/test_security.js` — 15 Tests)
 ```bash
 node backend/test_security.js
 ```
-* ✅ **PASS**: Helmet Security Headers (`X-Content-Type-Options`, `CSP`, `X-Frame-Options`)
+* ✅ **PASS**: Helmet Security Headers (`X-Content-Type-Options`, `Content-Security-Policy`, `X-Frame-Options`)
 * ✅ **PASS**: Normal C++ execution succeeds with exit code 0
 * ✅ **PASS**: Normal Python execution succeeds
 * ✅ **PASS**: Normal Rust execution succeeds
@@ -162,80 +165,87 @@ node backend/test_security.js
 * ✅ **PASS**: Blocks directory traversal on `/api/readFile` with 403
 * ✅ **PASS**: Blocks sibling path traversal with 403
 * ✅ **PASS**: Blocks directory traversal on `/api/listWorkspace` with 403
-* ✅ **PASS**: Token bucket rate limiter throttles burst spam with 429 & Retry-After header
+* ✅ **PASS**: Rate limiter returns 429 with `Retry-After` header
+* ✅ **PASS**: Token bucket rate limiter throttles burst spam with 429
 
-### 2. Concurrency & Scaling Test Suite (`backend/test_concurrency_scaling.js` — 17 Tests)
+### 2. Concurrency & Scaling Test Suite (`backend/test_concurrency_scaling.js` — 16 Tests)
 ```bash
 node backend/test_concurrency_scaling.js
 ```
-* ✅ **PASS**: Kubernetes `/live` probe returns 200 alive
-* ✅ **PASS**: Kubernetes `/ready` probe verifies STL database & GCC compiler availability
+* ✅ **PASS**: Liveness `/live` probe returns 200 alive
+* ✅ **PASS**: Readiness `/ready` probe verifies STL database & GCC compiler availability
 * ✅ **PASS**: `/health` telemetry reports active cache and queue statistics
-* ✅ **PASS**: LRU Cache `X-Cache: MISS` followed by instant `X-Cache: HIT`
-* ✅ **PASS**: Synchronous code execution via JobQueue with execution duration
-* ✅ **PASS**: Asynchronous code execution returns 202 Accepted with job polling resolution
-* ✅ **PASS**: Worker pool scaling and active worker metrics reporting
+* ✅ **PASS**: LRU Cache `X-Cache: MISS` followed by `X-Cache: HIT` on `/api/getSuggestions` and `/api/getStats`
+* ✅ **PASS**: Synchronous code execution via `JobQueue` returns `jobId`
+* ✅ **PASS**: Asynchronous code execution returns `202 Accepted` with `/api/jobs/:id` polling resolution
+* ✅ **PASS**: `/api/jobs` reports active workers and processed job count
 
 ---
 
-## 📊 Benchmarks & Performance
+## 📊 Verified Benchmarks & Engine Telemetry
 
-Native C++20 engine benchmarks run on Linux x86_64 (`-std=c++20 -O3`):
+Measured directly from the C++20 engine (`g++ -std=c++20 -O2` on `test_backend.cpp`) and backend test suites:
 
-| Operation | IntelliCPP Native C++ Engine | Traditional JS Engine | Speedup |
-|---|---|---|---|
-| **Prefix Lookup (`vec`)** | **~0.04 ms** | ~2.4 ms | **~60x Faster** |
-| **Prefix Lookup (`push`)** | **~0.03 ms** | ~2.1 ms | **~70x Faster** |
-| **Memory Overhead** | **~3.2 MB** | ~28.0 MB | **88% Less Memory** |
-| **Compiler Hard Kill** | **Strictly $\le 5.0\text{s}$** | Process hangs indefinitely | **Zero Server Freezes** |
+| Metric | Measured Result | Implementation Detail |
+|---|---|---|
+| **Native Index Build** | **~1.13 ms** (`1,127 µs`) | `1,550` symbols inserted into `codeflow::Trie` |
+| **Native Trie Prefix Search** | **1.00–1.77 µs** | Zero-copy DFS accumulator with `maxResults` early exit |
+| **STL Catalog Indexed** | **28 containers / 345 methods** | Loaded into JS `Trie` + `O(1)` `STL_METHOD_MAPS` |
+| **Compiler Hard Kill** | **Strictly $\le 5.0\text{s}$** | `timeout -k 1 5` + `ulimit` memory/file/PID caps |
 
 ---
 
 ## 🚀 Quick Start
 
 ### Prerequisites
-* **Node.js**: v18.0.0 or higher
+* **Node.js**: v18.0.0 or higher (Docker uses Node 20 Bookworm)
 * **GCC / G++**: Supporting C++20 (`g++ --version` $\ge$ 10.0)
 * **Python 3** & **Rust** (optional, for multi-language execution)
 
 ### 1. Installation
 
 ```bash
-# Clone the repository
 git clone https://github.com/CodeAXwOrlD/IntelliCPP.git
 cd IntelliCPP
+npm run install-deps
 
-# Install backend dependencies & build native C++ N-API addon
-cd backend
-npm install
-npx node-gyp rebuild
-
-# Install frontend dependencies
-cd ../frontend
-npm install
+# Optional: rebuild native C++ N-API addon
+cd backend && npx node-gyp rebuild && cd ..
 ```
 
-### 2. Run Test Suites
+### 2. Run Test Suites & C++ Benchmark
 
 ```bash
-# Run security test suite (15 tests)
+# Security & concurrency suites (31 automated checks)
 node backend/test_security.js
-
-# Run concurrency & scaling test suite (17 tests)
 node backend/test_concurrency_scaling.js
+
+# Standalone C++20 Trie benchmark
+g++ -std=c++20 -O2 -Ibackend/include -Ibackend/node_modules/node-addon-api \
+  test_backend.cpp backend/src/trie.cpp backend/src/tokenizer.cpp \
+  backend/src/suggestion_engine.cpp backend/src/code_runner.cpp -lpthread -o /tmp/test_backend \
+  && /tmp/test_backend
 ```
 
 ### 3. Start Development Servers
 
 ```bash
-# Start backend server (Port 3001)
-npm run start:backend
+# Start both backend (:3001) and frontend (:3000) concurrently
+npm run dev
 
-# Start frontend dev server (Port 3000)
-npm run start:frontend
+# Or run separately
+npm run dev:server
+npm run dev:frontend
 ```
 
-Open `http://localhost:3000` in your browser.
+### 4. Production Docker Build
+
+```bash
+docker build -t intellicpp .
+docker run -p 3001:3001 intellicpp
+```
+
+Open `http://localhost:3000` (dev) or `http://localhost:3001` (production Docker).
 
 ---
 
