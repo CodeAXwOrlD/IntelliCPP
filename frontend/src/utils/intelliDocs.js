@@ -341,20 +341,20 @@ const CPP_KEYWORDS = new Set([
 
 function extractLineVars(line) {
   const found = [];
-  const containerRegex = /\b(?:(?:std::)?(?:vector|string|map|unordered_map|set|unordered_set|stack|queue|priority_queue|deque|list|unique_ptr|shared_ptr|pair))\s*(?:<[^;{}\n]+>)?\s+[*&]*([a-zA-Z_][a-zA-Z0-9_]*)\b/g;
+  const containerRegex = /\b(?:(?:std::)?(?:vector|string|map|unordered_map|set|unordered_set|stack|queue|priority_queue|deque|list|unique_ptr|shared_ptr|pair))(?:\s*<[^;{}\n]+>\s*[*&]*|\s*[*&]+\s*|\s+)([a-zA-Z_][a-zA-Z0-9_]*)\b/g;
   let match;
   while ((match = containerRegex.exec(line)) !== null) {
-    const rawType = match[0].trim().split(/\s+/)[0];
+    const rawType = match[0].trim().split(/[\s<*&]/)[0];
     found.push({ name: match[1], type: rawType, detail: `Local Variable (${rawType})` });
   }
 
-  const primitiveRegex = /\b(?:int|float|double|char|bool|long|short|unsigned|int64_t|size_t|auto)\s+[*&]*([a-zA-Z_][a-zA-Z0-9_]*)\b/g;
+  const primitiveRegex = /\b(?:int|float|double|char|bool|long|short|unsigned|int64_t|size_t|auto)(?:\s*[*&]+\s*|\s+)([a-zA-Z_][a-zA-Z0-9_]*)\b/g;
   while ((match = primitiveRegex.exec(line)) !== null) {
-    const rawType = match[0].trim().split(/\s+/)[0];
+    const rawType = match[0].trim().split(/[\s*&]/)[0];
     found.push({ name: match[1], type: rawType, detail: `Local Variable (${rawType})` });
   }
 
-  const customTypeRegex = /\b([A-Z][a-zA-Z0-9_]*)\s+[*&]*([a-zA-Z_][a-zA-Z0-9_]*)\s*(?:=|;|\(|\{)/g;
+  const customTypeRegex = /\b([A-Z][a-zA-Z0-9_]*)(?:\s*<[^;{}\n]+>\s*[*&]*|\s*[*&]+\s*|\s+)([a-zA-Z_][a-zA-Z0-9_]*)\s*(?:=|;|\(|\{)/g;
   while ((match = customTypeRegex.exec(line)) !== null) {
     found.push({ name: match[2], type: match[1], detail: `Local Variable (${match[1]})` });
   }
@@ -372,27 +372,27 @@ export function analyzeScopesAtCursor(code, cursorLineNumber, cursorColumn = Inf
   const empty = { prioritySymbols: [], localVars: [], closedSymbols: [] };
   if (!code) return empty;
 
-  const lines = code.split('\n');
-  const limit = Math.min(cursorLineNumber || lines.length, lines.length);
+  const limit = cursorLineNumber ? Math.max(1, cursorLineNumber) : undefined;
+  const lines = limit ? code.split('\n', limit) : code.split('\n');
+  const count = lines.length;
 
   const ppStack = [];
   const activeGlobalMacros = new Map();
   const activeLocalVars = new Map();
   const closedSymbols = new Map();
 
-  for (let i = 0; i < limit; i++) {
+  for (let i = 0; i < count; i++) {
     let line = lines[i];
-    if (i === limit - 1 && Number.isFinite(cursorColumn)) {
+    if (i === count - 1 && Number.isFinite(cursorColumn)) {
       line = line.slice(0, Math.max(0, cursorColumn - 1));
     }
     const stripped = line.replace(/\/\/.*$/, '').trim();
     if (!stripped) continue;
 
     if (stripped.startsWith('#')) {
-      // Skip incomplete directive on the cursor line itself so typing "#if FO" doesn't self-complete as defined
-      if (i === limit - 1 && Number.isFinite(cursorColumn)) continue;
+      if (i === count - 1 && Number.isFinite(cursorColumn)) continue;
 
-      const condOpen = stripped.match(/^#\s*(ifdef|ifndef|if)\s+(.+)$/);
+      const condOpen = stripped.match(/^#\s*(ifdef|ifndef|if)(?:\s+|(?=\())(.+)$/);
       if (condOpen) {
         const condIds = extractConditionIds(condOpen[2]);
         ppStack.push({
@@ -404,7 +404,7 @@ export function analyzeScopesAtCursor(code, cursorLineNumber, cursorColumn = Inf
         continue;
       }
 
-      const elifMatch = stripped.match(/^#\s*elif\s+(.+)$/);
+      const elifMatch = stripped.match(/^#\s*elif(?:\s+|(?=\())(.+)$/);
       if (elifMatch && ppStack.length > 0) {
         extractConditionIds(elifMatch[1]).forEach(id => ppStack[ppStack.length - 1].conditionSymbols.add(id));
         continue;
@@ -659,6 +659,118 @@ export function validateSyntax(code, languageId = 'cpp') {
   return diagnostics;
 }
 
+const KNOWN_TEMPLATE_NAMES = new Set([
+  'vector', 'stack', 'queue', 'priority_queue', 'deque', 'list', 'forward_list',
+  'array', 'bitset', 'span', 'map', 'multimap', 'unordered_map', 'unordered_multimap',
+  'set', 'multiset', 'unordered_set', 'unordered_multiset', 'pair', 'tuple',
+  'optional', 'variant', 'any', 'unique_ptr', 'shared_ptr', 'weak_ptr',
+  'function', 'complex', 'atomic', 'greater', 'less', 'equal_to', 'not_equal_to',
+  'hash', 'allocator', 'default_delete', 'make_unique', 'make_shared',
+  'static_cast', 'dynamic_cast', 'const_cast', 'reinterpret_cast', 'bit_cast',
+  'numeric_limits', 'enable_if', 'is_same', 'decay', 'remove_reference'
+]);
+
+export function extractDeclaredTypes(code) {
+  if (!code) return [];
+  const types = [];
+  const seen = new Set();
+  const addType = (name, detail) => {
+    if (!name || seen.has(name) || CPP_KEYWORDS.has(name)) return;
+    seen.add(name);
+    types.push({ name, detail });
+  };
+
+  let match;
+  const structClassRegex = /\b(?:struct|class|enum(?:\s+class)?)\s+([a-zA-Z_][a-zA-Z0-9_]*)\b/g;
+  while ((match = structClassRegex.exec(code)) !== null) {
+    addType(match[1], 'User-defined type');
+  }
+
+  const usingAliasRegex = /\busing\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*=/g;
+  while ((match = usingAliasRegex.exec(code)) !== null) {
+    addType(match[1], 'Type alias (using)');
+  }
+
+  const typedefRegex = /\btypedef\b[^;]+\b([a-zA-Z_][a-zA-Z0-9_]*)\s*;/g;
+  while ((match = typedefRegex.exec(code)) !== null) {
+    addType(match[1], 'Type alias (typedef)');
+  }
+
+  return types;
+}
+
+function detectTemplateContext(textBeforeCursor) {
+  const angleStack = [];
+  let inString = false;
+  let stringChar = '';
+
+  for (let i = 0; i < textBeforeCursor.length; i++) {
+    const ch = textBeforeCursor[i];
+    const prev = i > 0 ? textBeforeCursor[i - 1] : '';
+    const next = i + 1 < textBeforeCursor.length ? textBeforeCursor[i + 1] : '';
+
+    if ((ch === '"' || ch === "'") && prev !== '\\') {
+      if (!inString) {
+        inString = true;
+        stringChar = ch;
+      } else if (ch === stringChar) {
+        inString = false;
+      }
+      continue;
+    }
+    if (inString) continue;
+
+    if (ch === ';' || ch === '{' || ch === '}') {
+      angleStack.length = 0;
+      continue;
+    }
+
+    if (ch === '<') {
+      if (next === '<' || next === '=') {
+        i++;
+        continue;
+      }
+      const left = textBeforeCursor.slice(0, i).trimEnd();
+      const idMatch = left.match(/(?:std::)?([a-zA-Z_][a-zA-Z0-9_]*)$/);
+      if (idMatch) {
+        const name = idMatch[1];
+        if (KNOWN_TEMPLATE_NAMES.has(name) || /^[A-Z]/.test(name)) {
+          angleStack.push({ openIdx: i, name });
+        }
+      }
+      continue;
+    }
+
+    if (ch === '>') {
+      if (prev === '-' || next === '=') {
+        if (next === '=') i++;
+        continue;
+      }
+      if (next === '>') {
+        if (angleStack.length > 0) angleStack.pop();
+        if (angleStack.length > 0) angleStack.pop();
+        i++;
+        continue;
+      }
+      if (angleStack.length > 0) {
+        angleStack.pop();
+      }
+    }
+  }
+
+  if (angleStack.length === 0) return null;
+  const top = angleStack[angleStack.length - 1];
+  const inner = textBeforeCursor.slice(top.openIdx + 1);
+  const wordMatch = inner.match(/([a-zA-Z_][a-zA-Z0-9_]*)$/);
+  return {
+    objectName: top.name,
+    type: 'template_arg',
+    templateName: top.name,
+    prefix: wordMatch ? wordMatch[1] : '',
+    isTemplateArg: true
+  };
+}
+
 export function deduceContextType(code, lineNumber, columnNumber) {
   if (!code) return { objectName: '', type: 'global', prefix: '' };
 
@@ -674,9 +786,15 @@ export function deduceContextType(code, lineNumber, columnNumber) {
     return { objectName: 'include', type: 'include_header', prefix: includeMatch[1] || '', delimiter, isInclude: true };
   }
 
-  const macroCondMatch = textBeforeCursor.match(/^\s*#\s*(ifdef|ifndef|undef|if|elif)\s+(?:.*[^a-zA-Z0-9_])?([a-zA-Z0-9_]*)$/);
+  const includePromptMatch = textBeforeCursor.match(/^\s*#\s*include\s+$/);
+  if (includePromptMatch) {
+    return { objectName: 'include', type: 'include_prompt', prefix: '', delimiter: '<', isInclude: true, needsAngle: true };
+  }
+
+  const macroCondMatch = textBeforeCursor.match(/^\s*#\s*(?:(ifdef|ifndef|undef)\s+|(if|elif)(?:\s+|(?=\()))(?:.*[^a-zA-Z0-9_])?([a-zA-Z0-9_]*)$/);
   if (macroCondMatch) {
-    return { objectName: macroCondMatch[1], type: 'macro_condition', directive: macroCondMatch[1], prefix: macroCondMatch[2] || '', isMacroCondition: true };
+    const dir = macroCondMatch[1] || macroCondMatch[2];
+    return { objectName: dir, type: 'macro_condition', directive: dir, prefix: macroCondMatch[3] || '', isMacroCondition: true };
   }
 
   const defineNameMatch = textBeforeCursor.match(/^\s*#\s*define\s+([a-zA-Z0-9_]*)$/);
@@ -710,16 +828,38 @@ export function deduceContextType(code, lineNumber, columnNumber) {
     const knownTypes = [
       'vector', 'string', 'map', 'unordered_map', 'set', 'unordered_set',
       'stack', 'queue', 'priority_queue', 'deque', 'list',
-      'unique_ptr', 'shared_ptr'
+      'unique_ptr', 'shared_ptr', 'pair'
     ];
+    const escapedName = objectName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const typeRegex = new RegExp(
-      '(?:(?:std::)?(' + knownTypes.join('|') + '))(?:\\s*<[^;\\r\\n]+>)?\\s+[*&]*\\b' + objectName + '\\b'
+      '(?:^|[;{},(]|\\n)\\s*(?:const\\s+|static\\s+|inline\\s+)?(?:std::)?(' +
+      knownTypes.join('|') +
+      ')\\b(?:\\s*<[^;\\r\\n]+>\\s*[*&]*|\\s*[*&]+\\s*|\\s+)' +
+      escapedName +
+      '\\b'
     );
     const match = code.match(typeRegex);
     if (match && match[1]) {
       return { objectName, type: match[1].toLowerCase(), prefix, isMemberAccess: true };
     }
+    const autoRegex = new RegExp(
+      '(?:^|[;{},(]|\\n)\\s*(?:const\\s+)?auto\\s*[*&]*\\s*' +
+      escapedName +
+      '\\s*=\\s*(?:std::)?(?:make_(unique|shared)\\s*<|(' +
+      knownTypes.join('|') +
+      ')\\b)'
+    );
+    const autoMatch = code.match(autoRegex);
+    if (autoMatch) {
+      const inferred = autoMatch[1] ? `${autoMatch[1]}_ptr` : autoMatch[2];
+      return { objectName, type: inferred.toLowerCase(), prefix, isMemberAccess: true };
+    }
     return { objectName, type: 'unknown_object', prefix, isMemberAccess: true };
+  }
+
+  const templateCtx = detectTemplateContext(textBeforeCursor);
+  if (templateCtx) {
+    return templateCtx;
   }
 
   const stdMatch = textBeforeCursor.match(/std::([a-zA-Z0-9_]*)$/);

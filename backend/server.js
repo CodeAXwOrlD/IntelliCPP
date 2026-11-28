@@ -24,6 +24,7 @@ const config = require('./config');
 const {
   STL_DB,
   containerTries,
+  STL_METHOD_MAPS,
   ALL_HEADERS,
   ALL_STL_TYPES,
   TEMPLATE_ARGS,
@@ -261,12 +262,13 @@ function inferVariableType(varName, code) {
 
     const normalized = line.replace(/std::/g, '');
 
+    const escapedVar = varName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const patterns = [
-      new RegExp(`(?:const\\s+|static\\s+)*([a-zA-Z_][a-zA-Z0-9_]*)\\s*<[^>]*>\\s+[*&]*${varName}\\b`),
-      new RegExp(`(?:const\\s+|static\\s+)*([a-zA-Z_][a-zA-Z0-9_]*)\\s+[*&]*${varName}\\s*[;=({]`),
-      new RegExp(`auto\\s+${varName}\\s*=\\s*([a-zA-Z_][a-zA-Z0-9_]*)\\s*<[^>]*>`),
-      new RegExp(`auto\\s+${varName}\\s*=\\s*make_unique<([a-zA-Z_][a-zA-Z0-9_]*)`),
-      new RegExp(`auto\\s+${varName}\\s*=\\s*make_shared<([a-zA-Z_][a-zA-Z0-9_]*)`),
+      new RegExp(`(?:const\\s+|static\\s+)*([a-zA-Z_][a-zA-Z0-9_]*)\\s*<[^>]*>\\s*[*&]*${escapedVar}\\b`),
+      new RegExp(`(?:const\\s+|static\\s+)*([a-zA-Z_][a-zA-Z0-9_]*)(?:\\s*[*&]+\\s*|\\s+)${escapedVar}\\s*[;=({]`),
+      new RegExp(`auto\\s+${escapedVar}\\s*=\\s*([a-zA-Z_][a-zA-Z0-9_]*)\\s*<[^>]*>`),
+      new RegExp(`auto\\s+${escapedVar}\\s*=\\s*make_unique\\s*<([a-zA-Z_][a-zA-Z0-9_]*)`),
+      new RegExp(`auto\\s+${escapedVar}\\s*=\\s*make_shared\\s*<([a-zA-Z_][a-zA-Z0-9_]*)`),
     ];
 
     const skipWords = new Set([
@@ -450,8 +452,9 @@ app.post('/api/getSuggestions', suggestionsLimiter, (req, res) => {
           const nativeResults = nativeEngine.getSuggestions(prefix, resolvedType, code || '', 0, 20);
           if (Array.isArray(nativeResults) && nativeResults.length > 0) {
             const containerInfo = STL_DB[resolvedType];
+            const methodMap = STL_METHOD_MAPS[resolvedType];
             const scored = nativeResults.map(item => {
-              const matchedMethod = containerInfo?.methods?.find(m => m.name === item.text);
+              const matchedMethod = methodMap ? methodMap.get(item.text) : null;
               return {
                 text: item.text,
                 display: `${item.text}()`,
@@ -480,7 +483,7 @@ app.post('/api/getSuggestions', suggestionsLimiter, (req, res) => {
         return res.json([]);
       }
 
-      const methods = trie.search(prefix);
+      const methods = trie.search(prefix, 50);
       const containerInfo = STL_DB[resolvedType];
 
       const scored = methods.map(m => {
@@ -545,8 +548,8 @@ app.post('/api/getSuggestions', suggestionsLimiter, (req, res) => {
     if (allowedContainers.includes('algorithm')) {
       const algoTrie = containerTries['algorithm'];
       if (algoTrie) {
-        const algos = algoTrie.search(prefix);
-        for (const a of algos.slice(0, 10)) {
+        const algos = algoTrie.search(prefix, 10);
+        for (const a of algos) {
           results.push({
             text: a.name,
             display: `std::${a.name}()`,
@@ -566,7 +569,7 @@ app.post('/api/getSuggestions', suggestionsLimiter, (req, res) => {
     const localVars = extractVariableNames(code);
     for (const v of localVars) {
       if (p && !v.toLowerCase().startsWith(p)) continue;
-      results.unshift({
+      results.push({
         text: v,
         display: v,
         type: 'variable',

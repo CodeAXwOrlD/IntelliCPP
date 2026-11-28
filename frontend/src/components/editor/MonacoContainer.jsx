@@ -1,8 +1,8 @@
-import React, { useRef, useEffect, useCallback, useMemo } from 'react';
+import React, { useRef, useEffect, useCallback, useMemo, useState } from 'react';
 import Editor from '@monaco-editor/react';
 import { useEditor } from '../../context/EditorContext';
 import { useEngine } from '../../context/EngineContext';
-import { deduceContextType, getDocumentation, analyzeScopesAtCursor } from '../../utils/intelliDocs';
+import { deduceContextType, getDocumentation, analyzeScopesAtCursor, extractDeclaredTypes } from '../../utils/intelliDocs';
 
 const STD_HEADERS = [
   { name: 'iostream', desc: 'Standard I/O stream' },
@@ -74,15 +74,26 @@ const MEMBER_METHODS = {
     { label: 'empty', sig: 'bool empty() const', comp: 'O(1)' },
     { label: 'clear', sig: 'void clear()', comp: 'O(1)' }
   ],
-  adapter: [
+  stackAdapter: [
     { label: 'push', sig: 'void push(const T& val)', comp: 'O(1)' },
     { label: 'emplace', sig: 'void emplace(Args&&... args)', comp: 'O(1)' },
     { label: 'pop', sig: 'void pop()', comp: 'O(1)' },
-    { label: 'top', sig: 'const T& top() const', comp: 'O(1)' },
+    { label: 'top', sig: 'T& top()', comp: 'O(1)' },
+    { label: 'size', sig: 'size_type size() const', comp: 'O(1)' },
+    { label: 'empty', sig: 'bool empty() const', comp: 'O(1)' }
+  ],
+  queueAdapter: [
+    { label: 'push', sig: 'void push(const T& val)', comp: 'O(1)' },
+    { label: 'emplace', sig: 'void emplace(Args&&... args)', comp: 'O(1)' },
+    { label: 'pop', sig: 'void pop()', comp: 'O(1)' },
     { label: 'front', sig: 'T& front()', comp: 'O(1)' },
     { label: 'back', sig: 'T& back()', comp: 'O(1)' },
     { label: 'size', sig: 'size_type size() const', comp: 'O(1)' },
     { label: 'empty', sig: 'bool empty() const', comp: 'O(1)' }
+  ],
+  pair: [
+    { label: 'first', sig: 'T1 first', comp: 'O(1)' },
+    { label: 'second', sig: 'T2 second', comp: 'O(1)' }
   ],
   associative: [
     { label: 'insert', sig: 'pair<iterator, bool> insert(const value_type& val)', comp: 'O(log N) / O(1)' },
@@ -105,6 +116,180 @@ const MEMBER_METHODS = {
   ]
 };
 
+const SEQUENTIAL_LIST_METHODS = [...MEMBER_METHODS.vector.slice(0, 4), ...MEMBER_METHODS.vector.slice(7)];
+
+const MEMBER_METHOD_LOOKUP = {
+  vector: MEMBER_METHODS.vector,
+  string: MEMBER_METHODS.string,
+  stack: MEMBER_METHODS.stackAdapter,
+  queue: MEMBER_METHODS.queueAdapter,
+  priority_queue: MEMBER_METHODS.stackAdapter,
+  pair: MEMBER_METHODS.pair,
+  map: MEMBER_METHODS.associative,
+  unordered_map: MEMBER_METHODS.associative,
+  set: MEMBER_METHODS.associative,
+  unordered_set: MEMBER_METHODS.associative,
+  deque: SEQUENTIAL_LIST_METHODS,
+  list: SEQUENTIAL_LIST_METHODS,
+  unique_ptr: MEMBER_METHODS.smart_ptr,
+  shared_ptr: MEMBER_METHODS.smart_ptr
+};
+
+/* eslint-disable no-template-curly-in-string */
+const CPP_DIRECTIVES = [
+  { label: '#include <...>', insert: 'include <${1:iostream}>', filter: 'include', detail: 'Standard library header' },
+  { label: '#include "..."', insert: 'include "${1:header.h}"', filter: 'include', detail: 'Local header file' },
+  { label: '#define',        insert: 'define ${1:MACRO} ${2:value}', filter: 'define', detail: 'Define preprocessor macro' },
+  { label: '#undef',         insert: 'undef ${1:MACRO}', filter: 'undef', detail: 'Undefine macro' },
+  { label: '#ifdef',         insert: 'ifdef ${1:MACRO}\n$0\n#endif', filter: 'ifdef', detail: 'Conditional if defined' },
+  { label: '#ifndef',        insert: 'ifndef ${1:MACRO}\n#define ${1:MACRO}\n$0\n#endif', filter: 'ifndef', detail: 'Header guard / if not defined' },
+  { label: '#if',            insert: 'if ${1:condition}\n$0\n#endif', filter: 'if', detail: 'Preprocessor conditional' },
+  { label: '#elif',          insert: 'elif ${1:condition}', filter: 'elif', detail: 'Preprocessor else-if' },
+  { label: '#else',          insert: 'else', filter: 'else', detail: 'Preprocessor else' },
+  { label: '#endif',         insert: 'endif', filter: 'endif', detail: 'End conditional block' },
+  { label: '#pragma once',   insert: 'pragma once', filter: 'pragma', detail: 'Single-inclusion guard' },
+  { label: '#error',         insert: 'error "${1:message}"', filter: 'error', detail: 'Compile-time error directive' },
+  { label: '#warning',       insert: 'warning "${1:message}"', filter: 'warning', detail: 'Compile-time warning directive' },
+  { label: '#line',          insert: 'line ${1:1}', filter: 'line', detail: 'Line control directive' }
+];
+
+const CPP_PRAGMAS = [
+  { label: 'once', detail: 'Include header only once per translation unit' },
+  { label: 'GCC optimize("O3")', detail: 'GCC O3 optimization' },
+  { label: 'pack(push, 1)', detail: 'Set 1-byte struct alignment' },
+  { label: 'pack(pop)', detail: 'Restore struct alignment' }
+];
+
+const PREDEFINED_MACROS = [
+  { name: '__cplusplus', detail: 'C++ standard version macro' },
+  { name: 'NDEBUG', detail: 'Disable assertions in release builds' },
+  { name: '__linux__', detail: 'Linux target platform' },
+  { name: '_WIN32', detail: 'Windows target platform' },
+  { name: '__GNUC__', detail: 'GCC compiler version' }
+];
+
+const STD_NAMESPACE_MEMBERS = [
+  { name: 'vector', kind: 'Class', detail: 'std::vector<T>' },
+  { name: 'string', kind: 'Class', detail: 'std::string' },
+  { name: 'map', kind: 'Class', detail: 'std::map<K, V>' },
+  { name: 'unordered_map', kind: 'Class', detail: 'std::unordered_map<K, V>' },
+  { name: 'set', kind: 'Class', detail: 'std::set<T>' },
+  { name: 'unordered_set', kind: 'Class', detail: 'std::unordered_set<T>' },
+  { name: 'stack', kind: 'Class', detail: 'std::stack<T>' },
+  { name: 'queue', kind: 'Class', detail: 'std::queue<T>' },
+  { name: 'priority_queue', kind: 'Class', detail: 'std::priority_queue<T>' },
+  { name: 'pair', kind: 'Class', detail: 'std::pair<T1, T2>' },
+  { name: 'unique_ptr', kind: 'Class', detail: 'std::unique_ptr<T>' },
+  { name: 'shared_ptr', kind: 'Class', detail: 'std::shared_ptr<T>' },
+  { name: 'make_unique', kind: 'Function', detail: 'std::make_unique<T>(args...)' },
+  { name: 'make_shared', kind: 'Function', detail: 'std::make_shared<T>(args...)' },
+  { name: 'sort', kind: 'Function', detail: 'std::sort(first, last)' },
+  { name: 'accumulate', kind: 'Function', detail: 'std::accumulate(first, last, init)' },
+  { name: 'binary_search', kind: 'Function', detail: 'std::binary_search(first, last, val)' },
+  { name: 'lower_bound', kind: 'Function', detail: 'std::lower_bound(first, last, val)' },
+  { name: 'upper_bound', kind: 'Function', detail: 'std::upper_bound(first, last, val)' },
+  { name: 'cout', kind: 'Variable', detail: 'Standard output stream' },
+  { name: 'cin', kind: 'Variable', detail: 'Standard input stream' },
+  { name: 'endl', kind: 'Variable', detail: 'Newline & flush' },
+  { name: 'move', kind: 'Function', detail: 'std::move(t)' },
+  { name: 'swap', kind: 'Function', detail: 'std::swap(a, b)' }
+];
+
+const TOP_LEVEL_CPP_SYMBOLS = [
+  { name: 'if', insertText: 'if (${1:condition}) {\n\t$0\n}', type: 'snippet', detail: 'if statement', complexity: 'Branch' },
+  { name: 'else', insertText: 'else {\n\t$0\n}', type: 'snippet', detail: 'else statement', complexity: 'Branch' },
+  { name: 'else if', insertText: 'else if (${1:condition}) {\n\t$0\n}', type: 'snippet', detail: 'else if statement', complexity: 'Branch' },
+  { name: 'for', insertText: 'for (int ${1:i} = 0; ${1:i} < ${2:n}; ++${1:i}) {\n\t$0\n}', type: 'snippet', detail: 'for loop', complexity: 'Loop' },
+  { name: 'while', insertText: 'while (${1:condition}) {\n\t$0\n}', type: 'snippet', detail: 'while loop', complexity: 'Loop' },
+  { name: 'do while', insertText: 'do {\n\t$0\n} while (${1:condition});', type: 'snippet', detail: 'do-while loop', complexity: 'Loop' },
+  { name: 'switch', insertText: 'switch (${1:expr}) {\n\tcase ${2:val}:\n\t\t$0\n\t\tbreak;\n\tdefault:\n\t\tbreak;\n}', type: 'snippet', detail: 'switch statement', complexity: 'Branch' },
+  { name: 'return', insertText: 'return $0;', type: 'keyword', detail: 'return statement', complexity: 'Control' },
+  { name: 'vector', type: 'class', detail: 'std::vector<T>', complexity: 'O(1) amortized push' },
+  { name: 'string', type: 'class', detail: 'std::string', complexity: 'O(1) amortized append' },
+  { name: 'map', type: 'class', detail: 'std::map<K, V>', complexity: 'O(log N)' },
+  { name: 'unordered_map', type: 'class', detail: 'std::unordered_map<K, V>', complexity: 'O(1) avg' },
+  { name: 'set', type: 'class', detail: 'std::set<T>', complexity: 'O(log N)' },
+  { name: 'unordered_set', type: 'class', detail: 'std::unordered_set<T>', complexity: 'O(1) avg' },
+  { name: 'stack', type: 'class', detail: 'std::stack<T>', complexity: 'O(1)' },
+  { name: 'queue', type: 'class', detail: 'std::queue<T>', complexity: 'O(1)' },
+  { name: 'priority_queue', type: 'class', detail: 'std::priority_queue<T>', complexity: 'O(log N)' },
+  { name: 'deque', type: 'class', detail: 'std::deque<T>', complexity: 'O(1)' },
+  { name: 'pair', type: 'class', detail: 'std::pair<T1, T2>', complexity: 'O(1)' },
+  { name: 'unique_ptr', type: 'class', detail: 'std::unique_ptr<T>', complexity: 'Zero overhead' },
+  { name: 'shared_ptr', type: 'class', detail: 'std::shared_ptr<T>', complexity: 'Atomic refcount' },
+  { name: 'sort', type: 'function', detail: 'std::sort(first, last)', complexity: 'O(N log N)' },
+  { name: 'accumulate', type: 'function', detail: 'std::accumulate(first, last, init)', complexity: 'O(N)' },
+  { name: 'binary_search', type: 'function', detail: 'std::binary_search(first, last, val)', complexity: 'O(log N)' },
+  { name: 'lower_bound', type: 'function', detail: 'std::lower_bound(first, last, val)', complexity: 'O(log N)' },
+  { name: 'upper_bound', type: 'function', detail: 'std::upper_bound(first, last, val)', complexity: 'O(log N)' },
+  { name: 'cout', type: 'object', detail: 'std::cout output stream', complexity: 'I/O' },
+  { name: 'cin', type: 'object', detail: 'std::cin input stream', complexity: 'I/O' },
+  { name: 'endl', type: 'object', detail: 'std::endl flush', complexity: 'I/O' },
+  { name: 'using namespace std;', type: 'keyword', detail: 'Import std namespace', complexity: 'Scope' },
+  { name: 'constexpr', type: 'keyword', detail: 'Compile-time constant', complexity: 'Zero cost' },
+  { name: 'auto', type: 'keyword', detail: 'Deduced type', complexity: 'Compile-time' },
+  { name: 'template<typename T>', type: 'keyword', detail: 'Template declaration', complexity: 'Compile-time' },
+  { name: 'const', type: 'keyword', detail: 'Constant qualifier', complexity: 'Safety' },
+  { name: 'struct', insertText: 'struct ${1:Name} {\n\t$0\n};', type: 'snippet', detail: 'struct declaration', complexity: 'Type' },
+  { name: 'class', insertText: 'class ${1:Name} {\npublic:\n\t${1:Name}();\n\t~$1();\nprivate:\n\t$0\n};', type: 'snippet', detail: 'class declaration', complexity: 'Type' }
+];
+
+const TEMPLATE_ARG_ITEMS = [
+  // Primitive & fundamental C++ types
+  { label: 'int', insertText: 'int', kind: 'Keyword', detail: '32-bit signed integer' },
+  { label: 'long long', insertText: 'long long', kind: 'Keyword', detail: '64-bit signed integer' },
+  { label: 'double', insertText: 'double', kind: 'Keyword', detail: '64-bit floating-point' },
+  { label: 'float', insertText: 'float', kind: 'Keyword', detail: '32-bit floating-point' },
+  { label: 'char', insertText: 'char', kind: 'Keyword', detail: '8-bit character' },
+  { label: 'bool', insertText: 'bool', kind: 'Keyword', detail: 'Boolean true/false' },
+  { label: 'long', insertText: 'long', kind: 'Keyword', detail: 'Signed long integer' },
+  { label: 'short', insertText: 'short', kind: 'Keyword', detail: '16-bit integer' },
+  { label: 'unsigned int', insertText: 'unsigned int', kind: 'Keyword', detail: '32-bit unsigned integer' },
+  { label: 'unsigned long long', insertText: 'unsigned long long', kind: 'Keyword', detail: '64-bit unsigned integer' },
+  { label: 'long double', insertText: 'long double', kind: 'Keyword', detail: 'Extended precision float' },
+  { label: 'void', insertText: 'void', kind: 'Keyword', detail: 'Void type (e.g. function<void(...)>)' },
+  { label: 'const', insertText: 'const ', kind: 'Keyword', detail: 'Const qualifier' },
+  // Fixed-width & standard typedefs
+  { label: 'size_t', insertText: 'size_t', kind: 'TypeParameter', detail: 'Unsigned size type (<cstddef>)' },
+  { label: 'int64_t', insertText: 'int64_t', kind: 'TypeParameter', detail: '64-bit signed (<cstdint>)' },
+  { label: 'uint64_t', insertText: 'uint64_t', kind: 'TypeParameter', detail: '64-bit unsigned (<cstdint>)' },
+  { label: 'int32_t', insertText: 'int32_t', kind: 'TypeParameter', detail: '32-bit signed (<cstdint>)' },
+  { label: 'uint32_t', insertText: 'uint32_t', kind: 'TypeParameter', detail: '32-bit unsigned (<cstdint>)' },
+  // STL Data Structures & Nested Containers
+  { label: 'string', insertText: 'string', kind: 'Class', detail: 'std::string (<string>)' },
+  { label: 'string_view', insertText: 'string_view', kind: 'Class', detail: 'std::string_view (C++17)' },
+  { label: 'pair<T1, T2>', insertText: 'pair<${1:int}, ${2:int}>', filterText: 'pair', kind: 'Class', detail: 'std::pair<T1, T2> (<utility>)' },
+  { label: 'vector<T>', insertText: 'vector<${1:int}>', filterText: 'vector', kind: 'Class', detail: 'std::vector<T> (<vector>)' },
+  { label: 'tuple<T...>', insertText: 'tuple<${1:int}, ${2:int}>', filterText: 'tuple', kind: 'Class', detail: 'std::tuple<T...> (<tuple>)' },
+  { label: 'map<K, V>', insertText: 'map<${1:string}, ${2:int}>', filterText: 'map', kind: 'Class', detail: 'std::map<K, V> (<map>)' },
+  { label: 'unordered_map<K, V>', insertText: 'unordered_map<${1:string}, ${2:int}>', filterText: 'unordered_map', kind: 'Class', detail: 'std::unordered_map<K, V>' },
+  { label: 'set<T>', insertText: 'set<${1:int}>', filterText: 'set', kind: 'Class', detail: 'std::set<T> (<set>)' },
+  { label: 'unordered_set<T>', insertText: 'unordered_set<${1:int}>', filterText: 'unordered_set', kind: 'Class', detail: 'std::unordered_set<T>' },
+  { label: 'stack<T>', insertText: 'stack<${1:int}>', filterText: 'stack', kind: 'Class', detail: 'std::stack<T> (<stack>)' },
+  { label: 'queue<T>', insertText: 'queue<${1:int}>', filterText: 'queue', kind: 'Class', detail: 'std::queue<T> (<queue>)' },
+  { label: 'priority_queue<T>', insertText: 'priority_queue<${1:int}>', filterText: 'priority_queue', kind: 'Class', detail: 'std::priority_queue<T> (<queue>)' },
+  { label: 'deque<T>', insertText: 'deque<${1:int}>', filterText: 'deque', kind: 'Class', detail: 'std::deque<T> (<deque>)' },
+  { label: 'list<T>', insertText: 'list<${1:int}>', filterText: 'list', kind: 'Class', detail: 'std::list<T> (<list>)' },
+  { label: 'array<T, N>', insertText: 'array<${1:int}, ${2:10}>', filterText: 'array', kind: 'Class', detail: 'std::array<T, N> (<array>)' },
+  { label: 'bitset<N>', insertText: 'bitset<${1:32}>', filterText: 'bitset', kind: 'Class', detail: 'std::bitset<N> (<bitset>)' },
+  { label: 'optional<T>', insertText: 'optional<${1:int}>', filterText: 'optional', kind: 'Class', detail: 'std::optional<T> (C++17)' },
+  { label: 'variant<T...>', insertText: 'variant<${1:int}, ${2:string}>', filterText: 'variant', kind: 'Class', detail: 'std::variant<T...> (C++17)' },
+  { label: 'any', insertText: 'any', kind: 'Class', detail: 'std::any (C++17)' },
+  { label: 'unique_ptr<T>', insertText: 'unique_ptr<${1:int}>', filterText: 'unique_ptr', kind: 'Class', detail: 'std::unique_ptr<T> (<memory>)' },
+  { label: 'shared_ptr<T>', insertText: 'shared_ptr<${1:int}>', filterText: 'shared_ptr', kind: 'Class', detail: 'std::shared_ptr<T> (<memory>)' },
+  { label: 'weak_ptr<T>', insertText: 'weak_ptr<${1:int}>', filterText: 'weak_ptr', kind: 'Class', detail: 'std::weak_ptr<T> (<memory>)' },
+  // Functors, comparators & function wrappers valid as template args
+  { label: 'greater<T>', insertText: 'greater<${1:int}>', filterText: 'greater', kind: 'Function', detail: 'Min-heap / descending comparator (<functional>)' },
+  { label: 'greater<>', insertText: 'greater<>', filterText: 'greater', kind: 'Function', detail: 'Transparent greater comparator (C++14)' },
+  { label: 'less<T>', insertText: 'less<${1:int}>', filterText: 'less', kind: 'Function', detail: 'Ascending comparator (<functional>)' },
+  { label: 'less<>', insertText: 'less<>', filterText: 'less', kind: 'Function', detail: 'Transparent less comparator (C++14)' },
+  { label: 'equal_to<T>', insertText: 'equal_to<${1:int}>', filterText: 'equal_to', kind: 'Function', detail: 'Equality comparator (<functional>)' },
+  { label: 'hash<T>', insertText: 'hash<${1:string}>', filterText: 'hash', kind: 'Function', detail: 'Default hash functor (<functional>)' },
+  { label: 'function<R(Args)>', insertText: 'function<${1:void}(${2:int})>', filterText: 'function', kind: 'Function', detail: 'Callable wrapper (<functional>)' },
+  { label: 'allocator<T>', insertText: 'allocator<${1:int}>', filterText: 'allocator', kind: 'Class', detail: 'Default allocator (<memory>)' }
+];
+/* eslint-enable no-template-curly-in-string */
+
 export default function MonacoContainer() {
   const { 
     files,
@@ -123,8 +308,7 @@ export default function MonacoContainer() {
   const { astTokens, diagnostics } = useEngine();
   const wrapperRef = useRef(null);
   const monacoInstanceRef = useRef(null);
-  const completionDisposablesRef = useRef([]);
-  const hoverDisposableRef = useRef(null);
+  const [isEditorReady, setIsEditorReady] = useState(false);
   const astTokensRef = useRef(astTokens);
   const activeLanguageRef = useRef(activeLanguage);
   const filesRef = useRef(files);
@@ -204,7 +388,7 @@ export default function MonacoContainer() {
         'editorWidget.border': '#27272A',
         'editorSuggestWidget.background': '#18181B',
         'editorSuggestWidget.border': '#27272A',
-        'editorSuggestWidget.selectedBackground': 'rgba(59, 130, 246, 0.2)',
+        'editorSuggestWidget.selectedBackground': '#3B82F633',
         'editorHoverWidget.background': '#18181B',
         'editorHoverWidget.border': '#27272A'
       }
@@ -247,6 +431,7 @@ export default function MonacoContainer() {
   }, [diagnostics, activeFile?.id, monacoEditorRef]);
 
   const handleEditorDidMount = (editor, monaco) => {
+    monacoInstanceRef.current = editor ? monaco : null;
     monacoEditorRef.current = editor;
     triggerLayout();
 
@@ -262,8 +447,13 @@ export default function MonacoContainer() {
       }
     });
 
-    completionDisposablesRef.current.forEach(d => d?.dispose());
-    completionDisposablesRef.current = [];
+    setIsEditorReady(true);
+  };
+
+  useEffect(() => {
+    const monaco = monacoInstanceRef.current;
+    const editor = monacoEditorRef.current;
+    if (!isEditorReady || !monaco || !editor) return;
 
     const snippetRule = monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet;
 
@@ -299,28 +489,8 @@ export default function MonacoContainer() {
         const context = deduceContextType(code, position.lineNumber, position.column);
 
         if (context.isDirective) {
-          /* eslint-disable no-template-curly-in-string */
-          const directives = [
-            { label: '#include <...>', insert: 'include <${1:iostream}>', filter: 'include', detail: 'Standard library header' },
-            { label: '#include "..."', insert: 'include "${1:header.h}"', filter: 'include', detail: 'Local header file' },
-            { label: '#define',        insert: 'define ${1:MACRO} ${2:value}', filter: 'define', detail: 'Define preprocessor macro' },
-            { label: '#undef',         insert: 'undef ${1:MACRO}', filter: 'undef', detail: 'Undefine macro' },
-            { label: '#ifdef',         insert: 'ifdef ${1:MACRO}\n$0\n#endif', filter: 'ifdef', detail: 'Conditional if defined' },
-            { label: '#ifndef',        insert: 'ifndef ${1:MACRO}\n#define ${1:MACRO}\n$0\n#endif', filter: 'ifndef', detail: 'Header guard / if not defined' },
-            { label: '#if',            insert: 'if ${1:condition}\n$0\n#endif', filter: 'if', detail: 'Preprocessor conditional' },
-            { label: '#elif',          insert: 'elif ${1:condition}', filter: 'elif', detail: 'Preprocessor else-if' },
-            { label: '#else',          insert: 'else', filter: 'else', detail: 'Preprocessor else' },
-            { label: '#endif',         insert: 'endif', filter: 'endif', detail: 'End conditional block' },
-            { label: '#pragma once',   insert: 'pragma once', filter: 'pragma', detail: 'Single-inclusion guard' },
-            { label: '#error',         insert: 'error "${1:message}"', filter: 'error', detail: 'Compile-time error directive' },
-            { label: '#warning',       insert: 'warning "${1:message}"', filter: 'warning', detail: 'Compile-time warning directive' },
-            { label: '#line',          insert: 'line ${1:1}', filter: 'line', detail: 'Line control directive' }
-          ];
-          /* eslint-enable no-template-curly-in-string */
-
           return {
-            incomplete: true,
-            suggestions: directives.map((d, i) => ({
+            suggestions: CPP_DIRECTIVES.map((d, i) => ({
               label: d.label,
               kind: monaco.languages.CompletionItemKind.Keyword,
               insertText: d.insert,
@@ -357,12 +527,13 @@ export default function MonacoContainer() {
             };
           }
 
+          const openAngle = context.needsAngle ? '<' : '';
           const closeAngle = nextChar === '>' ? '' : '>';
           return {
             suggestions: STD_HEADERS.map((h, i) => ({
               label: `<${h.name}>`,
               kind: monaco.languages.CompletionItemKind.Module,
-              insertText: `${h.name}${closeAngle}`,
+              insertText: `${openAngle}${h.name}${closeAngle}`,
               filterText: h.name,
               detail: `Header <${h.name}>`,
               documentation: { value: `**#include <${h.name}>**\n\n${h.desc}` },
@@ -373,14 +544,8 @@ export default function MonacoContainer() {
         }
 
         if (context.isPragma) {
-          const pragmas = [
-            { label: 'once', detail: 'Include header only once per translation unit' },
-            { label: 'GCC optimize("O3")', detail: 'GCC O3 optimization' },
-            { label: 'pack(push, 1)', detail: 'Set 1-byte struct alignment' },
-            { label: 'pack(pop)', detail: 'Restore struct alignment' }
-          ];
           return {
-            suggestions: pragmas.map(p => ({
+            suggestions: CPP_PRAGMAS.map(p => ({
               label: p.label,
               kind: monaco.languages.CompletionItemKind.Keyword,
               insertText: p.label,
@@ -424,14 +589,7 @@ export default function MonacoContainer() {
               });
               /* eslint-enable no-template-curly-in-string */
             }
-            const predefinedMacros = [
-              { name: '__cplusplus', detail: 'C++ standard version macro' },
-              { name: 'NDEBUG', detail: 'Disable assertions in release builds' },
-              { name: '__linux__', detail: 'Linux target platform' },
-              { name: '_WIN32', detail: 'Windows target platform' },
-              { name: '__GNUC__', detail: 'GCC compiler version' }
-            ];
-            predefinedMacros.forEach(m => {
+            PREDEFINED_MACROS.forEach(m => {
               if (!seen.has(m.name)) {
                 suggestions.push({
                   label: m.name,
@@ -465,22 +623,7 @@ export default function MonacoContainer() {
         }
 
         if (context.isMemberAccess) {
-          const targetType = context.type;
-          let methods = [];
-          if (targetType === 'vector' || targetType === 'unknown_object') {
-            methods = MEMBER_METHODS.vector;
-          } else if (targetType === 'string') {
-            methods = MEMBER_METHODS.string;
-          } else if (targetType === 'stack' || targetType === 'queue' || targetType === 'priority_queue') {
-            methods = MEMBER_METHODS.adapter;
-          } else if (targetType === 'map' || targetType === 'unordered_map' || targetType === 'set' || targetType === 'unordered_set') {
-            methods = MEMBER_METHODS.associative;
-          } else if (targetType === 'deque' || targetType === 'list') {
-            methods = [...MEMBER_METHODS.vector.slice(0, 4), ...MEMBER_METHODS.vector.slice(7)];
-          } else if (targetType === 'unique_ptr' || targetType === 'shared_ptr') {
-            methods = MEMBER_METHODS.smart_ptr;
-          }
-
+          const methods = MEMBER_METHOD_LOOKUP[context.type] || [];
           return {
             suggestions: methods.map(m => ({
               label: m.label,
@@ -492,35 +635,55 @@ export default function MonacoContainer() {
           };
         }
 
+        if (context.isTemplateArg) {
+          const declaredTypes = extractDeclaredTypes(code);
+          const scopes = analyzeScopesAtCursor(code, position.lineNumber, position.column);
+          const typeSuggestions = [];
+
+          declaredTypes.forEach(t => {
+            typeSuggestions.push({
+              label: t.name,
+              kind: monaco.languages.CompletionItemKind.Struct,
+              insertText: t.name,
+              detail: t.detail,
+              sortText: `0000_${t.name}`,
+              range
+            });
+          });
+
+          // Active #define macros are legal inside non-type templates like array<int, MAXN> / bitset<MAXN>
+          scopes.prioritySymbols
+            .filter(s => s.type === 'macro')
+            .forEach(m => {
+              typeSuggestions.push({
+                label: m.name,
+                kind: monaco.languages.CompletionItemKind.Constant,
+                insertText: m.name,
+                detail: `${m.detail} (Non-type template constant)`,
+                sortText: `0010_${m.name}`,
+                range
+              });
+            });
+
+          TEMPLATE_ARG_ITEMS.forEach((item, i) => {
+            typeSuggestions.push({
+              label: item.label,
+              kind: monaco.languages.CompletionItemKind[item.kind],
+              insertText: item.insertText,
+              filterText: item.filterText || item.label,
+              insertTextRules: item.insertText.includes('$') ? snippetRule : undefined,
+              detail: item.detail,
+              sortText: `01${String(i).padStart(2, '0')}_${item.filterText || item.label}`,
+              range
+            });
+          });
+
+          return { suggestions: typeSuggestions };
+        }
+
         if (context.isNamespace) {
-          const stdMembers = [
-            { name: 'vector', kind: 'Class', detail: 'std::vector<T>' },
-            { name: 'string', kind: 'Class', detail: 'std::string' },
-            { name: 'map', kind: 'Class', detail: 'std::map<K, V>' },
-            { name: 'unordered_map', kind: 'Class', detail: 'std::unordered_map<K, V>' },
-            { name: 'set', kind: 'Class', detail: 'std::set<T>' },
-            { name: 'unordered_set', kind: 'Class', detail: 'std::unordered_set<T>' },
-            { name: 'stack', kind: 'Class', detail: 'std::stack<T>' },
-            { name: 'queue', kind: 'Class', detail: 'std::queue<T>' },
-            { name: 'priority_queue', kind: 'Class', detail: 'std::priority_queue<T>' },
-            { name: 'pair', kind: 'Class', detail: 'std::pair<T1, T2>' },
-            { name: 'unique_ptr', kind: 'Class', detail: 'std::unique_ptr<T>' },
-            { name: 'shared_ptr', kind: 'Class', detail: 'std::shared_ptr<T>' },
-            { name: 'make_unique', kind: 'Function', detail: 'std::make_unique<T>(args...)' },
-            { name: 'make_shared', kind: 'Function', detail: 'std::make_shared<T>(args...)' },
-            { name: 'sort', kind: 'Function', detail: 'std::sort(first, last)' },
-            { name: 'accumulate', kind: 'Function', detail: 'std::accumulate(first, last, init)' },
-            { name: 'binary_search', kind: 'Function', detail: 'std::binary_search(first, last, val)' },
-            { name: 'lower_bound', kind: 'Function', detail: 'std::lower_bound(first, last, val)' },
-            { name: 'upper_bound', kind: 'Function', detail: 'std::upper_bound(first, last, val)' },
-            { name: 'cout', kind: 'Variable', detail: 'Standard output stream' },
-            { name: 'cin', kind: 'Variable', detail: 'Standard input stream' },
-            { name: 'endl', kind: 'Variable', detail: 'Newline & flush' },
-            { name: 'move', kind: 'Function', detail: 'std::move(t)' },
-            { name: 'swap', kind: 'Function', detail: 'std::swap(a, b)' }
-          ];
           return {
-            suggestions: stdMembers.map(s => ({
+            suggestions: STD_NAMESPACE_MEMBERS.map(s => ({
               label: s.name,
               kind: monaco.languages.CompletionItemKind[s.kind],
               insertText: s.name,
@@ -529,47 +692,6 @@ export default function MonacoContainer() {
             }))
           };
         }
-
-        /* eslint-disable no-template-curly-in-string */
-        const topLevelCppSymbols = [
-          { name: 'if', insertText: 'if (${1:condition}) {\n\t$0\n}', type: 'snippet', detail: 'if statement', complexity: 'Branch' },
-          { name: 'else', insertText: 'else {\n\t$0\n}', type: 'snippet', detail: 'else statement', complexity: 'Branch' },
-          { name: 'else if', insertText: 'else if (${1:condition}) {\n\t$0\n}', type: 'snippet', detail: 'else if statement', complexity: 'Branch' },
-          { name: 'for', insertText: 'for (int ${1:i} = 0; ${1:i} < ${2:n}; ++${1:i}) {\n\t$0\n}', type: 'snippet', detail: 'for loop', complexity: 'Loop' },
-          { name: 'while', insertText: 'while (${1:condition}) {\n\t$0\n}', type: 'snippet', detail: 'while loop', complexity: 'Loop' },
-          { name: 'do while', insertText: 'do {\n\t$0\n} while (${1:condition});', type: 'snippet', detail: 'do-while loop', complexity: 'Loop' },
-          { name: 'switch', insertText: 'switch (${1:expr}) {\n\tcase ${2:val}:\n\t\t$0\n\t\tbreak;\n\tdefault:\n\t\tbreak;\n}', type: 'snippet', detail: 'switch statement', complexity: 'Branch' },
-          { name: 'return', insertText: 'return $0;', type: 'keyword', detail: 'return statement', complexity: 'Control' },
-          { name: 'vector', type: 'class', detail: 'std::vector<T>', complexity: 'O(1) amortized push' },
-          { name: 'string', type: 'class', detail: 'std::string', complexity: 'O(1) amortized append' },
-          { name: 'map', type: 'class', detail: 'std::map<K, V>', complexity: 'O(log N)' },
-          { name: 'unordered_map', type: 'class', detail: 'std::unordered_map<K, V>', complexity: 'O(1) avg' },
-          { name: 'set', type: 'class', detail: 'std::set<T>', complexity: 'O(log N)' },
-          { name: 'unordered_set', type: 'class', detail: 'std::unordered_set<T>', complexity: 'O(1) avg' },
-          { name: 'stack', type: 'class', detail: 'std::stack<T>', complexity: 'O(1)' },
-          { name: 'queue', type: 'class', detail: 'std::queue<T>', complexity: 'O(1)' },
-          { name: 'priority_queue', type: 'class', detail: 'std::priority_queue<T>', complexity: 'O(log N)' },
-          { name: 'deque', type: 'class', detail: 'std::deque<T>', complexity: 'O(1)' },
-          { name: 'pair', type: 'class', detail: 'std::pair<T1, T2>', complexity: 'O(1)' },
-          { name: 'unique_ptr', type: 'class', detail: 'std::unique_ptr<T>', complexity: 'Zero overhead' },
-          { name: 'shared_ptr', type: 'class', detail: 'std::shared_ptr<T>', complexity: 'Atomic refcount' },
-          { name: 'sort', type: 'function', detail: 'std::sort(first, last)', complexity: 'O(N log N)' },
-          { name: 'accumulate', type: 'function', detail: 'std::accumulate(first, last, init)', complexity: 'O(N)' },
-          { name: 'binary_search', type: 'function', detail: 'std::binary_search(first, last, val)', complexity: 'O(log N)' },
-          { name: 'lower_bound', type: 'function', detail: 'std::lower_bound(first, last, val)', complexity: 'O(log N)' },
-          { name: 'upper_bound', type: 'function', detail: 'std::upper_bound(first, last, val)', complexity: 'O(log N)' },
-          { name: 'cout', type: 'object', detail: 'std::cout output stream', complexity: 'I/O' },
-          { name: 'cin', type: 'object', detail: 'std::cin input stream', complexity: 'I/O' },
-          { name: 'endl', type: 'object', detail: 'std::endl flush', complexity: 'I/O' },
-          { name: 'using namespace std;', type: 'keyword', detail: 'Import std namespace', complexity: 'Scope' },
-          { name: 'constexpr', type: 'keyword', detail: 'Compile-time constant', complexity: 'Zero cost' },
-          { name: 'auto', type: 'keyword', detail: 'Deduced type', complexity: 'Compile-time' },
-          { name: 'template<typename T>', type: 'keyword', detail: 'Template declaration', complexity: 'Compile-time' },
-          { name: 'const', type: 'keyword', detail: 'Constant qualifier', complexity: 'Safety' },
-          { name: 'struct', insertText: 'struct ${1:Name} {\n\t$0\n};', type: 'snippet', detail: 'struct declaration', complexity: 'Type' },
-          { name: 'class', insertText: 'class ${1:Name} {\npublic:\n\t${1:Name}();\n\t~$1();\nprivate:\n\t$0\n};', type: 'snippet', detail: 'class declaration', complexity: 'Type' }
-        ];
-        /* eslint-enable no-template-curly-in-string */
 
         const scopes = analyzeScopesAtCursor(code, position.lineNumber, position.column);
 
@@ -596,7 +718,7 @@ export default function MonacoContainer() {
           range
         }));
 
-        const symbolItems = topLevelCppSymbols.map(sym => ({
+        const symbolItems = TOP_LEVEL_CPP_SYMBOLS.map(sym => ({
           label: sym.name,
           kind: sym.type === 'snippet'
             ? monaco.languages.CompletionItemKind.Snippet
@@ -635,19 +757,29 @@ export default function MonacoContainer() {
       }
     };
 
-    const langsToRegister = ['cpp', 'python', 'rust'];
-    completionDisposablesRef.current = langsToRegister.map(id =>
+    const completionDisposables = ['cpp', 'python', 'rust'].map(id =>
       monaco.languages.registerCompletionItemProvider(id, {
-        triggerCharacters: ['.', ':', '>', '#', '<', '"', ' '],
+        triggerCharacters: ['.', ':', '>', '#', '<', '"'],
         provideCompletionItems: provideCompletions
       })
     );
 
-    if (hoverDisposableRef.current) {
-      hoverDisposableRef.current.dispose();
-    }
+    const typeTriggerDisposable = editor.onDidType((text) => {
+      if (text !== ' ' && text !== ',') return;
+      const model = editor.getModel();
+      const pos = editor.getPosition();
+      if (!model || !pos || model.getLanguageId() !== 'cpp') return;
+      const before = model.getLineContent(pos.lineNumber).slice(0, pos.column - 1);
+      if (
+        (text === ' ' && /^\s*#\s*(?:include|ifdef|ifndef|if|elif|undef|pragma)\s$/.test(before)) ||
+        (text === ',' && deduceContextType(model.getValue(), pos.lineNumber, pos.column).isTemplateArg) ||
+        (text === ' ' && /,\s$/.test(before) && deduceContextType(model.getValue(), pos.lineNumber, pos.column).isTemplateArg)
+      ) {
+        editor.trigger('intellicpp', 'editor.action.triggerSuggest', {});
+      }
+    });
 
-    const hoverProvider = monaco.languages.registerHoverProvider('cpp', {
+    const hoverDisposable = monaco.languages.registerHoverProvider('cpp', {
       provideHover: (model, position) => {
         try {
           if (typeof window !== 'undefined' && window.innerWidth < 640) {
@@ -710,15 +842,12 @@ export default function MonacoContainer() {
       }
     });
 
-    hoverDisposableRef.current = hoverProvider;
-  };
-
-  useEffect(() => {
     return () => {
-      completionDisposablesRef.current.forEach(d => d?.dispose());
-      hoverDisposableRef.current?.dispose();
+      completionDisposables.forEach(d => d?.dispose());
+      typeTriggerDisposable?.dispose();
+      hoverDisposable?.dispose();
     };
-  }, []);
+  }, [isEditorReady, monacoEditorRef]);
 
   const editorOptions = useMemo(() => {
     const isTouch = typeof window !== 'undefined' && window.innerWidth < 640;
@@ -755,8 +884,13 @@ export default function MonacoContainer() {
         showMethods: true,
         showVariables: true,
         showModules: true,
-        showSnippets: true
+        showSnippets: true,
+        showConstants: true,
+        showFiles: true,
+        showStructs: true,
+        showTypeParameters: true
       },
+      snippetSuggestions: 'inline',
       guides: {
         indentation: true,
         highlightActiveIndentation: true
@@ -768,7 +902,9 @@ export default function MonacoContainer() {
     <div
       className="monaco-wrapper"
       ref={wrapperRef}
-      onClick={() => monacoEditorRef.current?.focus()}
+      onClick={(e) => {
+        if (e.target === wrapperRef.current) monacoEditorRef.current?.focus();
+      }}
     >
       <Editor
         height="100%"

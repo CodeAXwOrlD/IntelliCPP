@@ -221,7 +221,7 @@ void SuggestionEngine::updateSymbols(const std::string &code) {
   // Patterns: vector<int> v;  map<int,int> m;  stack<double> s; string s;
   // list<int> lst;
   std::regex varDecl(
-      R"(\b(vector|stack|queue|deque|map|unordered_map|set|unordered_set|string|list|forward_list|priority_queue|array|bitset)(?:<[^>]*>)?\s+(\w+)\s*[=;({])");
+      R"(\b(?:std::)?(vector|stack|queue|deque|map|unordered_map|set|unordered_set|string|list|forward_list|priority_queue|array|bitset)(?:\s*<[^>]*>\s*[*&]*|\s*[*&]+\s*|\s+)(\w+)\s*[=;({,])");
   for (std::sregex_iterator it(code.begin(), code.end(), varDecl), end;
        it != end; ++it) {
     std::string type = (*it)[1].str();

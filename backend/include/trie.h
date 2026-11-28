@@ -37,9 +37,9 @@ public:
     
 private:
     std::shared_ptr<TrieNode> root;
-    std::vector<std::string> dfs(
-        std::shared_ptr<TrieNode> node,
-        int& count,
+    void dfs(
+        const std::shared_ptr<TrieNode>& node,
+        std::vector<std::string>& results,
         int maxResults
     );
 };

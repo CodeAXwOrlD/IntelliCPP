@@ -9,10 +9,9 @@ export default function MemoryVisualizer() {
   const [baseAddr, setBaseAddr] = useState('0x7ffe000');
   const [reallocFlash, setReallocFlash] = useState(false);
 
-  // Sync initial state if code has vector initializer
   useEffect(() => {
     if (!activeFile?.content) return;
-    const match = activeFile.content.match(/vector<\w+>\s+\w+\s*=\s*\{([^}]+)\}/);
+    const match = activeFile.content.match(/(?:std::)?vector\s*<[^>{;]+>\s*\w+\s*=?\s*\{([^}]+)\}/);
     if (match && match[1]) {
       const parsed = match[1].split(',').map(s => parseInt(s.trim(), 10)).filter(n => !isNaN(n));
       if (parsed.length > 0 && parsed.length <= 16) {
@@ -29,7 +28,6 @@ export default function MemoryVisualizer() {
     const newLength = elements.length + 1;
     
     if (newLength > capacity) {
-      // Vector 2x geometric growth & heap reallocation
       const newCap = capacity * 2;
       setCapacity(newCap);
       const newHex = '0x7ffe' + (Math.floor(Math.random() * 800) + 100).toString(16);

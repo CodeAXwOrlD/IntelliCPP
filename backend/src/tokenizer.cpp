@@ -87,7 +87,7 @@ std::unordered_map<std::string, std::string> Tokenizer::getSymbolTable() const {
 std::string Tokenizer::extractTypeFromContext(const std::string &code,
                                               int cursorPosition) {
   // Look backwards from cursor for variable declaration
-  std::regex varDecl(R"((\w+)\s+(\w+)\s*[=;])");
+  std::regex varDecl(R"((\w+)(?:\s*<[^>]*>\s*[*&]*|\s*[*&]+\s*|\s+)(\w+)\s*[=;({])");
   std::sregex_iterator it(code.begin(), code.begin() + cursorPosition, varDecl);
 
   if (it != std::sregex_iterator()) {

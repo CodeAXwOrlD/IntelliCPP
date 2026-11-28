@@ -9,8 +9,11 @@
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
-const { execSync, exec } = require('child_process');
+const { exec } = require('child_process');
+const { promisify } = require('util');
 const EventEmitter = require('events');
+
+const execAsync = promisify(exec);
 
 const config = require('../../config');
 const { getLanguage } = require('../../languages/registry');
@@ -26,8 +29,9 @@ class InMemoryJobQueue extends EventEmitter {
     this.concurrency = concurrency;
     this.maxCompletedRetention = maxCompletedRetention;
 
-    this.queue = []; // Array of job objects
-    this.jobs = new Map(); // Map: jobId => jobObject
+    this.queue = [];
+    this.head = 0;
+    this.jobs = new Map();
     this.activeWorkers = 0;
     this.totalProcessed = 0;
   }
@@ -110,11 +114,15 @@ class InMemoryJobQueue extends EventEmitter {
    * Worker queue loop: process next queued job if worker capacity is available
    */
   async processNext() {
-    if (this.activeWorkers >= this.concurrency || this.queue.length === 0) {
+    if (this.activeWorkers >= this.concurrency || this.head >= this.queue.length) {
       return;
     }
 
-    const job = this.queue.shift();
+    const job = this.queue[this.head++];
+    if (this.head > 64 && this.head * 2 >= this.queue.length) {
+      this.queue = this.queue.slice(this.head);
+      this.head = 0;
+    }
     if (!job) return;
 
     this.activeWorkers++;
@@ -154,7 +162,7 @@ class InMemoryJobQueue extends EventEmitter {
    * Execute code inside isolated temporary sandbox with ulimits or Docker
    */
   executeJobInSandbox(job) {
-    return new Promise((resolve) => {
+    return new Promise(async (resolve) => {
       const { code, language, stdin = '' } = job;
       const langConfig = getLanguage(language);
       if (!langConfig) {
@@ -188,17 +196,16 @@ class InMemoryJobQueue extends EventEmitter {
         fs.writeFileSync(srcFile, code, 'utf8');
         fs.writeFileSync(stdinFile, stdin || '', 'utf8');
 
-        // 1. Compilation
         if (langConfig.isCompiled && typeof langConfig.compileCmd === 'function') {
           try {
             const compileCmd = `${HOST_ULIMIT_PREFIX} ${langConfig.compileCmd(srcFile, binFile)}`;
-            execSync(compileCmd, { timeout: langConfig.compileTimeoutMs, maxBuffer: config.MAX_EXEC_BUFFER_BYTES });
+            await execAsync(compileCmd, { timeout: langConfig.compileTimeoutMs, maxBuffer: config.MAX_EXEC_BUFFER_BYTES });
           } catch (compileErr) {
             cleanup();
             return resolve({
               success: false,
               output: '',
-              error: compileErr.stdout?.toString() || compileErr.message,
+              error: compileErr.stderr?.toString() || compileErr.stdout?.toString() || compileErr.message,
               exitCode: 1,
               errorCategory: 'compilation_error'
             });

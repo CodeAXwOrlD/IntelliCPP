@@ -33,7 +33,7 @@ class Trie {
     node.methods.push(method);
   }
 
-  search(prefix) {
+  search(prefix, limit = 50) {
     let node = this.root;
     for (const ch of prefix.toLowerCase()) {
       if (!node.children.has(ch)) return [];
@@ -41,9 +41,14 @@ class Trie {
     }
     const results = [];
     const dfs = (n) => {
-      results.push(...n.methods);
+      if (results.length >= limit) return;
+      for (const m of n.methods) {
+        results.push(m);
+        if (results.length >= limit) return;
+      }
       for (const child of n.children.values()) {
         dfs(child);
+        if (results.length >= limit) return;
       }
     };
     dfs(node);
@@ -51,13 +56,11 @@ class Trie {
   }
 }
 
-/**
- * Load all STL container definitions from data/stl/*.json
- */
 function loadSTLDatabase() {
   const stlDir = path.join(__dirname, 'stl');
   const stlDb = {};
   const tries = {};
+  const methodMaps = {};
 
   if (fs.existsSync(stlDir)) {
     const files = fs.readdirSync(stlDir).filter(f => f.endsWith('.json'));
@@ -68,21 +71,23 @@ function loadSTLDatabase() {
         const data = JSON.parse(fs.readFileSync(fullPath, 'utf8'));
         stlDb[containerKey] = data;
 
-        // Build Trie for this container
         const trie = new Trie();
+        const methodMap = new Map();
         if (Array.isArray(data.methods)) {
           for (const method of data.methods) {
             trie.insert(method);
+            methodMap.set(method.name, method);
           }
         }
         tries[containerKey] = trie;
+        methodMaps[containerKey] = methodMap;
       } catch (err) {
         console.error(`[DataLoader] Failed to load STL definition: ${file}`, err.message);
       }
     }
   }
 
-  return { stlDb, tries };
+  return { stlDb, tries, methodMaps };
 }
 
 /**
@@ -106,7 +111,7 @@ function loadConstants() {
   };
 }
 
-const { stlDb: STL_DB, tries: containerTries } = loadSTLDatabase();
+const { stlDb: STL_DB, tries: containerTries, methodMaps: STL_METHOD_MAPS } = loadSTLDatabase();
 const {
   ALL_HEADERS,
   ALL_STL_TYPES,
@@ -118,6 +123,7 @@ const {
 module.exports = {
   STL_DB,
   containerTries,
+  STL_METHOD_MAPS,
   ALL_HEADERS,
   ALL_STL_TYPES,
   TEMPLATE_ARGS,

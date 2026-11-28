@@ -27,48 +27,54 @@ std::vector<std::string> Trie::search(const std::string &prefix,
                                       int maxResults) {
   auto node = root;
 
-  // Navigate to prefix
   for (char c : prefix) {
-    if (!node->children.count(c)) {
-      return {}; // No results
+    auto it = node->children.find(c);
+    if (it == node->children.end()) {
+      return {};
     }
-    node = node->children[c];
+    node = it->second;
   }
 
-  // DFS from prefix node
   std::vector<std::string> results;
-  int count = 0;
-  return dfs(node, count, maxResults);
+  if (maxResults > 0) {
+    results.reserve(static_cast<size_t>(maxResults));
+    dfs(node, results, maxResults);
+  }
+  return results;
 }
 
-std::vector<std::string> Trie::dfs(std::shared_ptr<TrieNode> node, int &count,
-                                   int maxResults) {
+void Trie::dfs(const std::shared_ptr<TrieNode> &node,
+               std::vector<std::string> &results, int maxResults) {
+  if (!node || static_cast<int>(results.size()) >= maxResults)
+    return;
 
-  std::vector<std::string> results;
-
-  if (!node)
-    return results;
-
-  if (node->isEnd && count < maxResults) {
+  if (node->isEnd) {
     results.push_back(node->word);
-    count++;
+    if (static_cast<int>(results.size()) >= maxResults)
+      return;
   }
 
-  // Sort children by frequency for better ranking
-  std::vector<std::pair<char, std::shared_ptr<TrieNode>>> sorted(
-      node->children.begin(), node->children.end());
+  if (node->children.size() <= 1) {
+    for (const auto &[c, child] : node->children) {
+      dfs(child, results, maxResults);
+    }
+    return;
+  }
+
+  std::vector<std::pair<int, std::shared_ptr<TrieNode>>> sorted;
+  sorted.reserve(node->children.size());
+  for (const auto &[c, child] : node->children) {
+    sorted.emplace_back(child->frequency, child);
+  }
   std::sort(sorted.begin(), sorted.end(), [](const auto &a, const auto &b) {
-    return a.second->frequency > b.second->frequency;
+    return a.first > b.first;
   });
 
-  for (const auto &[c, child] : sorted) {
-    if (count >= maxResults)
+  for (const auto &[freq, child] : sorted) {
+    if (static_cast<int>(results.size()) >= maxResults)
       break;
-    auto subResults = dfs(child, count, maxResults);
-    results.insert(results.end(), subResults.begin(), subResults.end());
+    dfs(child, results, maxResults);
   }
-
-  return results;
 }
 
 std::vector<std::string> Trie::getAllWords() const {
