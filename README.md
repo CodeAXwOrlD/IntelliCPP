@@ -127,21 +127,39 @@ IntelliCPP combines bare-metal C++20 execution performance with a clean, distrac
 
 ## 🏗️ System Architecture
 
-```mermaid
-graph TD
-    A[Monaco Editor & React 18 UI] -->|HTTP / Gzip Compression| B[Express Gateway Server :3001]
-    A -->|File System Access API| FS[Native OS File Manager]
-    A -->|Offline Sync| LS[LocalStorage Workspace]
-    A -->|Static AST Analysis| C[Real-Time Big-O & Scope Engine]
-    
-    B -->|LRU Cache / 28 STL JSONs + O(1) Maps| D[backend/data/stl/*.json]
-    B -->|Node-API Native Bridge| E[codeflow_native.node / C++20 Trie]
-    
-    B -->|Token Bucket & Concurrency Limiter| F[Helmet CSP & Input Validation]
-    B -->|Enqueue Job + STDIN| G[Async InMemoryJobQueue - 4 Workers]
-    
-    G -->|ulimits + 5s timeout| H[Toolchains: g++ C++20 / python3 / rustc]
-    H -->|stdout / stderr| I[Terminal Dock & Monaco Markers]
+```text
+┌────────────────────────────────────────────────────────────────────────────────────────┐
+│                            CLIENT LAYER  (Browser · React 18)                          │
+│                                                                                        │
+│   [ Monaco Editor UI ] ──── AST Static Analysis ───> [ Real-Time Big-O & Scope Engine ]│
+│            │                                                                           │
+│            ├─── File System Access API ────────────> [ Native OS Local File Sync ]     │
+│            └─── Offline Persistence ───────────────> [ LocalStorage Workspace Cache ]  │
+└───────────────────────────────────────────┬────────────────────────────────────────────┘
+                                            │ HTTP + Gzip Compression
+                                            v
+┌────────────────────────────────────────────────────────────────────────────────────────┐
+│                         API GATEWAY & CACHE  (Express :3001)                           │
+│                                                                                        │
+│   [ Helmet CSP & Input Validation ] ──> [ Token-Bucket Rate Limiter & Concurrency Cap ]│
+│            │                                                                           │
+│            ├─── Autocomplete Lookup ──> [ O(1) LRUCache ] ──> [ Node-API Native Bridge]│
+│            │                                                    ├─ codeflow_native.node│
+│            │                                                    ├─ C++20 Trie Engine   │
+│            │                                                    └─ 28 STL JSONs (345)  │
+│            │                                                                           │
+│            └─── Code Execution ───────> [ Async InMemoryJobQueue (4 Bounded Workers) ] │
+└───────────────────────────────────────────┬────────────────────────────────────────────┘
+                                            │ ulimits (RAM / CPU / fsize) + 5s Timeout
+                                            v
+┌────────────────────────────────────────────────────────────────────────────────────────┐
+│                       SANDBOXED COMPUTE LAYER  (Linux Container)                       │
+│                                                                                        │
+│        [ g++ (C++20) ]            [ python3 (Python 3) ]            [ rustc (Rust) ]   │
+│               └─────────────────────────────┬──────────────────────────────┘           │
+│                                             v  stdout / stderr / exit code             │
+│                        [ Terminal Dock & Monaco Inline Markers ]                       │
+└────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
